@@ -1,0 +1,27 @@
+{
+  "name": "jscad-utils",
+  "version": "1.0.1",
+  "description": "Utilities for use in a jscad script.",
+  "main": "jscad-utils.jscad",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "jscad"
+  ],
+  "homepage": "https://github.com/johnwebbcole/jscad-utils",
+  "bugs": "https://github.com/johnwebbcole/jscad-utils/issues",
+  "author": {
+    "name": "John Cole",
+    "email": "johnwebbcole@gmail.com",
+    "url": "http://github.com/johnwebbcole@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/johnwebbcole/jscad-utils.git"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.5.1"
+  }
+}
