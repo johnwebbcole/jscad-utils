@@ -1,7 +1,3 @@
-/**
- * jscad utilties
- * @class util
- */
 util = {
   print: function (msg, o) {
     echo(msg, JSON.stringify(o.getBounds()), JSON.stringify(this.size(o.getBounds())));
@@ -217,6 +213,11 @@ util = {
     }));
   },
 
+  /**
+   * [init description]
+   * @class UtilInit
+   * @constructor
+   */
   init: function init(CSG) {
     /**
      * Moves an object flush with another object
@@ -258,6 +259,12 @@ util = {
       return util.flush(this, to, axis, a[0], a[1]);
     };
 
+    /**
+     * Moves an objects midpoint on an axis a certain distance.
+     * @param  {[type]} axis [description]
+     * @param  {[type]} to   [description]
+     * @return {[type]}      [description]
+     */
     CSG.prototype.midlineTo = function midlineTo(axis, to) {
       return util.midlineTo(this, axis, to);
     };
@@ -266,6 +273,11 @@ util = {
       return util.centerWith(this, axis, to);
     };
 
+    /**
+     * Align with another object on the selected axis.
+     * @param  {CSG} to   The object to align to.
+     * @param  {string} axis A string indicating which axis to align, 'x', 'y', 'z', or any combination including 'xyz'.
+     */
     CSG.prototype.align = function align(to, axis) {
       return util.centerWith(this, axis, to);
     };
@@ -283,6 +295,9 @@ util = {
       return util.enlarge(this, x, y, z);
     }
 
+    /**
+     * Places an object at zero on the `z` axis.
+     */
     CSG.prototype.Zero = function zero() {
       return util.zero(this);
     };
@@ -296,5 +311,4 @@ util = {
       return this.setColor(r, g, b, a)
     };
   }
-
 };

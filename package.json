@@ -1,6 +1,6 @@
 {
   "name": "jscad-utils",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Utilities for use in a jscad script.",
   "main": "jscad-utils.jscad",
   "scripts": {
