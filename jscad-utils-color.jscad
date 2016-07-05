@@ -231,6 +231,7 @@ Colors = {
          * @augments CSG
          */
         CSG.prototype.color = function (r, g, b, a) {
+            if (!r) return this; // shortcut empty color values to do nothing.
             return Colors.color(this, r, g, b, a);
         }
 

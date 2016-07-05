@@ -18,6 +18,11 @@ util = {
         echo(msg, JSON.stringify(o.getBounds()), JSON.stringify(this.size(o.getBounds())));
     },
 
+    error: function (msg) {
+        if (console && console.error) console.error(msg);
+        throw new Error(msg);
+    },
+
     label: function label(text, x, y, width, height) {
         var l = vector_text(x || 0, y || 0, text); // l contains a list of polylines to draw
         var o = [];
@@ -80,10 +85,24 @@ util = {
             });
         },
 
-        add: function (a, f) {
+        addValue: function (a, f) {
             return _.map(a, function (e) {
                 return e + f;
             });
+        },
+
+        addArray: function (a, f) {
+            return _.map(a, function (e, i) {
+                return e + f[i];
+            });
+        },
+
+        add: function (a, f) {
+            if (_.isArray(f)) {
+                return util.array.addArray(a, f);
+            } else {
+                return util.array.addValue(a, f);
+            }
         },
 
         toxyz: function (a) {
@@ -140,12 +159,30 @@ util = {
         return [size.x, size.y, size.z];
     },
 
-    size: function size(bbox) {
-        return {
-            x: bbox[1].x - bbox[0].x,
-            y: bbox[1].y - bbox[0].y,
-            z: bbox[1].z - bbox[0].z
-        };
+    /**
+     * Returns a `Vector3D` with the size of the object.
+     * @param  {CSG} o A `CSG` like object or an array of `CSG.Vector3D` objects (the result of getBounds()).
+     * @return {CSG.Vector3D}   Vector3d with the size of the object
+     */
+    size: function size(o) {
+        var bbox = o.getBounds ? o.getBounds() : o;
+
+        var foo = bbox[1].minus(bbox[0]);
+        return foo;
+    },
+
+    /**
+     * Returns a scale factor (0.0-1.0) for an object
+     * that will resize it by a value in size units instead
+     * of percentages.
+     * @param  {number} size  Object size
+     * @param  {number} value Amount to add (negative values subtract) from the size of the object.
+     * @return {number}       Scale factor
+     */
+    scale: function scale(size, value) {
+        if (value == 0) return 1;
+
+        return 1 + ((100 / (size / value)) / 100);
     },
 
     center: function center(object, size) {
@@ -174,31 +211,27 @@ util = {
      * @return {CSG}        [description]
      */
     enlarge: function enlarge(object, x, y, z) {
+        var a;
         if (_.isArray(x)) {
-            var a = x;
-            x = a[0];
-            y = a[1];
-            z = a[2];
+            a = x;
+        } else {
+            a = [x, y, z];
         }
-        // echo('en', _.isArray(x), JSON.stringify(a), x, y, z);
-        var c = util.centroid(object);
-        var size = this.size(object.getBounds());
 
-        function scale(size, value) {
-            if (value == 0) return 1;
+        var size = util.size(object);
+        var centroid = util.centroid(object, size);
 
-            // echo('scale', size, value, (100 / (size / value)) / 100);
-            return 1 + ((100 / (size / value)) / 100);
-        }
-        var s = [scale(size.x, x), scale(size.y, y), scale(size.z, z)];
-        var new_object = object.scale(s);
-        var nc = util.centroid(new_object);
+        var idx = 0;
+        var t = _.map(size, function (i) {
+            return util.scale(i, a[idx++]);
+        });
+
+        var new_object = object.scale(t);
+        var new_centroid = util.centroid(new_object);
 
         /// Calculate the difference between the original centroid and the new
-        /// centroid, so that the object can be translated to it's original position.
-        var delta = [-(nc[0] - c[0]), -(nc[1] - c[1]), -(nc[2] - c[2])]
-            // echo('enlarge centroid', JSON.stringify(c), JSON.stringify(nc), JSON.stringify(delta));
-            // echo('enlarge size', JSON.stringify(size), JSON.stringify(s), JSON.stringify(util.size(new_object.getBounds())));
+        var delta = new_centroid.minus(centroid).times(-1);
+
         return new_object.translate(delta);
     },
 
@@ -261,6 +294,7 @@ util = {
     },
 
     calcFlush: function calcFlush(moveobj, withobj, axes, mside, wside) {
+        console.error('util.calcFlush is depreciated, use util.calcSnap instead.')
         var side
 
         if (mside === 0 || mside === 1) {
@@ -284,6 +318,40 @@ util = {
         });
     },
 
+    calcSnap: function calcSnap(moveobj, withobj, axes, orientation, delta) {
+        var side = util.flushSide[orientation];
+
+        if (!side) {
+            var fix = {
+                '01': 'outside+',
+                '10': 'outside-',
+                '11': 'inside+',
+                '00': 'inside-',
+                '-11': 'center+',
+                '-10': 'center-'
+            }
+            util.error('util.calcSnap: invalid side: ' + orientation + ' should be ' + fix['' + orientation + delta]);
+        }
+
+        var m = moveobj.getBounds();
+        var w = withobj.getBounds();
+
+        // Add centroid if needed
+        if (side[0] === -1) {
+            w[-1] = withobj.centroid();
+        }
+
+        var t = this.axisApply(axes, function (i, axis) {
+            return w[side[0]][axis] - m[side[1]][axis];
+        });
+
+        return delta ? util.array.add(t, delta) : t;
+    },
+
+    snap: function snap(moveobj, withobj, axis, orientation, delta) {
+        return moveobj.translate(util.calcSnap(moveobj, withobj, axis, orientation, delta))
+    },
+
     /**
      * Moves an object flush with another object
      * @param  {CSG} moveobj Object to move
@@ -294,21 +362,10 @@ util = {
      * @return {CSG}         [description]
      */
     flush: function flush(moveobj, withobj, axis, mside, wside) {
-        // mside: 0 or 1
-        // axis: 'x', 'y', 'z'
-        // wside = wside !== undefined ? wside : mside;
-        // var m = moveobj.getBounds();
-        // var w = withobj.getBounds()
-        // var d = w[wside][axis] - m[mside][axis];
-        // var ta = [d, 0, 0];
-        // if (axis != 'x') {
-        //     ta = axis == 'y' ? [0, d, 0] : [0, 0, d];
-        // }
-        // echo('flush', JSON.stringify(ta));
         return moveobj.translate(util.calcFlush(moveobj, withobj, axis, mside, wside))
     },
 
-    axisApply: function (axis, valfun) {
+    axisApply: function (axes, valfun) {
         var retval = [0, 0, 0];
         var lookup = {
             x: 0,
@@ -316,14 +373,15 @@ util = {
             z: 2
         };
 
-        axis.split('').forEach(function (ax) {
-            retval[lookup[ax]] = valfun(lookup[ax], ax);
+        axes.split('').forEach(function (axis) {
+            retval[lookup[axis]] = valfun(lookup[axis], axis);
         })
 
         return retval;
     },
 
     axis2array: function (axes, valfun) {
+        console.error('axis2array is depreciated')
         var a = [0, 0, 0];
         var lookup = {
             x: 0,
@@ -333,20 +391,16 @@ util = {
 
         axes.split('').forEach(function (axis) {
             var i = lookup[axis];
-            a[i] = valfun(i);
+            a[i] = valfun(i, axis);
         });
         return a;
     },
 
-    centroid: function (o) {
-        var b = o.getBounds();
-        var s = util.size(b);
-        var centroid = _.map(b[0], function (p, i) {
-            /// the bounds have the axis with a `_` in front (_x, _y, _z).  Strip
-            /// it off and lookup the size and add half to each axis to find the centroid.
-            return p + (s[i.slice(1)] / 2);
-        });
-        return centroid;
+    centroid: function (o, size) {
+        var bounds = o.getBounds();
+        size = size || util.size(bounds);
+
+        return bounds[0].plus(size.dividedBy(2));
     },
 
     midlineTo: function midlineTo(o, axis, to) {
@@ -354,8 +408,8 @@ util = {
         var s = util.size(b);
         var centroid = util.centroid(o);
 
-        return o.translate(util.axisApply(axis, function (i) {
-            return to - centroid[i];
+        return o.translate(util.axisApply(axis, function (i, a) {
+            return to - centroid[a];
         }));
     },
 
@@ -371,28 +425,226 @@ util = {
         return t;
     },
 
-    //  centerWith: function centerWith(o, axis, withObj) {
-    //    var centroid = util.centroid(o);
-    //    var withCentroid = util.centroid(withObj);
-    //    // echo('centerWith', centroid, withCentroid);
-    //
-    //    return o.translate(util.axisApply(axis, function (i) {
-    //      return withCentroid[i] - centroid[i];
-    //    }));
-    //  },
+    calcCenterWith: function calcCenterWith(o, axes, withObj, delta) {
 
-    calcCenterWith: function calcCenterWith(o, axis, withObj) {
         var centroid = util.centroid(o);
         var withCentroid = util.centroid(withObj);
-        // echo('centerWith', centroid, withCentroid);
 
-        return util.axis2array(axis, function (i) {
-            return withCentroid[i] - centroid[i];
+        var t = util.axisApply(axes, function (i, axis) {
+            return withCentroid[axis] - centroid[axis];
         });
+
+        return delta ? util.array.add(t, delta) : t;
     },
 
     centerWith: function centerWith(o, axis, withObj) {
         return o.translate(util.calcCenterWith(o, axis, withObj));
+    },
+
+    complex: function complex(names, objects) {
+
+        return {
+            parts: _.zipObject(names.split(','), objects),
+            combine: function (pieces, options) {
+                var scale = options && options.scale || [0, 0, 0];
+                pieces = (pieces || names).split(',');
+                return union(
+                    _.chain(this.parts)
+                    .pick(pieces)
+                    .values()
+                    .map(function (o) {
+                        return o.enlarge(scale);
+                    })
+                    .value()
+                );
+            }
+        };
+    },
+
+    slices2poly: function slices2poly(slices, options, axis) {
+        // console.log('util.slices2poly', options);
+        var resolution = slices.length;
+        // var offsetVector = new CSG.Vector3D(options.offset);
+        var twistangle = CSG.parseOptionAsFloat(options, 'twistangle', 0);
+        var twiststeps = CSG.parseOptionAsInt(options, 'twiststeps', CSG.defaultResolution3D);
+
+        if (twistangle == 0 || twiststeps < 1) {
+            twiststeps = 1;
+        }
+
+        var normalVector = options.si.normalVector;
+
+        var polygons = [];
+
+        // bottom and top
+        var first = _.first(slices);
+        var last = _.last(slices);
+        var up = first.offset[axis] > last.offset[axis];
+
+        // _toPlanePolygons only works in the 'z' axis.  It's hard coded
+        // to create the poly using 'x' and 'y'.
+        polygons = polygons.concat(first.poly._toPlanePolygons({
+            translation: first.offset,
+            normalVector: normalVector,
+            flipped: !(up)
+        }));
+
+        var rotateAxis = 'rotate' + axis.toUpperCase();
+        polygons = polygons.concat(last.poly._toPlanePolygons({
+            translation: last.offset,
+            normalVector: normalVector[rotateAxis](twistangle),
+            flipped: up
+        }));
+
+        // rotate with quick short circut
+        var rotate = twistangle === 0 ? function rotateZero(v) {
+            return v;
+        } : function rotate(v, angle, percent) {
+            return v[rotateAxis](angle * percent);
+        };
+
+        // walls
+        var connectorAxis = last.offset.minus(first.offset).abs();
+        // console.log('connectorAxis', connectorAxis);
+        slices.forEach(function (slice, idx) {
+            if (idx < slices.length - 1) {
+                var nextidx = idx + 1;
+                var top = !up ? slices[nextidx] : slice;
+                var bottom = up ? slices[nextidx] : slice;
+
+                var c1 = new CSG.Connector(bottom.offset, connectorAxis,
+                    rotate(normalVector, twistangle, idx / slices.length));
+                var c2 = new CSG.Connector(top.offset, connectorAxis,
+                    rotate(normalVector, twistangle, nextidx / slices.length));
+
+                // console.log('slices2poly.slices', c1.point, c2.point);
+                polygons = polygons.concat(bottom.poly._toWallPolygons({
+                    cag: top.poly,
+                    toConnector1: c1,
+                    toConnector2: c2
+                }));
+            }
+        });
+
+        return CSG.fromPolygons(polygons);
+    },
+
+    sliceParams: function sliceParams(orientation, radius, bounds) {
+        var axis = orientation[0];
+        var direction = orientation[1];
+
+        var dirInfo = {
+            'dir+': {
+                sizeIdx: 1,
+                sizeDir: -1,
+                moveDir: -1,
+                positive: true
+            },
+            'dir-': {
+                sizeIdx: 0,
+                sizeDir: 1,
+                moveDir: 0,
+                positive: false
+            }
+        };
+
+        var axisInfo = {
+            'z': {
+                orthoNormalCartesian: ['X', 'Y'],
+                normalVector: CSG.Vector3D.Create(0, 1, 0)
+            },
+            'x': {
+                orthoNormalCartesian: ['Y', 'Z'],
+                normalVector: CSG.Vector3D.Create(0, 0, 1)
+            },
+            'y': {
+                orthoNormalCartesian: ['X', 'Z'],
+                normalVector: CSG.Vector3D.Create(0, 0, 1)
+            }
+        }
+
+        var info = dirInfo['dir' + direction];
+
+        return _.assign({
+            axis: axis,
+            cutDelta: util.axisApply(axis, function (i, a) {
+                return bounds[info.sizeIdx][a] + (Math.abs(radius) * info.sizeDir);
+            }),
+            moveDelta: util.axisApply(axis, function (i, a) {
+                return bounds[info.sizeIdx][a] + (Math.abs(radius) * info.moveDir);
+            })
+        }, info, axisInfo[axis]);
+    },
+
+    reShape: function reShape(object, radius, orientation, options, slicer) {
+        options = options || {};
+        var b = object.getBounds();
+        var s = util.size(b);
+        var ar = Math.abs(radius);
+        var si = util.sliceParams(orientation, radius, b);
+
+        if (si.axis !== 'z') throw new Error('util.reShape error: CAG._toPlanePolytons only uses the "z" axis.  You must use the "z" axis for now.');
+
+        var cutplane = CSG.OrthoNormalBasis.GetCartesian(si.orthoNormalCartesian[0], si.orthoNormalCartesian[1]).translate(si.cutDelta);
+
+        var slice = object.sectionCut(cutplane);
+
+        var first = util.axisApply(si.axis, function (i, a) {
+            return si.positive ? 0 : ar;
+        });
+
+        var last = util.axisApply(si.axis, function (i, a) {
+            return si.positive ? ar : 0;
+        });
+
+        var plane = si.positive ? cutplane.plane : cutplane.plane.flipped();
+
+        var slices = slicer(first, last, slice);
+
+        var delta = util.slices2poly(slices, _.assign(options, {
+            si: si
+        }), si.axis).color(options.color);
+
+        var remainder = object.cutByPlane(plane);
+        return union([options.unionOriginal ? object : remainder,
+            delta.translate(si.moveDelta)
+        ]);
+    },
+
+    chamfer: function chamfer(object, radius, orientation, options) {
+        return util.reShape(object, radius, orientation, options, function (first, last, slice) {
+            return [{
+                poly: slice,
+                offset: new CSG.Vector3D(first)
+            }, {
+                poly: util.enlarge(slice, [-radius * 2, -radius * 2]),
+                offset: new CSG.Vector3D(last)
+            }];
+        });
+    },
+
+    fillet: function fillet(object, radius, orientation, options) {
+        options = options || {};
+        return util.reShape(object, radius, orientation, options, function (first, last, slice) {
+            var v1 = new CSG.Vector3D(first);
+            var v2 = new CSG.Vector3D(last)
+
+            var res = options.resolution || CSG.defaultResolution3D;
+
+            var slices = _.range(0, res).map(function (i) {
+                var p = i > 0 ? i / (res - 1) : 0;
+                var v = v1.lerp(v2, p);
+
+                var size = (-radius * 2) - (Math.cos(Math.asin(p)) * (-radius * 2));
+
+                return {
+                    poly: util.enlarge(slice, [size, size]),
+                    offset: v
+                };
+            });
+
+            return slices;
+        });
     },
 
     /**
@@ -447,8 +699,12 @@ util = {
          * @augments CSG
          * @chainable
          */
-        CSG.prototype.snap = function snap(to, axis, orientation, b) {
-            return util.flush(this, to, axis, orientation, b);
+        CSG.prototype.snap = function snap(to, axis, orientation, delta) {
+            return util.snap(this, to, axis, orientation, delta);
+        };
+
+        CSG.prototype.calcSnap = function calcSnap(to, axis, orientation, delta) {
+            return util.calcSnap(this, to, axis, orientation, delta);
         };
 
         /**
@@ -462,10 +718,13 @@ util = {
         };
 
         CSG.prototype.centerWith = function centerWith(axis, to) {
+            console.warn('centerWith is depreciated, use align');
             return util.centerWith(this, axis, to);
         };
 
+        if (CSG.center) echo('CSG already has .center');
         CSG.prototype.center = function centerWith(to, axis) {
+            console.warn('center is depreciated, use align');
             return util.centerWith(this, axis, to);
         };
 
@@ -479,8 +738,12 @@ util = {
          * @chainable
          */
         CSG.prototype.align = function align(to, axis) {
-
+            // console.log('align', to.getBounds(), axis);
             return util.centerWith(this, axis, to);
+        };
+
+        CSG.prototype.calcAlign = function calcAlign(to, axis, delta) {
+            return util.calcCenterWith(this, axis, to, delta);
         };
 
         /**
@@ -501,6 +764,21 @@ util = {
         }
 
         if (CSG.size) echo('CSG already has .size');
+        /**
+         * Returns the size of the object in a `Vector3D` object.
+         * @alias size
+         * @memberof module:CSG
+         * @augments CSG
+         * @return {CSG.Vector3D} A `CSG.Vector3D` with the size of the object.
+         * @example
+         * var cube = CSG.cube({
+         *     radius: 10
+         * }).setColor(1, 0, 0);
+         *
+         * var size = cube.size()
+         *
+         * // size = {"x":20,"y":20,"z":20}
+         */
         CSG.prototype.size = function () {
             return util.size(this.getBounds());
         }
@@ -516,6 +794,24 @@ util = {
             return util.zero(this);
         };
 
+        CSG.Vector2D.prototype.map = function Vector2D_map(cb) {
+            return new CSG.Vector2D(cb(this.x), cb(this.y));
+        }
+
+        // // Obtient une interpolation linéaire entre 2 valeurs
+        // Math.lerp = function (value1, value2, amount) {
+        //     amount = amount < 0 ? 0 : amount;
+        //     amount = amount > 1 ? 1 : amount;
+        //     return value1 + (value2 - value1) * amount;
+        // };
+        //
+        CSG.prototype.fillet = function fillet(radius, orientation, options) {
+            return util.fillet(this, radius, orientation, options);
+        };
+
+        CSG.prototype.chamfer = function chamfer(radius, orientation, options) {
+            return util.chamfer(this, radius, orientation, options);
+        };
 
     }
-};;
+};;;

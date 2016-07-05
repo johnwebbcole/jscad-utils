@@ -29,13 +29,13 @@ function cutBox(box, thickness, cutHeight, rabbetHeight, cheekGap) {
     var toplip = c.subtract(female).color('red', 0.5);
     var bottomlip = male.color('blue', 0.5)
 
-    var top = box.subtract(cutter.union(negative.flush(cutter, 'z', 1, 0))).color('white', 0.25).union(toplip);
-    var bottom = box.subtract(cutter.union(negative.flush(cutter, 'z', 0, 1))).color('white', 0.25).union(bottomlip)
+    var top = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside-'))).color('white', 0.25).union(toplip);
+    var bottom = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside+'))).color('white', 0.25).union(bottomlip)
     return {
-        top: top.subtract(negative.flush(top, 'z', 1, 1).translate([0, 0, -thickness])),
-        topsides: top.subtract(negative.flush(top, 'z', 0, 1).translate([0, 0, -thickness])),
-        bottomsides: bottom.subtract(negative.flush(bottom, 'z', 1, 0).translate([0, 0, thickness])),
-        bottom: bottom.subtract(negative.flush(bottom, 'z', 0, 0).translate([0, 0, thickness]))
+        top: top.subtract(negative.snap(top, 'z', 'inside+').translate([0, 0, -thickness])),
+        topsides: top.subtract(negative.snap(top, 'z', 'outside+').translate([0, 0, -thickness])),
+        bottomsides: bottom.subtract(negative.snap(bottom, 'z', 'outside-').translate([0, 0, thickness])),
+        bottom: bottom.subtract(negative.snap(bottom, 'z', 'inside-').translate([0, 0, thickness]))
     };
 }
 
@@ -59,23 +59,26 @@ function topMiddleBottom(box, thickness) {
     };
 }
 
-function rabbetTMB(box, thickness) {
-
+function rabbetTMB(box, thickness, gap) {
+    // console.log('rabbetTMB', gap)
+    gap = gap || 0.25;
     var r = util.array.add(getRadius(box), -thickness / 2);
     r[2] = thickness / 2;
     var cutter = CSG.cube({
         center: r,
         radius: r
-    }).center(box, 'xy').color('green', .25);
+    }).align(box, 'xy').color('green', .75);
 
     var topCutter = cutter.snap(box, 'z', 'inside+');
 
     var placeholder = topMiddleBottom(box, thickness);
 
     return {
-        top: box.intersect(topCutter),
-        middle: box.subtract(cutter).subtract(topCutter),
-        bottom: placeholder.bottom.intersect(cutter)
+        topCutter: topCutter,
+        bottomCutter: cutter,
+        top: box.intersect(topCutter.enlarge([-gap, -gap, 0])),
+        middle: box.subtract(cutter.enlarge([gap, gap, 0])).subtract(topCutter.enlarge([gap, gap, 0])),
+        bottom: placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0]))
     };
 }
 
@@ -84,6 +87,8 @@ function rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
     var r = util.array.add(getRadius(box), 1);
 
     rabbetHeight = rabbetHeight || 5;
+
+    console.log('rabbetJoin', cutHeight, rabbetHeight)
     var cutter = CSG.cube({
         center: [r[0], r[1], rabbetHeight],
         radius: [r[0], r[1], rabbetHeight]
@@ -106,8 +111,8 @@ function rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
     var toplip = c.subtract(female).color('red', 0.5);
     var bottomlip = male.color('blue', 0.5)
 
-    var top = box.subtract(cutter.union(negative.flush(cutter, 'z', 1, 0))).color('white', 0.25).union(toplip);
-    var bottom = box.subtract(cutter.union(negative.flush(cutter, 'z', 0, 1))).color('white', 0.25).union(bottomlip)
+    var top = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside-'))).color('white', 0.25).union(toplip);
+    var bottom = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside+'))).color('white', 0.25).union(bottomlip)
     return {
         top: top,
         bottom: bottom
@@ -155,7 +160,7 @@ Boxes = {
         return cutOut(o, height);
     },
 
-    Rectangle: function (size, thickness) {
+    Rectangle: function (size, thickness, gap) {
         thickness = thickness || 2;
         var s = util.array.div(util.xyz2array(size), 2);
 
@@ -168,7 +173,7 @@ Boxes = {
             radius: s
         }));
 
-        return rabbetTMB(box.color('gray', 0.25), thickness);
+        return rabbetTMB(box.color('gray', 0.25), thickness, gap);
     },
 
     BBox: function (o) {

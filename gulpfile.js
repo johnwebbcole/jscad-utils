@@ -16,6 +16,7 @@ gulp.task('clean', function (done) {
 
 gulp.task('docs', function () {
     return gulp.src('*.jscad')
+        .pipe(plugins.plumber())
         .pipe(concat('README.md'))
         .pipe(plugins.jsdocToMarkdown({
             template: fs.readFileSync('./jsdoc2md/README.hbs', 'utf8')
@@ -23,9 +24,10 @@ gulp.task('docs', function () {
         .on('error', function (err) {
             gutil.log('jsdoc2md failed:', err.message)
         })
+        .pipe(gulp.dest('.'))
 })
 
-gulp.task('default', ['clean', 'docs'], function () {
+gulp.task('default', ['docs'], function () {
     plugins.watch(['!examples/*', '**/*.jscad', 'node_modules/'], {
         verbose: true,
         followSymlinks: true

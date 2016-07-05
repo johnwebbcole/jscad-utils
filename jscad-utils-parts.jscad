@@ -12,10 +12,9 @@ Parts = {
         var h = height / 2;
 
         options = _.defaults(options, {
-            start: [0, 0, -h],
-            end: [0, 0, h],
-            radius: diameter / 2,
-            resolution: 64
+            start: [0, 0, 0],
+            end: [0, 0, height],
+            radius: diameter / 2
         });
         return CSG.cylinder(options);
     },
@@ -45,6 +44,19 @@ Parts = {
         ]);
 
         return hex.extrude({
+            offset: [0, 0, height]
+        });
+    },
+
+    Triangle: function (base, height, thickness) {
+        var radius = base / 2;
+        var tri = CAG.fromPoints([
+            [-radius, 0],
+            [radius, 0],
+            [0, Math.sin(30) * radius],
+        ]);
+
+        return tri.extrude({
             offset: [0, 0, height]
         });
     },
