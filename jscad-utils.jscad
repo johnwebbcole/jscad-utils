@@ -443,8 +443,13 @@ util = {
 
     complex: function complex(names, objects) {
 
-        return {
-            parts: _.zipObject(names.split(','), objects),
+        var self = {
+            parts: (objects instanceof Array) ? _.zipObject(names.split(','), objects) : objects,
+            map: function (cb) {
+                self.parts = _.transform(self.parts, function (result, value, key) {
+                    result[key] = cb(value, key);
+                });
+            },
             combine: function (pieces, options) {
                 var scale = options && options.scale || [0, 0, 0];
                 pieces = (pieces || names).split(',');
@@ -459,7 +464,9 @@ util = {
                 );
             }
         };
+        return self;
     },
+
 
     slices2poly: function slices2poly(slices, options, axis) {
         // console.log('util.slices2poly', options);
