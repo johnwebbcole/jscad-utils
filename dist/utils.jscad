@@ -1,3 +1,491 @@
+function getRadius(o) {
+    return util.array.div(util.xyz2array(o.size()), 2)
+}
+
+function cutBox(box, thickness, cutHeight, rabbetHeight, cheekGap) {
+    var s = box.size();
+    var r = util.array.add(getRadius(box), 1);
+
+    rabbetHeight = rabbetHeight || 5;
+    var cutter = CSG.cube({
+        center: [r[0], r[1], rabbetHeight],
+        radius: [r[0], r[1], rabbetHeight]
+    }).translate([0, 0, (cutHeight - rabbetHeight)]);
+
+    var negative = CSG.cube({
+        center: r,
+        radius: r
+    }).color('green', .25);
+
+    var c = box.intersect(cutter);
+
+    cheekGap = cheekGap || 0.25;
+
+    var fRabbet = -thickness - cheekGap;
+    var female = c.subtract(c.enlarge(fRabbet, fRabbet, 0)).color('yellow', 0.5);
+    var mRabbet = -thickness + cheekGap;
+    var male = c.subtract(c.enlarge(mRabbet, mRabbet, 0)).color('green', 0.5);
+
+    var toplip = c.subtract(female).color('red', 0.5);
+    var bottomlip = male.color('blue', 0.5)
+
+    var top = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside-'))).color('white', 0.25).union(toplip);
+    var bottom = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside+'))).color('white', 0.25).union(bottomlip)
+    return {
+        top: top.subtract(negative.snap(top, 'z', 'inside+').translate([0, 0, -thickness])),
+        topsides: top.subtract(negative.snap(top, 'z', 'outside+').translate([0, 0, -thickness])),
+        bottomsides: bottom.subtract(negative.snap(bottom, 'z', 'outside-').translate([0, 0, thickness])),
+        bottom: bottom.subtract(negative.snap(bottom, 'z', 'inside-').translate([0, 0, thickness]))
+    };
+}
+
+function topMiddleBottom(box, thickness) {
+
+    var r = util.array.add(getRadius(box), 1);
+
+    var negative = CSG.cube({
+        center: r,
+        radius: r
+    }).color('green', .25);
+
+    var top = box.subtract(negative.translate([0, 0, -(thickness + 2)])).color('red', 0.25);
+    var bottom = box.subtract(negative.translate([0, 0, thickness])).color('blue', 0.25);
+    var middle = box.subtract([top, bottom]);
+
+    return {
+        top: top,
+        bottom: bottom,
+        middle: middle
+    };
+}
+
+function rabbetTMB(box, thickness, gap) {
+    // console.log('rabbetTMB', gap)
+    gap = gap || 0.25;
+    var r = util.array.add(getRadius(box), -thickness / 2);
+    r[2] = thickness / 2;
+    var cutter = CSG.cube({
+        center: r,
+        radius: r
+    }).align(box, 'xy').color('green', .75);
+
+    var topCutter = cutter.snap(box, 'z', 'inside+');
+
+    var placeholder = topMiddleBottom(box, thickness);
+
+    return {
+        topCutter: topCutter,
+        bottomCutter: cutter,
+        top: box.intersect(topCutter.enlarge([-gap, -gap, 0])),
+        middle: box.subtract(cutter.enlarge([gap, gap, 0])).subtract(topCutter.enlarge([gap, gap, 0])),
+        bottom: placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0]))
+    };
+}
+
+function rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
+    var s = box.size();
+    var r = util.array.add(getRadius(box), 1);
+
+    rabbetHeight = rabbetHeight || 5;
+    var rh = rabbetHeight / 2;
+    // console.log('rabbetJoin', cutHeight, rabbetHeight, getRadius(box), r)
+    var cutter = CSG.cube({
+            center: [r[0], r[1], rh],
+            radius: [r[0], r[1], rh]
+        })
+        .midlineTo('z', cutHeight);
+
+    var c = box.intersect(cutter).color('green', 0.5);
+
+    cheekGap = cheekGap || 0.25;
+    var fRabbet = -thickness - cheekGap;
+    var female = c.subtract(c.enlarge(fRabbet, fRabbet, 0)).color('blue', 0.5);
+    var mRabbet = -thickness + cheekGap;
+    var male = c.subtract(c.enlarge(mRabbet, mRabbet, 0)).color('red', 0.5);
+
+    var b = util.bisect(box, 'z', cutHeight);
+    b.parts.positive = b.parts.positive.subtract(female)
+    b.parts.negative = b.parts.negative.subtract(c.subtract(male))
+        // console.log('b', b);
+    return b;
+}
+
+function cutOut(o, height) {
+    var r = getRadius(o);
+
+    var cutout = CSG.cube({
+        center: r,
+        radius: r
+    }).align(o, 'xy').color('yellow');
+
+    return {
+        top: cutout.snap(o, 'z', 'center+').union(o),
+        bottom: cutout.snap(o, 'z', 'center-').union(o)
+    };
+}
+
+/**
+ * Box and join utilities for jscad.
+ * @type {Object}
+ */
+Boxes = {
+
+    /**
+     * Create a [rabbet joint](https://en.wikipedia.org/wiki/Rabbet) in a CSG solid.
+     * This was designed for cubes, but should work on other types of objects.
+     *
+     * Splits a CGS object into a top and bottom objects.  The two objects will
+     * fit together with a rabbet join.
+     * @param {CGS} box          [description]
+     * @param {Number} thickness    [description]
+     * @param {Number} cutHeight    [description]
+     * @param {Number} rabbetHeight [description]
+     * @param {Number} cheekGap     [description]
+     * @return {Object} An object with `top` and `bottom` CGS objects.
+     */
+    RabbetJoin: function RabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
+        return rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap);
+    },
+
+    CutOut: function CutOut(o, height) {
+        return cutOut(o, height);
+    },
+
+    Rectangle: function (size, thickness, gap, cb) {
+        thickness = thickness || 2;
+        var s = util.array.div(util.xyz2array(size), 2);
+
+        var r = util.array.add(s, thickness);
+        var box = CSG.cube({
+            center: r,
+            radius: r
+        }).subtract(CSG.cube({
+            center: r,
+            radius: s
+        }));
+
+        if (cb) box = cb(box);
+
+        return rabbetTMB(box.color('gray', 0.25), thickness, gap);
+    },
+
+    BBox: function (o) {
+        var s = util.array.div(util.xyz2array(o.size()), 2);
+        return CSG.cube({
+            center: s,
+            radius: s
+        });
+    }
+}
+
+/**
+ * Color utilities for jscad.  Makes setting colors easier using css color names.  Using `.init()` adds a `.color()` function to the CSG object.
+ * > You must use `Colors.init(CSG)` in the `main()` function.  The `CSG` class is not available before this.
+ * @example
+ *include('jscad-utils-color.jscad');
+ *
+ *function mainx(params) {
+ *   Colors.init(CSG);
+ *
+ *   // draws a purple cube
+ *   return CSG.cube({radius: [10, 10, 10]}).color('purple');
+ *}
+ * @type {Object}
+ * @module jscad-utils-color
+ */
+Colors = {
+
+    nameArray: {
+        'aliceblue': '#f0f8ff',
+        'antiquewhite': '#faebd7',
+        'aqua': '#00ffff',
+        'aquamarine': '#7fffd4',
+        'azure': '#f0ffff',
+        'beige': '#f5f5dc',
+        'bisque': '#ffe4c4',
+        'black': '#000000',
+        'blanchedalmond': '#ffebcd',
+        'blue': '#0000ff',
+        'blueviolet': '#8a2be2',
+        'brown': '#a52a2a',
+        'burlywood': '#deb887',
+        'cadetblue': '#5f9ea0',
+        'chartreuse': '#7fff00',
+        'chocolate': '#d2691e',
+        'coral': '#ff7f50',
+        'cornflowerblue': '#6495ed',
+        'cornsilk': '#fff8dc',
+        'crimson': '#dc143c',
+        'cyan': '#00ffff',
+        'darkblue': '#00008b',
+        'darkcyan': '#008b8b',
+        'darkgoldenrod': '#b8860b',
+        'darkgray': '#a9a9a9',
+        'darkgrey': '#a9a9a9',
+        'darkgreen': '#006400',
+        'darkkhaki': '#bdb76b',
+        'darkmagenta': '#8b008b',
+        'darkolivegreen': '#556b2f',
+        'darkorange': '#ff8c00',
+        'darkorchid': '#9932cc',
+        'darkred': '#8b0000',
+        'darksalmon': '#e9967a',
+        'darkseagreen': '#8fbc8f',
+        'darkslateblue': '#483d8b',
+        'darkslategray': '#2f4f4f',
+        'darkslategrey': '#2f4f4f',
+        'darkturquoise': '#00ced1',
+        'darkviolet': '#9400d3',
+        'deeppink': '#ff1493',
+        'deepskyblue': '#00bfff',
+        'dimgray': '#696969',
+        'dimgrey': '#696969',
+        'dodgerblue': '#1e90ff',
+        'firebrick': '#b22222',
+        'floralwhite': '#fffaf0',
+        'forestgreen': '#228b22',
+        'fuchsia': '#ff00ff',
+        'gainsboro': '#dcdcdc',
+        'ghostwhite': '#f8f8ff',
+        'gold': '#ffd700',
+        'goldenrod': '#daa520',
+        'gray': '#808080',
+        'grey': '#808080',
+        'green': '#008000',
+        'greenyellow': '#adff2f',
+        'honeydew': '#f0fff0',
+        'hotpink': '#ff69b4',
+        'indianred': '#cd5c5c',
+        'indigo': '#4b0082',
+        'ivory': '#fffff0',
+        'khaki': '#f0e68c',
+        'lavender': '#e6e6fa',
+        'lavenderblush': '#fff0f5',
+        'lawngreen': '#7cfc00',
+        'lemonchiffon': '#fffacd',
+        'lightblue': '#add8e6',
+        'lightcoral': '#f08080',
+        'lightcyan': '#e0ffff',
+        'lightgoldenrodyellow': '#fafad2',
+        'lightgray': '#d3d3d3',
+        'lightgrey': '#d3d3d3',
+        'lightgreen': '#90ee90',
+        'lightpink': '#ffb6c1',
+        'lightsalmon': '#ffa07a',
+        'lightseagreen': '#20b2aa',
+        'lightskyblue': '#87cefa',
+        'lightslategray': '#778899',
+        'lightslategrey': '#778899',
+        'lightsteelblue': '#b0c4de',
+        'lightyellow': '#ffffe0',
+        'lime': '#00ff00',
+        'limegreen': '#32cd32',
+        'linen': '#faf0e6',
+        'magenta': '#ff00ff',
+        'maroon': '#800000',
+        'mediumaquamarine': '#66cdaa',
+        'mediumblue': '#0000cd',
+        'mediumorchid': '#ba55d3',
+        'mediumpurple': '#9370d8',
+        'mediumseagreen': '#3cb371',
+        'mediumslateblue': '#7b68ee',
+        'mediumspringgreen': '#00fa9a',
+        'mediumturquoise': '#48d1cc',
+        'mediumvioletred': '#c71585',
+        'midnightblue': '#191970',
+        'mintcream': '#f5fffa',
+        'mistyrose': '#ffe4e1',
+        'moccasin': '#ffe4b5',
+        'navajowhite': '#ffdead',
+        'navy': '#000080',
+        'oldlace': '#fdf5e6',
+        'olive': '#808000',
+        'olivedrab': '#6b8e23',
+        'orange': '#ffa500',
+        'orangered': '#ff4500',
+        'orchid': '#da70d6',
+        'palegoldenrod': '#eee8aa',
+        'palegreen': '#98fb98',
+        'paleturquoise': '#afeeee',
+        'palevioletred': '#d87093',
+        'papayawhip': '#ffefd5',
+        'peachpuff': '#ffdab9',
+        'peru': '#cd853f',
+        'pink': '#ffc0cb',
+        'plum': '#dda0dd',
+        'powderblue': '#b0e0e6',
+        'purple': '#800080',
+        'red': '#ff0000',
+        'rosybrown': '#bc8f8f',
+        'royalblue': '#4169e1',
+        'saddlebrown': '#8b4513',
+        'salmon': '#fa8072',
+        'sandybrown': '#f4a460',
+        'seagreen': '#2e8b57',
+        'seashell': '#fff5ee',
+        'sienna': '#a0522d',
+        'silver': '#c0c0c0',
+        'skyblue': '#87ceeb',
+        'slateblue': '#6a5acd',
+        'slategray': '#708090',
+        'slategrey': '#708090',
+        'snow': '#fffafa',
+        'springgreen': '#00ff7f',
+        'steelblue': '#4682b4',
+        'tan': '#d2b48c',
+        'teal': '#008080',
+        'thistle': '#d8bfd8',
+        'tomato': '#ff6347',
+        'turquoise': '#40e0d0',
+        'violet': '#ee82ee',
+        'wheat': '#f5deb3',
+        'white': '#ffffff',
+        'whitesmoke': '#f5f5f5',
+        'yellow': '#ffff00',
+        'yellowgreen': '#9acd32'
+    },
+
+    name2hex: function (n) {
+        n = n.toLowerCase();
+        if (!Colors.nameArray[n]) return 'Invalid Color Name';
+        return Colors.nameArray[n];
+    },
+
+    hex2rgb: function (h) {
+        h = h.replace(/^\#/, '');
+
+        if (h.length === 6) {
+            return [
+                parseInt(h.substr(0, 2), 16),
+                parseInt(h.substr(2, 2), 16),
+                parseInt(h.substr(4, 2), 16)
+            ];
+        }
+    },
+
+    _name2rgb: {},
+
+    name2rgb: function (n) {
+        if (!Colors._name2rgb[n]) Colors._name2rgb[n] = this.hex2rgb(this.name2hex(n));
+        return Colors._name2rgb[n];
+    },
+
+    color: function (o, r, g, b, a) {
+        if (typeof (r) !== 'string') return this.setColor(r, g, b, a);
+        var c = Colors.name2rgb(r).map(function (x) {
+            return x / 255;
+        });
+        c[3] = g || 1.0;
+        return o.setColor(c);
+    },
+
+    /**
+     * Initialize the Color utility.  This adds a `.color()` prototype to the `CSG` object.
+     * @param  {CSG} CSG The global `CSG` object
+     * @memberof module:jscad-utils-color
+     * @augments CSG
+     */
+    init: function init(CSG) {
+        var _setColor = CSG.setColor;
+
+        /**
+         * Set the color of a CSG object using a css color name.  Also accepts the normal `setColor()` values.
+         * @example
+         * // creates a red cube
+         * var redcube = CSG.cube({radius: [1, 1, 1]}).color('red');
+         *
+         * // creates a blue cube with the alpha channel at 50%
+         * var bluecube =  CSG.cube({radius: [1, 1, 1]}).color('blue', 0.5);
+         *
+         * // creates a green cube with the alpha channel at 25%
+         * // this is the same as the standard setColor
+         * var greencube =  CSG.cube({radius: [1, 1, 1]}).color(0, 1, 0, 0.25);
+         * @param  {(String | Number)} [red or css name] - Css color name or the red color channel value (0.0 - 1.0)
+         * @param  {Number} [green or alpha] - green color channel value (0.0 - 1.0) or the alpha channel when used with a css color string
+         * @param  {Number} [blue] - blue color channel value (0.0 - 1.0)
+         * @param  {Number} [alpha] - alpha channel value (0.0 - 1.0)
+         * @return {CSG}   Returns a `CSG` object set to the desired color.
+         * @memberof module:CSG
+         * @alias color
+         * @chainable
+         * @augments CSG
+         */
+        CSG.prototype.color = function (r, g, b, a) {
+            if (!r) return this; // shortcut empty color values to do nothing.
+            return Colors.color(this, r, g, b, a);
+        }
+
+    }
+}
+
+Parts = {
+    Cube: function (width) {
+        var r = util.divA(width, 2);
+        return CSG.cube({
+                center: r,
+                radius: r
+            })
+            .setColor(0.25, 0.25, 0.25, 0.5);
+    },
+
+    Cylinder: function (diameter, height, options) {
+        var h = height / 2;
+
+        options = _.defaults(options, {
+            start: [0, 0, 0],
+            end: [0, 0, height],
+            radius: diameter / 2
+        });
+        return CSG.cylinder(options);
+    },
+
+    Cone: function (diameter1, diameter2, height, options) {
+        options = options || {};
+        var h = height / 2;
+        return CSG.cylinder({
+            start: [0, 0, -h],
+            end: [0, 0, h],
+            radiusStart: diameter1 / 2,
+            radiusEnd: diameter2 / 2,
+            resolution: options.resolution
+        });
+    },
+
+    Hexagon: function (diameter, height) {
+        var radius = diameter / 2;
+        var sqrt3 = Math.sqrt(3) / 2;
+        var hex = CAG.fromPoints([
+            [radius, 0],
+            [radius / 2, radius * sqrt3],
+            [-radius / 2, radius * sqrt3],
+            [-radius, 0],
+            [-radius / 2, -radius * sqrt3],
+            [radius / 2, -radius * sqrt3]
+        ]);
+
+        return hex.extrude({
+            offset: [0, 0, height]
+        });
+    },
+
+    Triangle: function (base, height, thickness) {
+        var radius = base / 2;
+        var tri = CAG.fromPoints([
+            [-radius, 0],
+            [radius, 0],
+            [0, Math.sin(30) * radius],
+        ]);
+
+        return tri.extrude({
+            offset: [0, 0, height]
+        });
+    },
+
+    Tube: function Tube(outsideDiameter, insideDiameter, height, outsideOptions, insideOptions) {
+        return Parts.Cylinder(outsideDiameter, height, outsideOptions).subtract(Parts.Cylinder(insideDiameter, height, insideOptions || outsideOptions));
+    }
+};
+
 /**
  * @module CSG
  */

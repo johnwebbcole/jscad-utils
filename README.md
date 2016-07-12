@@ -35,6 +35,9 @@ main() {
     * [.snap(to, axis, orientation)](#module_CSG.snap) ⇒ <code>CSG</code>
     * [.align(to, axis)](#module_CSG.align) ↩︎
     * [.size()](#module_CSG.size) ⇒ <code>CSG.Vector3D</code>
+    * [.centroid()](#module_CSG.centroid) ⇒ <code>CSG.Vector3D</code>
+    * [.fillet(radius, orientation, options)](#module_CSG.fillet) ⇒ <code>CSG</code>
+    * [.chamfer(radius, orientation)](#module_CSG.chamfer) ⇒ <code>CSG</code>
 
 <a name="module_CSG.color"></a>
 ### CSG.color([red or css name], [green or alpha], [blue], [alpha]) ⇒ <code>CSG</code>
@@ -133,6 +136,76 @@ var size = cube.size()
 
 // size = {"x":20,"y":20,"z":20}
 ```
+<a name="module_CSG.centroid"></a>
+### CSG.centroid() ⇒ <code>CSG.Vector3D</code>
+Returns the centroid of the current objects bounding box.
+
+**Kind**: static method of <code>[CSG](#module_CSG)</code>  
+**Extends:** <code>CSG</code>  
+**Returns**: <code>CSG.Vector3D</code> - A `CSG.Vector3D` with the center of the object bounds.  
+<a name="module_CSG.fillet"></a>
+### CSG.fillet(radius, orientation, options) ⇒ <code>CSG</code>
+Add a fillet or roundover to an object.
+![fillet example](jsdoc2md/fillet.png)
+
+**Kind**: static method of <code>[CSG](#module_CSG)</code>  
+**Extends:** <code>CSG</code>  
+**Chainable**  
+**Returns**: <code>CSG</code> - [description]  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| radius | <code>number</code> | Radius of fillet.  Positive and negative radius will create a fillet or a roundover. |
+| orientation | <code>string</code> | Axis and end (positive or negative) to place the chamfer.  Currently on the `z` axis is supported. |
+| options | <code>object</code> | additional options. |
+
+**Example**  
+```js
+include('lodash.js');
+include('utils.jscad');
+
+function main() {
+util.init(CSG);
+
+var cube = Parts.Cube([10, 10, 10]);
+
+return cube
+  .fillet(2, 'z+') // roundover on top (positive fillet)
+  .fillet(-2, 'z-') // fillet on  the bottom (negative fillet)
+  .color('orange');
+}
+```
+<a name="module_CSG.chamfer"></a>
+### CSG.chamfer(radius, orientation) ⇒ <code>CSG</code>
+Add a chamfer to an object.  This modifies the object by removing part of the object and reducing its size over the radius of the chamfer.
+![chamfer example](jsdoc2md/chamfer.png)
+
+**Kind**: static method of <code>[CSG](#module_CSG)</code>  
+**Extends:** <code>CSG</code>  
+**Chainable**  
+**Returns**: <code>CSG</code> - [description]  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| radius | <code>number</code> | Radius of the chamfer |
+| orientation | <code>string</code> | Axis and end (positive or negative) to place the chamfer.  Currently on the `z` axis is supported. |
+
+**Example**  
+```js
+include('lodash.js');
+include('jscad-utils.jscad');
+
+// rename mainx to main
+function mainx() {
+util.init(CSG);
+
+var cube = CSG.cube({
+    radius: 10
+});
+
+return cube.chamfer(2, 'z+').color('orange');
+}
+```
 
 ### util
 jscad-utils
@@ -144,6 +217,7 @@ jscad-utils
     * [.scale(size, value)](#module_util.scale) ⇒ <code>number</code>
     * [.enlarge(object, x, y, z)](#module_util.enlarge) ⇒ <code>CSG</code>
     * [.flush(moveobj, withobj, axis, mside, wside)](#module_util.flush) ⇒ <code>CSG</code>
+    * [.bisect(object, axis, offset)](#module_util.bisect) ⇒ <code>Complex</code>
     * [.init(CSG)](#module_util.init) ⇐ <code>CSG</code>
 
 <a name="module_util.print"></a>
@@ -212,6 +286,20 @@ Moves an object flush with another object
 | axis | <code>String</code> | Which axis: 'x', 'y', 'z' |
 | mside | <code>Number</code> | 0 or 1 |
 | wside | <code>Number</code> | 0 or 1 |
+
+<a name="module_util.bisect"></a>
+### util.bisect(object, axis, offset) ⇒ <code>Complex</code>
+Cut an object into two pieces, along a given axis.
+![bisect example](jsdoc2md/bisect.png)
+
+**Kind**: static method of <code>[util](#module_util)</code>  
+**Returns**: <code>Complex</code> - Returns a complex object with a parts object.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| object | <code>CSG</code> | object to bisect |
+| axis | <code>string</code> | axis to cut along |
+| offset | <code>number</code> | offset to cut at |
 
 <a name="module_util.init"></a>
 ### util.init(CSG) ⇐ <code>CSG</code>

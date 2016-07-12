@@ -1,9 +1,6 @@
 {
     "files": [
-        "jscad-utils.jscad",
-        "jscad-utils-parts.jscad",
-        "jscad-boxes.jscad",
-        "jscad-utils-color.jscad",
+        "dist/utils.jscad",
         "node_modules/lodash/lodash.js"
     ]
 }

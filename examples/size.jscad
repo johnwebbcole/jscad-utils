@@ -8,9 +8,8 @@ function main() {
         radius: 10
     }).setColor(1, 0, 0);
 
-    var sphere = CSG.sphere({
-        radius: 5
-    }).setColor(0, 0, 1);
 
-    return cube.union(sphere.snap(cube, 'z', 'outside-'));
+    echo(JSON.stringify(cube.size()));
+
+    return cube;
 }
