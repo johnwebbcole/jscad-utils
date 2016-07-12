@@ -449,6 +449,7 @@ util = {
                 self.parts = _.transform(self.parts, function (result, value, key) {
                     result[key] = cb(value, key);
                 });
+                return self;
             },
             combine: function (pieces, options) {
                 var scale = options && options.scale || [0, 0, 0];
@@ -467,6 +468,21 @@ util = {
         return self;
     },
 
+    bisect: function bisect(object, axis, offset) {
+        var info = util.normalVector(axis);
+        var bounds = object.getBounds();
+        var size = util.size(object);
+
+
+        console.log('bisect', axis, offset, info);
+        var cutDelta = util.axisApply(axis, function (i, a) {
+            return bounds[0][a] + (offset || size[axis] / 2);
+        });
+
+        var cutplane = CSG.OrthoNormalBasis.GetCartesian(info.orthoNormalCartesian[0], info.orthoNormalCartesian[1]).translate(cutDelta);
+        return util.complex('negative,positive', [object.cutByPlane(cutplane.plane).color('red'), object.cutByPlane(cutplane.plane.flipped()).color('blue')]);
+        // return object
+    },
 
     slices2poly: function slices2poly(slices, options, axis) {
         // console.log('util.slices2poly', options);
@@ -536,6 +552,25 @@ util = {
         return CSG.fromPolygons(polygons);
     },
 
+    normalVector: function normalVector(axis) {
+        var axisInfo = {
+            'z': {
+                orthoNormalCartesian: ['X', 'Y'],
+                normalVector: CSG.Vector3D.Create(0, 1, 0)
+            },
+            'x': {
+                orthoNormalCartesian: ['Y', 'Z'],
+                normalVector: CSG.Vector3D.Create(0, 0, 1)
+            },
+            'y': {
+                orthoNormalCartesian: ['X', 'Z'],
+                normalVector: CSG.Vector3D.Create(0, 0, 1)
+            }
+        }
+        if (!axisInfo[axis]) throw new Error('util.normalVector: invalid axis ' + aixs)
+        return axisInfo[axis];
+    },
+
     sliceParams: function sliceParams(orientation, radius, bounds) {
         var axis = orientation[0];
         var direction = orientation[1];
@@ -555,21 +590,6 @@ util = {
             }
         };
 
-        var axisInfo = {
-            'z': {
-                orthoNormalCartesian: ['X', 'Y'],
-                normalVector: CSG.Vector3D.Create(0, 1, 0)
-            },
-            'x': {
-                orthoNormalCartesian: ['Y', 'Z'],
-                normalVector: CSG.Vector3D.Create(0, 0, 1)
-            },
-            'y': {
-                orthoNormalCartesian: ['X', 'Z'],
-                normalVector: CSG.Vector3D.Create(0, 0, 1)
-            }
-        }
-
         var info = dirInfo['dir' + direction];
 
         return _.assign({
@@ -580,7 +600,7 @@ util = {
             moveDelta: util.axisApply(axis, function (i, a) {
                 return bounds[info.sizeIdx][a] + (Math.abs(radius) * info.moveDir);
             })
-        }, info, axisInfo[axis]);
+        }, info, util.normalVector(axis));
     },
 
     reShape: function reShape(object, radius, orientation, options, slicer) {
@@ -790,6 +810,13 @@ util = {
             return util.size(this.getBounds());
         }
 
+        /**
+         * Returns the centroid of the current objects bounding box.
+         * @alias centroid
+         * @memberof module:CSG
+         * @augments CSG
+         * @return  {CSG.Vector3D} A `CSG.Vector3D` with the center of the object bounds.
+         */
         CSG.prototype.centroid = function () {
             return util.centroid(this);
         }
@@ -821,4 +848,4 @@ util = {
         };
 
     }
-};;;
+};

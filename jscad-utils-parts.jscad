@@ -27,7 +27,7 @@ Parts = {
             end: [0, 0, h],
             radiusStart: diameter1 / 2,
             radiusEnd: diameter2 / 2,
-            resolution: options.resolution || 64
+            resolution: options.resolution
         });
     },
 

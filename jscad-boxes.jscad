@@ -87,36 +87,27 @@ function rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
     var r = util.array.add(getRadius(box), 1);
 
     rabbetHeight = rabbetHeight || 5;
-
-    console.log('rabbetJoin', cutHeight, rabbetHeight)
+    var rh = rabbetHeight / 2;
+    // console.log('rabbetJoin', cutHeight, rabbetHeight, getRadius(box), r)
     var cutter = CSG.cube({
-        center: [r[0], r[1], rabbetHeight],
-        radius: [r[0], r[1], rabbetHeight]
-    }).translate([0, 0, (cutHeight - rabbetHeight) - 1]);
+            center: [r[0], r[1], rh],
+            radius: [r[0], r[1], rh]
+        })
+        .midlineTo('z', cutHeight);
 
-    var negative = CSG.cube({
-        center: r,
-        radius: r
-    }).color('green', .25);
-
-    var c = box.intersect(cutter);
+    var c = box.intersect(cutter).color('green', 0.5);
 
     cheekGap = cheekGap || 0.25;
-
     var fRabbet = -thickness - cheekGap;
-    var female = c.subtract(c.enlarge(fRabbet, fRabbet, 0)).color('yellow', 0.5);
+    var female = c.subtract(c.enlarge(fRabbet, fRabbet, 0)).color('blue', 0.5);
     var mRabbet = -thickness + cheekGap;
-    var male = c.subtract(c.enlarge(mRabbet, mRabbet, 0)).color('green', 0.5);
+    var male = c.subtract(c.enlarge(mRabbet, mRabbet, 0)).color('red', 0.5);
 
-    var toplip = c.subtract(female).color('red', 0.5);
-    var bottomlip = male.color('blue', 0.5)
-
-    var top = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside-'))).color('white', 0.25).union(toplip);
-    var bottom = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside+'))).color('white', 0.25).union(bottomlip)
-    return {
-        top: top,
-        bottom: bottom
-    };
+    var b = util.bisect(box, 'z', cutHeight);
+    b.parts.positive = b.parts.positive.subtract(female)
+    b.parts.negative = b.parts.negative.subtract(c.subtract(male))
+        // console.log('b', b);
+    return b;
 }
 
 function cutOut(o, height) {
@@ -160,7 +151,7 @@ Boxes = {
         return cutOut(o, height);
     },
 
-    Rectangle: function (size, thickness, gap) {
+    Rectangle: function (size, thickness, gap, cb) {
         thickness = thickness || 2;
         var s = util.array.div(util.xyz2array(size), 2);
 
@@ -172,6 +163,8 @@ Boxes = {
             center: r,
             radius: s
         }));
+
+        if (cb) box = cb(box);
 
         return rabbetTMB(box.color('gray', 0.25), thickness, gap);
     },
