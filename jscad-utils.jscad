@@ -19,8 +19,14 @@ util = {
     },
 
     error: function (msg) {
-        if (console && console.error) console.error(msg);
+        if (console && console.error) console.error(msg); // eslint-disable-line no-console
         throw new Error(msg);
+    },
+
+    depreciated: function (method, error, message) {
+        var msg = method + ' is depreciated.' + ((' ' + message) || '');
+        if (console && console.error) console[error ? 'error' : 'warn'](msg); // eslint-disable-line no-console
+        if (error) throw new Error(msg);
     },
 
     label: function label(text, x, y, width, height) {
@@ -36,7 +42,7 @@ util = {
     },
 
     unitCube: function (length, radius) {
-        radius = radius || 0.5
+        radius = radius || 0.5;
         return CSG.cube({
             center: [0, 0, 0],
             radius: [radius, radius, length || 0.5]
@@ -67,8 +73,8 @@ util = {
                 c: 90,
                 A: Math.abs(p2.x) - Math.abs(p1.x),
                 B: Math.abs(p2.y) - Math.abs(p1.y)
-            }
-            var brad = Math.atan2(r.B, r.A)
+            };
+            var brad = Math.atan2(r.B, r.A);
             r.b = util.triangle.toDegrees(brad);
             // r.C = Math.sqrt(Math.pow(r.B, 2) + Math.pow(r.A, 2));
             r.C = r.B / Math.sin(brad);
@@ -117,9 +123,9 @@ util = {
 
     map: function (o, callback) {
         _.forIn(o, function (value, key) {
-            echo('util.map', key);
+            // echo('util.map', key);
             if (value instanceof CSG) {
-                echo('key', value instanceof CSG);
+                // echo('key', value instanceof CSG);
                 return value = callback(value, key);
             }
             return value;
@@ -235,10 +241,20 @@ util = {
         return new_object.translate(delta);
     },
 
+    /**
+     * Fit an object inside a bounding box.  Often used
+     * with text labels.
+     * @param  {CSG} object            [description]
+     * @param  {number | array} x                 [description]
+     * @param  {number} y                 [description]
+     * @param  {number} z                 [description]
+     * @param  {boolean} keep_aspect_ratio [description]
+     * @return {CSG}                   [description]
+     */
     fit: function fit(object, x, y, z, keep_aspect_ratio) {
         var a;
         if (_.isArray(x)) {
-            var a = x;
+            a = x;
             keep_aspect_ratio = y;
             x = a[0];
             y = a[1];
@@ -247,7 +263,7 @@ util = {
             a = [x, y, z];
         }
 
-        var c = util.centroid(object);
+        // var c = util.centroid(object);
         var size = this.size(object.getBounds());
 
         function scale(size, value) {
@@ -266,13 +282,11 @@ util = {
 
     shift: function shift(object, x, y, z) {
         var hsize = this.div(this.size(object.getBounds()), 2);
-        echo('hsize', JSON.stringify(hsize));
         return object.translate(this.xyz2array(this.mulxyz(hsize, x, y, z)));
     },
 
     zero: function shift(object) {
         var bounds = object.getBounds();
-        echo('zero', JSON.stringify(bounds));
         return object.translate([0, 0, -bounds[0].z]);
     },
 
@@ -294,15 +308,16 @@ util = {
     },
 
     calcFlush: function calcFlush(moveobj, withobj, axes, mside, wside) {
-        console.error('util.calcFlush is depreciated, use util.calcSnap instead.')
-        var side
+        util.depreciated('calcFlush', false, 'Use util.calcSnap instead.');
+
+        var side;
 
         if (mside === 0 || mside === 1) {
             // wside = wside !== undefined ? wside : mside;
-            side = [wside !== undefined ? wside : mside, mside]
+            side = [wside !== undefined ? wside : mside, mside];
         } else {
             side = util.flushSide[mside];
-            if (!side) console.error('invalid side: ' + mside)
+            if (!side) util.error('invalid side: ' + mside);
         }
 
         var m = moveobj.getBounds();
@@ -329,7 +344,7 @@ util = {
                 '00': 'inside-',
                 '-11': 'center+',
                 '-10': 'center-'
-            }
+            };
             util.error('util.calcSnap: invalid side: ' + orientation + ' should be ' + fix['' + orientation + delta]);
         }
 
@@ -349,7 +364,7 @@ util = {
     },
 
     snap: function snap(moveobj, withobj, axis, orientation, delta) {
-        return moveobj.translate(util.calcSnap(moveobj, withobj, axis, orientation, delta))
+        return moveobj.translate(util.calcSnap(moveobj, withobj, axis, orientation, delta));
     },
 
     /**
@@ -362,7 +377,7 @@ util = {
      * @return {CSG}         [description]
      */
     flush: function flush(moveobj, withobj, axis, mside, wside) {
-        return moveobj.translate(util.calcFlush(moveobj, withobj, axis, mside, wside))
+        return moveobj.translate(util.calcFlush(moveobj, withobj, axis, mside, wside));
     },
 
     axisApply: function (axes, valfun) {
@@ -375,13 +390,13 @@ util = {
 
         axes.split('').forEach(function (axis) {
             retval[lookup[axis]] = valfun(lookup[axis], axis);
-        })
+        });
 
         return retval;
     },
 
     axis2array: function (axes, valfun) {
-        console.error('axis2array is depreciated')
+        util.depreciated('axis2array');
         var a = [0, 0, 0];
         var lookup = {
             x: 0,
@@ -404,8 +419,6 @@ util = {
     },
 
     midlineTo: function midlineTo(o, axis, to) {
-        var b = o.getBounds();
-        var s = util.size(b);
         var centroid = util.centroid(o);
 
         return o.translate(util.axisApply(axis, function (i, a) {
@@ -421,7 +434,6 @@ util = {
             return withCentroid[i] - centroid[i];
         });
 
-        echo('translator', t);
         return t;
     },
 
@@ -494,7 +506,7 @@ util = {
 
     slices2poly: function slices2poly(slices, options, axis) {
         // console.log('util.slices2poly', options);
-        var resolution = slices.length;
+        // var resolution = slices.length;
         // var offsetVector = new CSG.Vector3D(options.offset);
         var twistangle = CSG.parseOptionAsFloat(options, 'twistangle', 0);
         var twiststeps = CSG.parseOptionAsInt(options, 'twiststeps', CSG.defaultResolution3D);
@@ -574,8 +586,8 @@ util = {
                 orthoNormalCartesian: ['X', 'Z'],
                 normalVector: CSG.Vector3D.Create(0, 0, 1)
             }
-        }
-        if (!axisInfo[axis]) throw new Error('util.normalVector: invalid axis ' + aixs)
+        };
+        if (!axisInfo[axis]) util.error('util.normalVector: invalid axis ' + axis);
         return axisInfo[axis];
     },
 
@@ -614,7 +626,7 @@ util = {
     reShape: function reShape(object, radius, orientation, options, slicer) {
         options = options || {};
         var b = object.getBounds();
-        var s = util.size(b);
+        // var s = util.size(b);
         var ar = Math.abs(radius);
         var si = util.sliceParams(orientation, radius, b);
 
@@ -624,11 +636,11 @@ util = {
 
         var slice = object.sectionCut(cutplane);
 
-        var first = util.axisApply(si.axis, function (i, a) {
+        var first = util.axisApply(si.axis, function () {
             return si.positive ? 0 : ar;
         });
 
-        var last = util.axisApply(si.axis, function (i, a) {
+        var last = util.axisApply(si.axis, function () {
             return si.positive ? ar : 0;
         });
 
@@ -662,7 +674,7 @@ util = {
         options = options || {};
         return util.reShape(object, radius, orientation, options, function (first, last, slice) {
             var v1 = new CSG.Vector3D(first);
-            var v2 = new CSG.Vector3D(last)
+            var v2 = new CSG.Vector3D(last);
 
             var res = options.resolution || CSG.defaultResolution3D;
 
@@ -750,19 +762,23 @@ util = {
          * @param  {String} axis Axis to move the object along.
          * @param  {Number} to   The distance to move the midpoint of the object.
          * @return {CGE}      A translated CGE object.
+         * @alias midlineTo
+         * @memberof module:CSG
+         * @augments CSG
+         * @chainable
          */
         CSG.prototype.midlineTo = function midlineTo(axis, to) {
             return util.midlineTo(this, axis, to);
         };
 
         CSG.prototype.centerWith = function centerWith(axis, to) {
-            console.warn('centerWith is depreciated, use align');
+            util.depreciated('centerWith', false, 'Use align instead.');
             return util.centerWith(this, axis, to);
         };
 
         if (CSG.center) echo('CSG already has .center');
         CSG.prototype.center = function centerWith(to, axis) {
-            console.warn('center is depreciated, use align');
+            util.depreciated('center', false, 'Use align instead.');
             return util.centerWith(this, axis, to);
         };
 
@@ -795,11 +811,48 @@ util = {
          */
         CSG.prototype.enlarge = function enlarge(x, y, z) {
             return util.enlarge(this, x, y, z);
-        }
+        };
 
+        /**
+         * Fit an object inside a bounding box. Often
+         * used to fit text on the face of an object.
+         *  A zero for a size value will leave that axis untouched.
+         * ![fit example](jsdoc2md/fit.png)
+         * @param  {number | array} x size of x or array of axes
+         * @param  {number | boolean} y size of y axis or a boolean too keep the aspect ratio if `x` is an array
+         * @param  {number} z size of z axis
+         * @param  {boolean} a Keep objects aspect ratio
+         * @alias fit
+         * @memberof module:CSG
+         * @augments CSG
+         * @return {CSG}   The new object fitted inside a bounding box
+         * @example
+         * include('lodash.js');
+         * include('utils.jscad');
+         *
+         * function main() {
+         *    util.init(CSG);
+         *
+         *    var cube = CSG.cube({
+         *        radius: 10
+         *    }).color('orange');
+         *
+         *    // create a label, place it on top of the cube
+         *    // and center it on the top face
+         *    var label = util.label('hello')
+         *        .snap(cube, 'z', 'outside-')
+         *        .align(cube, 'xy');
+         *
+         *    var s = cube.size();
+         *    // fit the label to the cube (minus 2mm) while
+         *    // keeping the aspect ratio of the text
+         *    // and return the union
+         *    return cube.union(label.fit([s.x - 2, s.y - 2, 0], true).color('blue'));
+         * }
+         */
         CSG.prototype.fit = function fit(x, y, z, a) {
             return util.fit(this, x, y, z, a);
-        }
+        };
 
         if (CSG.size) echo('CSG already has .size');
         /**
@@ -819,7 +872,7 @@ util = {
          */
         CSG.prototype.size = function () {
             return util.size(this.getBounds());
-        }
+        };
 
         /**
          * Returns the centroid of the current objects bounding box.
@@ -830,7 +883,7 @@ util = {
          */
         CSG.prototype.centroid = function () {
             return util.centroid(this);
-        }
+        };
 
         /**
          * Places an object at zero on the `z` axis.
@@ -841,7 +894,7 @@ util = {
 
         CSG.Vector2D.prototype.map = function Vector2D_map(cb) {
             return new CSG.Vector2D(cb(this.x), cb(this.y));
-        }
+        };
 
         /**
          * Add a fillet or roundover to an object.

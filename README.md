@@ -33,7 +33,9 @@ main() {
 * [CSG](#module_CSG)
     * [.color([red or css name], [green or alpha], [blue], [alpha])](#module_CSG.color) ⇒ <code>CSG</code>
     * [.snap(to, axis, orientation)](#module_CSG.snap) ⇒ <code>CSG</code>
+    * [.midlineTo(axis, to)](#module_CSG.midlineTo) ⇒ <code>CGE</code>
     * [.align(to, axis)](#module_CSG.align) ↩︎
+    * [.fit(x, y, z, a)](#module_CSG.fit) ⇒ <code>CSG</code>
     * [.size()](#module_CSG.size) ⇒ <code>CSG.Vector3D</code>
     * [.centroid()](#module_CSG.centroid) ⇒ <code>CSG.Vector3D</code>
     * [.fillet(radius, orientation, options)](#module_CSG.fillet) ⇒ <code>CSG</code>
@@ -106,6 +108,20 @@ function mainx() {
    return cube.union(sphere.snap(cube, 'z', 'outside-'));
 }
 ```
+<a name="module_CSG.midlineTo"></a>
+### CSG.midlineTo(axis, to) ⇒ <code>CGE</code>
+Moves an objects midpoint on an axis a certain distance.
+
+**Kind**: static method of <code>[CSG](#module_CSG)</code>  
+**Extends:** <code>CSG</code>  
+**Chainable**  
+**Returns**: <code>CGE</code> - A translated CGE object.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| axis | <code>String</code> | Axis to move the object along. |
+| to | <code>Number</code> | The distance to move the midpoint of the object. |
+
 <a name="module_CSG.align"></a>
 ### CSG.align(to, axis) ↩︎
 Align with another object on the selected axis.
@@ -119,6 +135,49 @@ Align with another object on the selected axis.
 | to | <code>CSG</code> | The object to align to. |
 | axis | <code>string</code> | A string indicating which axis to align, 'x', 'y', 'z', or any combination including 'xyz'. |
 
+<a name="module_CSG.fit"></a>
+### CSG.fit(x, y, z, a) ⇒ <code>CSG</code>
+Fit an object inside a bounding box. Often
+used to fit text on the face of an object.
+ A zero for a size value will leave that axis untouched.
+![fit example](jsdoc2md/fit.png)
+
+**Kind**: static method of <code>[CSG](#module_CSG)</code>  
+**Extends:** <code>CSG</code>  
+**Returns**: <code>CSG</code> - The new object fitted inside a bounding box  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>number</code> &#124; <code>array</code> | size of x or array of axes |
+| y | <code>number</code> &#124; <code>boolean</code> | size of y axis or a boolean too keep the aspect ratio if `x` is an array |
+| z | <code>number</code> | size of z axis |
+| a | <code>boolean</code> | Keep objects aspect ratio |
+
+**Example**  
+```js
+include('lodash.js');
+include('utils.jscad');
+
+function main() {
+   util.init(CSG);
+
+   var cube = CSG.cube({
+       radius: 10
+   }).color('orange');
+
+   // create a label, place it on top of the cube
+   // and center it on the top face
+   var label = util.label('hello')
+       .snap(cube, 'z', 'outside-')
+       .align(cube, 'xy');
+
+   var s = cube.size();
+   // fit the label to the cube (minus 2mm) while
+   // keeping the aspect ratio of the text
+   // and return the union
+   return cube.union(label.fit([s.x - 2, s.y - 2, 0], true).color('blue'));
+}
+```
 <a name="module_CSG.size"></a>
 ### CSG.size() ⇒ <code>CSG.Vector3D</code>
 Returns the size of the object in a `Vector3D` object.
@@ -216,6 +275,7 @@ jscad-utils
     * [.size(o)](#module_util.size) ⇒ <code>CSG.Vector3D</code>
     * [.scale(size, value)](#module_util.scale) ⇒ <code>number</code>
     * [.enlarge(object, x, y, z)](#module_util.enlarge) ⇒ <code>CSG</code>
+    * [.fit(object, x, y, z, keep_aspect_ratio)](#module_util.fit) ⇒ <code>CSG</code>
     * [.flush(moveobj, withobj, axis, mside, wside)](#module_util.flush) ⇒ <code>CSG</code>
     * [.bisect(object, axis, offset)](#module_util.bisect) ⇒ <code>Complex</code>
     * [.init(CSG)](#module_util.init) ⇐ <code>CSG</code>
@@ -271,6 +331,22 @@ object o by 1mm in each access, while the centroid stays the same.
 | x | <code>number</code> | [description] |
 | y | <code>number</code> | [description] |
 | z | <code>number</code> | [description] |
+
+<a name="module_util.fit"></a>
+### util.fit(object, x, y, z, keep_aspect_ratio) ⇒ <code>CSG</code>
+Fit an object inside a bounding box.  Often used
+with text labels.
+
+**Kind**: static method of <code>[util](#module_util)</code>  
+**Returns**: <code>CSG</code> - [description]  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| object | <code>CSG</code> | [description] |
+| x | <code>number</code> &#124; <code>array</code> | [description] |
+| y | <code>number</code> | [description] |
+| z | <code>number</code> | [description] |
+| keep_aspect_ratio | <code>boolean</code> | [description] |
 
 <a name="module_util.flush"></a>
 ### util.flush(moveobj, withobj, axis, mside, wside) ⇒ <code>CSG</code>

@@ -206,7 +206,7 @@ Colors = {
      * @augments CSG
      */
     init: function init(CSG) {
-        var _setColor = CSG.setColor;
+        var _setColor = CSG.setColor; // eslint-disable-line no-unused-vars
 
         /**
          * Set the color of a CSG object using a css color name.  Also accepts the normal `setColor()` values.
@@ -233,7 +233,7 @@ Colors = {
         CSG.prototype.color = function (r, g, b, a) {
             if (!r) return this; // shortcut empty color values to do nothing.
             return Colors.color(this, r, g, b, a);
-        }
+        };
 
     }
-}
+};

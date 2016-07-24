@@ -9,8 +9,6 @@ Parts = {
     },
 
     Cylinder: function (diameter, height, options) {
-        var h = height / 2;
-
         options = _.defaults(options, {
             start: [0, 0, 0],
             end: [0, 0, height],
@@ -48,12 +46,12 @@ Parts = {
         });
     },
 
-    Triangle: function (base, height, thickness) {
+    Triangle: function (base, height) {
         var radius = base / 2;
         var tri = CAG.fromPoints([
             [-radius, 0],
             [radius, 0],
-            [0, Math.sin(30) * radius],
+            [0, Math.sin(30) * radius]
         ]);
 
         return tri.extrude({

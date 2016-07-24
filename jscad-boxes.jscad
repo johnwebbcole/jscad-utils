@@ -1,5 +1,5 @@
 function getRadius(o) {
-    return util.array.div(util.xyz2array(o.size()), 2)
+    return util.array.div(util.xyz2array(o.size()), 2);
 }
 
 function cutBox(box, thickness, cutHeight, rabbetHeight, cheekGap) {
@@ -27,10 +27,10 @@ function cutBox(box, thickness, cutHeight, rabbetHeight, cheekGap) {
     var male = c.subtract(c.enlarge(mRabbet, mRabbet, 0)).color('green', 0.5);
 
     var toplip = c.subtract(female).color('red', 0.5);
-    var bottomlip = male.color('blue', 0.5)
+    var bottomlip = male.color('blue', 0.5);
 
     var top = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside-'))).color('white', 0.25).union(toplip);
-    var bottom = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside+'))).color('white', 0.25).union(bottomlip)
+    var bottom = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside+'))).color('white', 0.25).union(bottomlip);
     return {
         top: top.subtract(negative.snap(top, 'z', 'inside+').translate([0, 0, -thickness])),
         topsides: top.subtract(negative.snap(top, 'z', 'outside+').translate([0, 0, -thickness])),
@@ -95,18 +95,35 @@ function rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
         })
         .midlineTo('z', cutHeight);
 
-    var c = box.intersect(cutter).color('green', 0.5);
+    var c = box.intersect(cutter).color('green');
 
     cheekGap = cheekGap || 0.25;
     var fRabbet = -thickness - cheekGap;
-    var female = c.subtract(c.enlarge(fRabbet, fRabbet, 0)).color('blue', 0.5);
+    var female = c.subtract(c.enlarge(fRabbet, fRabbet, 0)).color('purple');
     var mRabbet = -thickness + cheekGap;
-    var male = c.subtract(c.enlarge(mRabbet, mRabbet, 0)).color('red', 0.5);
+    var male = c.subtract(c.enlarge(mRabbet, mRabbet, 0)).color('orange');
+
+    var airGap = airGap || 0.35;
 
     var b = util.bisect(box, 'z', cutHeight);
-    b.parts.positive = b.parts.positive.subtract(female)
-    b.parts.negative = b.parts.negative.subtract(c.subtract(male))
-        // console.log('b', b);
+    b.parts.positive = b.parts.positive.subtract(female);
+    b.parts.positiveCutout = util.bisect(female, 'z', rh + (cheekGap / 2)).parts.positive.color('orange');
+    b.parts.positiveSupport = union([
+            b.parts.positiveCutout.enlarge([airGap * 2, airGap * 2, 0]),
+            b.parts.positiveCutout.enlarge([thickness / 2, thickness / 2, 0]),
+            b.parts.positiveCutout.enlarge([thickness, thickness, 0])
+        ])
+        .enlarge([0, 0, -airGap]).translate([0, 0, -airGap / 2]).color('gray');
+    b.parts.negative = b.parts.negative.subtract(c.subtract(male));
+    b.parts.negativeCutout = util.bisect(c.subtract(male), 'z', rh + (cheekGap / 2)).parts.negative.color('orange');
+    b.parts.negativeSupport = union([
+            b.parts.negativeCutout.enlarge([-airGap * 2, -airGap * 2, 0]),
+            b.parts.negativeCutout.enlarge([-thickness / 2, -thickness / 2, 0]),
+            b.parts.negativeCutout.enlarge([-thickness, -thickness, 0])
+        ])
+        .enlarge([0, 0, -airGap]).translate([0, 0, airGap / 2]).color('gray');
+    // b.parts.negativeCutout = c.subtract(male).color('orange');
+    // console.log('b', b);
     return b;
 }
 
@@ -118,10 +135,11 @@ function cutOut(o, height) {
         radius: r
     }).align(o, 'xy').color('yellow');
 
-    return {
+    return util.complex('top,bottom', {
         top: cutout.snap(o, 'z', 'center+').union(o),
-        bottom: cutout.snap(o, 'z', 'center-').union(o)
-    };
+        bottom: cutout.snap(o, 'z', 'center-').union(o),
+        cutout: o
+    });
 }
 
 /**
