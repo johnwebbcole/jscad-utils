@@ -387,7 +387,6 @@ util = {
             y: 1,
             z: 2
         };
-
         axes.split('').forEach(function (axis) {
             retval[lookup[axis]] = valfun(lookup[axis], axis);
         });
@@ -453,7 +452,22 @@ util = {
         return o.translate(util.calcCenterWith(o, axis, withObj));
     },
 
-    complex: function complex(names, objects) {
+    /**
+     * Creates a `group` object given a comma separated
+     * list of names, and an array or object.  If an object
+     * is given, then the names list is used as the default
+     * parts used when the `combine()` function is called.
+     *
+     * You can call the `combine()` function with a list of parts you want combined into one.
+     *
+     * The `map()` funciton allows you to modify each part
+     * contained in the group object.
+     *
+     * @param  {string} names   Comma separated list of part names.
+     * @param  {array | object} objects Array or object of parts.  If Array, the names list is used as names for each part.
+     * @return {object}         An object that has a parts dictionary, a `combine()` and `map()` function.
+     */
+    group: function group(names, objects) {
 
         var self = {
             parts: (objects instanceof Array) ? _.zipObject(names.split(','), objects) : objects,
@@ -486,7 +500,7 @@ util = {
      * @param  {CSG} object object to bisect
      * @param  {string} axis   axis to cut along
      * @param  {number} offset offset to cut at
-     * @return {Complex}  Returns a complex object with a parts object.
+     * @return {object}  Returns a group object with a parts object.
      */
     bisect: function bisect(object, axis, offset) {
         var info = util.normalVector(axis);
@@ -500,7 +514,7 @@ util = {
         });
 
         var cutplane = CSG.OrthoNormalBasis.GetCartesian(info.orthoNormalCartesian[0], info.orthoNormalCartesian[1]).translate(cutDelta);
-        return util.complex('negative,positive', [object.cutByPlane(cutplane.plane).color('red'), object.cutByPlane(cutplane.plane.flipped()).color('blue')]);
+        return util.group('negative,positive', [object.cutByPlane(cutplane.plane).color('red'), object.cutByPlane(cutplane.plane.flipped()).color('blue')]);
         // return object
     },
 
@@ -758,7 +772,75 @@ util = {
         };
 
         /**
-         * Moves an objects midpoint on an axis a certain distance.
+         * Moves an objects midpoint on an axis a certain distance.  This is very useful when creating parts
+         * from mechanical drawings.
+         * For example, the [RaspberryPi Hat Board Specification](https://github.com/raspberrypi/hats/blob/master/hat-board-mechanical.pdf) has several pieces with the midpoint measured.
+         * ![pi hat drawing](jsdoc2md/rpi-hat.png)
+         * To avoid converting the midpoint to the relative position, you can use `midpointTo`.
+         * ![midlineTo example](jsdoc2md/midlineto.gif)
+         * @example
+         * include('lodash.js');
+         * include('utils.jscad');
+         *
+         * // rename mainx to main
+         * function mainx() {
+         *    util.init(CSG);
+         *
+         *    // create a RPi hat board
+         *    var board = Parts.Board(65, 56.5, 3).color('green');
+         *
+         *    // a 40 pin gpio
+         *    var gpio = Parts.Cube([52.2, 5, 8.5])
+         *        .snap(board, 'z', 'outside+')
+         *        .midlineTo('x', 29 + 3.5)
+         *        .midlineTo('y', 49 + 3.5)
+         *        .color('black')
+         *
+         *    var camera_flex_slot = Parts.Board(2, 17, 1)
+         *        .midlineTo('x', 45)
+         *        .midlineTo('y', 11.5)
+         *        .color('red');
+         *
+         *    // This is more group, due to the outside 1mm          * roundover.
+         *    // Create a board to work from first.  The spec
+         *    // has the edge offset, not the midline listed as          * 19.5mm.
+         *    // Bisect the cutout into two parts.
+         *    var display_flex_cutout = Parts.Board(5, 17, 1)
+         *        .translate([0, 19.5, 0])
+         *        .bisect('x');
+         *
+         *    // Bisect the outside (negative) part.
+         *    var edges = display_flex_cutout.parts.negative.bisect('y');
+         *
+         *    // Create a cube, and align it with the rounded edges
+         *    // of the edge, subtract the edge from it and move it
+         *    // to the other side of the coutout.
+         *    var round1 = Parts.Cube([2, 2, 2])
+         *        .snap(edges.parts.positive, 'xyz', 'inside-')
+         *        .subtract(edges.parts.positive)
+         *        .translate([0, 17, 0]);
+         *
+         *    // Repeat for the opposite corner
+         *    var round2 = Parts.Cube([2, 2, 2])
+         *        .snap(edges.parts.negative, 'yz', 'inside+')
+         *        .snap(edges.parts.negative, 'x', 'inside-')
+         *        .subtract(edges.parts.negative)
+         *        .translate([0, -17, 0]);
+         *
+         *    // Create a cube cutout so the outside is square instead of rounded.
+         *    // The `round1` and `round2` parts will be used to subtract off the rounded outside corner.
+         *    var cutout = Parts.Cube(display_flex_cutout.parts.negative.size()).align(display_flex_cutout.parts.negative, 'xyz');
+         *
+         *    return board
+         *        .union(gpio)
+         *        .subtract(camera_flex_slot)
+         *        .subtract(union([display_flex_cutout.parts.positive,
+         *            cutout
+         *        ]))
+         *        .subtract(round1)
+         *        .subtract(round2);
+         * }
+
          * @param  {String} axis Axis to move the object along.
          * @param  {Number} to   The distance to move the midpoint of the object.
          * @return {CGE}      A translated CGE object.
@@ -830,7 +912,8 @@ util = {
          * include('lodash.js');
          * include('utils.jscad');
          *
-         * function main() {
+         * // rename mainx to main
+         * function mainx() {
          *    util.init(CSG);
          *
          *    var cube = CSG.cube({
@@ -904,7 +987,8 @@ util = {
          * include('lodash.js');
          * include('utils.jscad');
          *
-         * function main() {
+         * // rename mainx to main
+         * function mainx() {
          * util.init(CSG);
          *
          * var cube = Parts.Cube([10, 10, 10]);
@@ -955,6 +1039,20 @@ util = {
          */
         CSG.prototype.chamfer = function chamfer(radius, orientation, options) {
             return util.chamfer(this, radius, orientation, options);
+        };
+
+        /**
+         * Cuts an object into two parts.  You can modify the offset, otherwise two equal parts are created.  The `group` part returned has a `positive` and `negative` half, cut along the desired axis.
+         * ![bisect example](jsdoc2md/bisect.png)
+         * @param  {string} axis   Axis to cut the object
+         * @param  {number} offset Offset to cut the object.  Defaults to the middle of the object
+         * @return {object}        A group group object with a parts dictionary and a `combine()` method.
+         * @alias bisect
+         * @memberof module:CSG
+         * @augments CSG
+         */
+        CSG.prototype.bisect = function bisect(axis, offset) {
+            return util.bisect(this, axis, offset);
         };
 
     }

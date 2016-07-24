@@ -61,5 +61,18 @@ Parts = {
 
     Tube: function Tube(outsideDiameter, insideDiameter, height, outsideOptions, insideOptions) {
         return Parts.Cylinder(outsideDiameter, height, outsideOptions).subtract(Parts.Cylinder(insideDiameter, height, insideOptions || outsideOptions));
+    },
+
+    Board: function (width, height, corner_radius, thickness) {
+        var r = util.divA([width, height], 2);
+        var board = CAG.roundedRectangle({
+            center: [r[0], r[1], 0],
+            radius: r,
+            roundradius: corner_radius
+        }).extrude({
+            offset: [0, 0, thickness || 1.62]
+        }).setColor(0.5, 0.5, 0.5, 0.25);
+
+        return board;
     }
 };

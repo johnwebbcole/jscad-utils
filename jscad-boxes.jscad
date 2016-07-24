@@ -135,7 +135,7 @@ function cutOut(o, height) {
         radius: r
     }).align(o, 'xy').color('yellow');
 
-    return util.complex('top,bottom', {
+    return util.group('top,bottom', {
         top: cutout.snap(o, 'z', 'center+').union(o),
         bottom: cutout.snap(o, 'z', 'center-').union(o),
         cutout: o
