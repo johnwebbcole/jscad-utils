@@ -2,42 +2,42 @@ function getRadius(o) {
     return util.array.div(util.xyz2array(o.size()), 2);
 }
 
-function cutBox(box, thickness, cutHeight, rabbetHeight, cheekGap) {
-    var s = box.size();
-    var r = util.array.add(getRadius(box), 1);
-
-    rabbetHeight = rabbetHeight || 5;
-    var cutter = CSG.cube({
-        center: [r[0], r[1], rabbetHeight],
-        radius: [r[0], r[1], rabbetHeight]
-    }).translate([0, 0, (cutHeight - rabbetHeight)]);
-
-    var negative = CSG.cube({
-        center: r,
-        radius: r
-    }).color('green', .25);
-
-    var c = box.intersect(cutter);
-
-    cheekGap = cheekGap || 0.25;
-
-    var fRabbet = -thickness - cheekGap;
-    var female = c.subtract(c.enlarge(fRabbet, fRabbet, 0)).color('yellow', 0.5);
-    var mRabbet = -thickness + cheekGap;
-    var male = c.subtract(c.enlarge(mRabbet, mRabbet, 0)).color('green', 0.5);
-
-    var toplip = c.subtract(female).color('red', 0.5);
-    var bottomlip = male.color('blue', 0.5);
-
-    var top = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside-'))).color('white', 0.25).union(toplip);
-    var bottom = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside+'))).color('white', 0.25).union(bottomlip);
-    return {
-        top: top.subtract(negative.snap(top, 'z', 'inside+').translate([0, 0, -thickness])),
-        topsides: top.subtract(negative.snap(top, 'z', 'outside+').translate([0, 0, -thickness])),
-        bottomsides: bottom.subtract(negative.snap(bottom, 'z', 'outside-').translate([0, 0, thickness])),
-        bottom: bottom.subtract(negative.snap(bottom, 'z', 'inside-').translate([0, 0, thickness]))
-    };
-}
+// function cutBox(box, thickness, cutHeight, rabbetHeight, cheekGap) {
+//     var s = box.size();
+//     var r = util.array.add(getRadius(box), 1);
+//
+//     rabbetHeight = rabbetHeight || 5;
+//     var cutter = CSG.cube({
+//         center: [r[0], r[1], rabbetHeight],
+//         radius: [r[0], r[1], rabbetHeight]
+//     }).translate([0, 0, (cutHeight - rabbetHeight)]);
+//
+//     var negative = CSG.cube({
+//         center: r,
+//         radius: r
+//     }).color('green', .25);
+//
+//     var c = box.intersect(cutter);
+//
+//     cheekGap = cheekGap || 0.25;
+//
+//     var fRabbet = -thickness - cheekGap;
+//     var female = c.subtract(c.enlarge(fRabbet, fRabbet, 0)).color('yellow', 0.5);
+//     var mRabbet = -thickness + cheekGap;
+//     var male = c.subtract(c.enlarge(mRabbet, mRabbet, 0)).color('green', 0.5);
+//
+//     var toplip = c.subtract(female).color('red', 0.5);
+//     var bottomlip = male.color('blue', 0.5);
+//
+//     var top = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside-'))).color('white', 0.25).union(toplip);
+//     var bottom = box.subtract(cutter.union(negative.snap(cutter, 'z', 'outside+'))).color('white', 0.25).union(bottomlip);
+//     return {
+//         top: top.subtract(negative.snap(top, 'z', 'inside+').translate([0, 0, -thickness])),
+//         topsides: top.subtract(negative.snap(top, 'z', 'outside+').translate([0, 0, -thickness])),
+//         bottomsides: bottom.subtract(negative.snap(bottom, 'z', 'outside-').translate([0, 0, thickness])),
+//         bottom: bottom.subtract(negative.snap(bottom, 'z', 'inside-').translate([0, 0, thickness]))
+//     };
+// }
 
 function topMiddleBottom(box, thickness) {
 
@@ -46,10 +46,10 @@ function topMiddleBottom(box, thickness) {
     var negative = CSG.cube({
         center: r,
         radius: r
-    }).color('green', .25);
+    }).color('green');
 
-    var top = box.subtract(negative.translate([0, 0, -(thickness + 2)])).color('red', 0.25);
-    var bottom = box.subtract(negative.translate([0, 0, thickness])).color('blue', 0.25);
+    var top = box.subtract(negative.translate([0, 0, -(thickness + 2)])).color('red');
+    var bottom = box.subtract(negative.translate([0, 0, thickness])).color('blue');
     var middle = box.subtract([top, bottom]);
 
     return {
@@ -59,31 +59,55 @@ function topMiddleBottom(box, thickness) {
     };
 }
 
-function rabbetTMB(box, thickness, gap) {
-    // console.log('rabbetTMB', gap)
+function rabbetTMB(box, thickness, gap, options) {
+    // console.log('rabbetTMB', gap, options)
+    options = _.defaults(options, {
+        removableTop: true,
+        removableBottom: true
+    });
+
     gap = gap || 0.25;
     var r = util.array.add(getRadius(box), -thickness / 2);
     r[2] = thickness / 2;
     var cutter = CSG.cube({
         center: r,
         radius: r
-    }).align(box, 'xy').color('green', .75);
+    }).align(box, 'xy').color('green');
 
     var topCutter = cutter.snap(box, 'z', 'inside+');
 
     var placeholder = topMiddleBottom(box, thickness);
 
-    return {
+    var group = util.group('', {
         topCutter: topCutter,
         bottomCutter: cutter,
-        top: box.intersect(topCutter.enlarge([-gap, -gap, 0])),
-        middle: box.subtract(cutter.enlarge([gap, gap, 0])).subtract(topCutter.enlarge([gap, gap, 0])),
-        bottom: placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0]))
-    };
+        // top: box.intersect(topCutter.enlarge([-gap, -gap, 0])),
+        // middle: box.subtract(cutter.enlarge([gap, gap, 0])).subtract(topCutter.enlarge([gap, gap, 0])),
+        // bottom: placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0]))
+    });
+
+    if (options.removableTop && options.removableBottom) {
+        group.add(box.intersect(topCutter.enlarge([-gap, -gap, 0])), 'top');
+        group.add(box.subtract(cutter.enlarge([gap, gap, 0])).subtract(topCutter.enlarge([gap, gap, 0])), 'middle');
+        group.add(placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0])), 'bottom');
+    }
+
+    if (options.removableTop && !options.removableBottom) {
+        group.add(box.intersect(topCutter.enlarge([-gap, -gap, 0])), 'top');
+        group.add(box.subtract(topCutter.enlarge([gap, gap, 0])), 'bottom');
+        // group.add(placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0])), 'bottom');
+    }
+
+    if (!options.removableTop && options.removableBottom) {
+        // group.add(box.intersect(topCutter.enlarge([-gap, -gap, 0])), 'top');
+        group.add(box.subtract(cutter.enlarge([gap, gap, 0])), 'top');
+        group.add(placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0])), 'bottom');
+    }
+
+    return group;
 }
 
 function rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
-    var s = box.size();
     var r = util.array.add(getRadius(box), 1);
 
     rabbetHeight = rabbetHeight || 5;
@@ -127,18 +151,39 @@ function rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
     return b;
 }
 
-function cutOut(o, height) {
-    var r = getRadius(o);
+function cutOut(o, h, box, plug, gap) {
+    gap = gap || 0.25;
+    // console.log('cutOut', o.size(), h, b.size());
+    // var r = getRadius(o);
+    var s = o.size();
 
-    var cutout = CSG.cube({
-        center: r,
-        radius: r
-    }).align(o, 'xy').color('yellow');
+    var cutout = o.intersect(box);
+    var cs = o.size();
 
-    return util.group('top,bottom', {
-        top: cutout.snap(o, 'z', 'center+').union(o),
-        bottom: cutout.snap(o, 'z', 'center-').union(o),
-        cutout: o
+    var clear = Parts.Cube([s.x, s.y, h]).align(o, 'xy').color('yellow');
+    var top = clear.snap(o, 'z', 'center+').union(o);
+    var back = Parts.Cube([cs.x + 6, 2, cs.z + 2.5])
+        .align(cutout, 'x')
+        .snap(cutout, 'z', 'center+')
+        .snap(cutout, 'y', 'outside-');
+
+    var clip = Parts.Cube([cs.x + 2 - gap, 1 - gap, cs.z + 2.5])
+        .align(cutout, 'x')
+        .snap(cutout, 'z', 'center+')
+        .snap(cutout, 'y', 'outside-');
+
+    return util.group('insert', {
+        top: top,
+        bottom: clear.snap(o, 'z', 'center-').union(o),
+        cutout: union([o, top]),
+        back: back.subtract(plug).subtract(clip).subtract(clear.translate([0, 5, 0])),
+        clip: clip.subtract(plug).color('red'),
+        insert: union([o, top])
+            .intersect(box)
+            .subtract(o)
+            .enlarge([-gap, 0, 0])
+            .union(clip.subtract(plug))
+            .color('blue')
     });
 }
 
@@ -165,11 +210,11 @@ Boxes = {
         return rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap);
     },
 
-    CutOut: function CutOut(o, height) {
-        return cutOut(o, height);
+    CutOut: function CutOut(o, height, box, plug) {
+        return cutOut(o, height, box, plug);
     },
 
-    Rectangle: function (size, thickness, gap, cb) {
+    Rectangle: function (size, thickness, gap, options, cb) {
         thickness = thickness || 2;
         var s = util.array.div(util.xyz2array(size), 2);
 
@@ -184,7 +229,7 @@ Boxes = {
 
         if (cb) box = cb(box);
 
-        return rabbetTMB(box.color('gray', 0.25), thickness, gap);
+        return rabbetTMB(box.color('gray'), thickness, gap, options);
     },
 
     BBox: function (o) {
@@ -194,4 +239,4 @@ Boxes = {
             radius: s
         });
     }
-}
+};

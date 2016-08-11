@@ -29,6 +29,11 @@ Parts = {
         });
     },
 
+    /**
+     * Crate a hexagon.
+     * @param {number} diameter Outside diameter of the hexagon
+     * @param {number} height   height of the hexagon
+     */
     Hexagon: function (diameter, height) {
         var radius = diameter / 2;
         var sqrt3 = Math.sqrt(3) / 2;
@@ -74,5 +79,44 @@ Parts = {
         }).setColor(0.5, 0.5, 0.5, 0.25);
 
         return board;
+    },
+
+    Hardware: {
+        Orientation: {
+            up: {
+                head: 'outside-',
+                clear: 'inside+'
+            },
+            down: {
+                head: 'outside+',
+                clear: 'inside-'
+            }
+        },
+
+        /**
+         * Creates a `Group` object with a Pan Head Screw.
+         * @param {number} headDiameter Diameter of the head of the screw
+         * @param {number} headLength   Length of the head
+         * @param {number} diameter     Diameter of the threaded shaft
+         * @param {number} length       Length of the threaded shaft
+         * @param {number} clearLength  Length of the clearance section of the head.
+         * @param {object} options      Screw options include orientation and clerance scale.
+         */
+        PanHeadScrew: function (headDiameter, headLength, diameter, length, clearLength, options) {
+            options = _.defaults(options, {
+                orientation: 'up',
+                clearance: [0, 0, 0]
+            });
+            var orientation = Parts.Hardware.Orientation[options.orientation];
+
+            var head = Parts.Cylinder(headDiameter, headLength).color('gray');
+            var thread = Parts.Cylinder(diameter, length).snap(head, 'z', orientation.head).color('silver');
+            var group = util.group('head,thread', [head, thread]);
+            if (clearLength) {
+                var headClearSpace = Parts.Cylinder(headDiameter, clearLength).enlarge(options.clearance).snap(head, 'z', orientation.clear).color('red');
+                group.add(headClearSpace, 'headClearSpace', true);
+            }
+            return group;
+        }
     }
 };

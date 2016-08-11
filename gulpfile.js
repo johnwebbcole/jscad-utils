@@ -1,7 +1,8 @@
-'use strict'
-var fs = require('fs')
-var gulp = require('gulp')
-var concat = require('gulp-concat')
+'use strict';
+/* eslint-env node */
+var fs = require('fs');
+var gulp = require('gulp');
+// var concat = require('gulp-concat');
 var del = require('del');
 var gulpLoadPlugins = require('gulp-load-plugins');
 var plugins = gulpLoadPlugins();
@@ -14,25 +15,33 @@ gulp.task('clean', function (done) {
     });
 });
 
+gulp.task('lint', () => {
+    return gulp.src(['*.jscad', 'gulpfile.js'])
+        .pipe(plugins.plumber())
+        .pipe(plugins.eslint())
+        .pipe(plugins.eslint.format());
+    // .pipe(plugins.eslint.failAfterError());
+});
+
 gulp.task('docs', function () {
     return gulp.src('*.jscad')
         .pipe(plugins.plumber())
-        .pipe(concat('README.md'))
+        .pipe(plugins.concat('README.md'))
         .pipe(plugins.jsdocToMarkdown({
             template: fs.readFileSync('./jsdoc2md/README.hbs', 'utf8')
         }))
         .on('error', function (err) {
-            gutil.log('jsdoc2md failed:', err.message)
+            plugins.util.log('jsdoc2md failed:', err.message);
         })
-        .pipe(gulp.dest('.'))
-})
+        .pipe(gulp.dest('.'));
+});
 
 gulp.task('build', function () {
     return gulp.src('*.jscad')
         .pipe(plugins.plumber())
-        .pipe(concat('utils.jscad'))
+        .pipe(plugins.concat('utils.jscad'))
         .pipe(gulp.dest('dist'));
-})
+});
 
 gulp.task('examples', function () {
     return gulp.src('jscad.json')
@@ -40,13 +49,13 @@ gulp.task('examples', function () {
         .pipe(plugins.jscadFiles())
         .pipe(plugins.flatten())
         .pipe(gulp.dest('examples'));
-})
+});
 
-gulp.task('default', ['docs'], function () {
+gulp.task('default', function () {
     plugins.watch(['*.jscad', 'node_modules/'], {
         verbose: true,
         followSymlinks: true
     }, plugins.batch(function (events, done) {
-        runSequence('docs', 'build', 'examples', done);
+        runSequence('docs', 'lint', 'build', 'examples', done);
     }));
 });

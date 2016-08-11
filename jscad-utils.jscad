@@ -9,6 +9,11 @@
  * @exports util
  */
 util = {
+
+    identity: function (solid) {
+        return solid;
+    },
+
     /**
      * Print a message and CSG object bounds and size to the conosle.
      * @param  {String} msg Message to print
@@ -469,28 +474,112 @@ util = {
      */
     group: function group(names, objects) {
 
-        var self = {
-            parts: (objects instanceof Array) ? _.zipObject(names.split(','), objects) : objects,
-            map: function (cb) {
-                self.parts = _.transform(self.parts, function (result, value, key) {
-                    result[key] = cb(value, key);
+        var self = {};
+
+        self.names = names.split(',');
+
+        self.parts = (objects instanceof Array) ? _.zipObject(self.names, objects) : objects;
+
+        /**
+         * Apply a function to each element in the group.
+         * @param  {Function} cb Callback founction applied to each part.
+         * It is called with the parameters `(value, key)`
+         * @return {Object}      Returns this object so it can be chained
+         */
+        self.map = function (cb) {
+
+            self.parts = _.transform(self.parts, function (result, value, key) {
+                result[key] = cb(value, key);
+            });
+
+            if (self.holes) {
+
+                if (_.isArray(self.holes)) {
+                    self.holes = self.holes.map(function (hole, idx) {
+
+                        return cb(hole, idx);
+                    });
+                } else {
+                    self.holes = cb(self.holes, 'holes');
+                }
+            }
+            return self;
+        };
+
+        /**
+         * Add a CSG object to the current group.
+         * @param {CSG} object Object to add the parts dictionary.
+         * @param {string} name   Name of the part
+         * @param {boolean} hidden If true, then the part not be added during a default `combine()`
+         */
+        self.add = function (object, name, hidden) {
+            if (!hidden) self.names.push(name);
+            self.parts[name] = object;
+            return self;
+        };
+
+        self.clone = function (map) {
+            if (!map) map = util.identity;
+            var group = util.group(self.names.join(','), _.mapValues(self.parts, function (part, name) {
+                return map(CSG.fromPolygons(part.toPolygons()), name);
+            }));
+            if (self.holes) {
+                group.holes = self.holes.map(function (part) {
+                    return map(CSG.fromPolygons(part.toPolygons()), 'holes');
                 });
-                return self;
-            },
-            combine: function (pieces, options) {
-                var scale = options && options.scale || [0, 0, 0];
-                pieces = (pieces || names).split(',');
-                return union(
+            }
+            return group;
+        };
+
+        self.rotate = function (solid, axis, angle) {
+            var axes = {
+                'x': [1, 0, 0],
+                'y': [0, 1, 0],
+                'z': [0, 0, 1]
+            };
+            var rotationCenter = solid.centroid();
+            var rotationAxis = axes[axis];
+
+            self.map(function (part) {
+                return part.rotate(rotationCenter, rotationAxis, angle);
+            });
+            return self;
+        };
+
+        self.combine = function (pieces, options, map) {
+
+            options = _.defaults(options, {
+                noholes: false
+            });
+            pieces = pieces ? pieces.split(',') : self.names;
+            // console.log('pieces', pieces);
+            var g;
+            if (map) {
+                g = union(
+                    _.chain(this.parts)
+                    .pick(pieces)
+                    .mapValues(function (value, key, object) {
+                        return map(value, key, object);
+                    })
+                    .values()
+                    .value());
+
+            } else {
+                g = union(
                     _.chain(this.parts)
                     .pick(pieces)
                     .values()
-                    .map(function (o) {
-                        return o.enlarge(scale);
-                    })
-                    .value()
-                );
+                    .value());
+
+            }
+
+            if (self.holes && !options.noholes) {
+                return g.subtract(_.isArray(self.holes) ? union(self.holes) : self.holes);
+            } else {
+                return g;
             }
         };
+
         return self;
     },
 
@@ -1053,6 +1142,14 @@ util = {
          */
         CSG.prototype.bisect = function bisect(axis, offset) {
             return util.bisect(this, axis, offset);
+        };
+
+        CSG.prototype.unionIf = function unionIf(object, condition) {
+            return condition ? this.union(object) : this;
+        };
+
+        CSG.prototype.subtractIf = function subtractIf(object, condition) {
+            return condition ? this.subtract(object) : this;
         };
 
     }

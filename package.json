@@ -29,6 +29,7 @@
     "gulp": "^3.9.1",
     "gulp-batch": "^1.0.5",
     "gulp-concat": "^2.6.0",
+    "gulp-eslint": "^3.0.1",
     "gulp-flatten": "^0.3.0",
     "gulp-jscad-files": "^1.0.0",
     "gulp-jsdoc-to-markdown": "^1.2.1",
