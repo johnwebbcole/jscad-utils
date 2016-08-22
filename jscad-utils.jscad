@@ -726,6 +726,16 @@ util = {
         }, info, util.normalVector(axis));
     },
 
+    solidFromSlices: function (slices, heights) {
+        var si = {
+            axis: 'z',
+            cutDelta: {},
+            moveDelta: {},
+            orthoNormalCartesian: ['X', 'Y'],
+            normalVector: CSG.Vector3D.Create(0, 1, 0)
+        }
+    },
+
     reShape: function reShape(object, radius, orientation, options, slicer) {
         options = options || {};
         var b = object.getBounds();

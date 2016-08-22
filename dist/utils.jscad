@@ -176,13 +176,13 @@ function cutOut(o, h, box, plug, gap) {
         top: top,
         bottom: clear.snap(o, 'z', 'center-').union(o),
         cutout: union([o, top]),
-        back: back.subtract(plug).subtract(clip).subtract(clear.translate([0, 5, 0])),
+        back: back.subtract(plug).subtract(clip.enlarge(gap, gap, gap)).subtract(clear.translate([0, 5, 0])),
         clip: clip.subtract(plug).color('red'),
         insert: union([o, top])
             .intersect(box)
             .subtract(o)
             .enlarge([-gap, 0, 0])
-            .union(clip.subtract(plug))
+            .union(clip.subtract(plug).enlarge(-gap, -gap, 0))
             .color('blue')
     });
 }
@@ -1330,6 +1330,16 @@ util = {
                 return bounds[info.sizeIdx][a] + (Math.abs(radius) * info.moveDir);
             })
         }, info, util.normalVector(axis));
+    },
+
+    solidFromSlices: function (slices, heights) {
+        var si = {
+            axis: 'z',
+            cutDelta: {},
+            moveDelta: {},
+            orthoNormalCartesian: ['X', 'Y'],
+            normalVector: CSG.Vector3D.Create(0, 1, 0)
+        }
     },
 
     reShape: function reShape(object, radius, orientation, options, slicer) {
