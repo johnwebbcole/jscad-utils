@@ -6,7 +6,7 @@ var gulp = require('gulp');
 var del = require('del');
 var gulpLoadPlugins = require('gulp-load-plugins');
 var plugins = gulpLoadPlugins();
-var runSequence = require('run-sequence');
+// var runSequence = require('run-sequence');
 
 gulp.task('clean', function (done) {
     del(['README.md', 'dist/jscad-utils.js']).then(paths => {
@@ -15,7 +15,7 @@ gulp.task('clean', function (done) {
     });
 });
 
-gulp.task('lint', () => {
+gulp.task('lint', function () {
     return gulp.src(['*.jscad', 'gulpfile.js'])
         .pipe(plugins.plumber())
         .pipe(plugins.eslint())
@@ -43,19 +43,25 @@ gulp.task('build', function () {
         .pipe(gulp.dest('dist'));
 });
 
-gulp.task('examples', function () {
-    return gulp.src('jscad.json')
+gulp.task('examples', ['build'], function () {
+    return gulp.src('examples/*.jscad')
         .pipe(plugins.plumber())
-        .pipe(plugins.jscadFiles())
-        .pipe(plugins.flatten())
-        .pipe(gulp.dest('examples'));
+        .pipe(plugins.inject(gulp.src(['dist/utils.jscad']), {
+            relative: true,
+            starttag: '// include:js',
+            endtag: '// endinject',
+            transform: function (filepath, file) {
+                return '// ' + filepath + '\n' + file.contents.toString('utf8');
+            }
+        }))
+        .pipe(gulp.dest('dist'));
 });
 
-gulp.task('default', function () {
-    plugins.watch(['*.jscad', 'node_modules/'], {
+gulp.task('all', ['docs', 'lint', 'build', 'examples'])
+
+gulp.task('default', ['all'], function () {
+    gulp.watch(['*.jscad', 'examples/*.jscad', 'jsdoc2md/README.hbs', 'node_modules/'], {
         verbose: true,
         followSymlinks: true
-    }, plugins.batch(function (events, done) {
-        runSequence('docs', 'lint', 'build', 'examples', done);
-    }));
+    }, ['all']);
 });

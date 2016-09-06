@@ -1,6 +1,3 @@
-include('lodash.js');
-include('utils.jscad');
-
 function main() {
     util.init(CSG);
 
@@ -10,3 +7,6 @@ function main() {
 
     return cube.chamfer(2, 'z+').color('orange');
 }
+
+// include:js
+// endinject

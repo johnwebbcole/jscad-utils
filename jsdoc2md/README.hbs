@@ -18,13 +18,19 @@ To use the utilities, you need to include the `jscad-utils.jscad` file and a cop
 
 ```javascript
 include('node_modules/jscad-utils/jscad-utils.jscad');
-include('node_modules/lodash/lodash.js');
 
 main() {
   util.init(CSG);
 
 }
 ```
+
+## Examples
+Examples are placed in the `dist` directory with the `jscad-utils.jscad` file injected into them.  This allows the files to be included directly into openjscad.org.
+
+Here are some of the examples:
+
+* [snap](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/snap.jscad) an example showing how to use the `snap` function.
 
 ## API Reference
 
@@ -44,6 +50,20 @@ main() {
 
 ### Colors
 {{#module name="jscad-utils-color"}}
+{{>body~}}
+{{>member-index~}}
+{{>members~}}
+{{/module}}
+
+### Parts
+{{#module name="jscad-utils-parts"}}
+{{>body~}}
+{{>member-index~}}
+{{>members~}}
+{{/module}}
+
+### Boxes
+{{#module name="jscad-utils-boxes"}}
 {{>body~}}
 {{>member-index~}}
 {{>members~}}

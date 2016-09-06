@@ -1,6 +1,3 @@
-include('lodash.js');
-include('utils.jscad');
-
 function main() {
     util.init(CSG);
 
@@ -20,3 +17,6 @@ function main() {
     // and return the union
     return cube.union(label.fit([s.x - 2, s.y - 2, 0], true).color('blue'));
 }
+
+// include:js
+// endinject

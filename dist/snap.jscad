@@ -1,3 +1,19 @@
+function main() {
+    util.init(CSG);
+
+    var cube = CSG.cube({
+        radius: 10
+    }).setColor(1, 0, 0);
+
+    var sphere = CSG.sphere({
+        radius: 5
+    }).setColor(0, 0, 1);
+
+    return cube.union(sphere.snap(cube, 'z', 'outside-'));
+}
+
+// include:js
+// ../dist/utils.jscad
 /**
  * jscad box and join utilities.  This should be considered experimental (indicated by the amount of commented out code).
  * @type {Object}
@@ -1989,3 +2005,5 @@ util = {
 
     }
 };
+
+// endinject

@@ -1,6 +1,3 @@
-include('lodash.js');
-include('utils.jscad');
-
 function main() {
     util.init(CSG);
 
@@ -12,3 +9,6 @@ function main() {
 
     return p.combine();
 }
+
+// include:js
+// endinject

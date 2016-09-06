@@ -17,6 +17,7 @@
         "vector_text": true,
         "rectangular_extrude": true
     },
+    "plugins": [],
     "extends": "eslint:recommended",
     "rules": {
         "linebreak-style": [

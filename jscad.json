@@ -1,6 +1,5 @@
 {
     "files": [
-        "dist/utils.jscad",
-        "node_modules/lodash/lodash.js"
+        "dist/utils.jscad"
     ]
 }

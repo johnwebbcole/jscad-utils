@@ -10,8 +10,42 @@
  */
 util = {
 
+    /**
+     * A function that reutrns the first argument.  Useful when
+     * passing in a callback to modify something, and you want a
+     * default functiont hat does nothing.
+     * @param  {object} solid an object that will be returned
+     * @return {object}       the first parameter passed into the function.
+     */
     identity: function (solid) {
         return solid;
+    },
+
+    /**
+     * If `f` is a funciton, it is executed with `object` as the parameter.  This is used in
+     * `CSG.unionIf` and `CSG.subtractIf`, allowing you to pass a function instead of an object.  Since the
+     * function isn't exeuted until called, the object to `union` or `subtract` can be assembled only if
+     * the conditional is true.
+     * @param  {object} object the context to run the function with.
+     * @param  {function|object} f      if a funciton it is executed, othewise the object is returned.
+     * @return {object}        the result of the function or the object.
+     */
+    result: function (object, f) {
+        if (typeof (f) === 'function') {
+            return f.call(object);
+        } else {
+            return f;
+        }
+    },
+
+    /**
+     * Returns target object with default values assigned. If values already exist, they are not set.
+     * @param  {object} target   The target object to return.
+     * @param  {object} defaults Defalut values to add to the object if they don't already exist.
+     * @return {object}          Target object with default values assigned.
+     */
+    defaults: function (target, defaults) {
+        return Object.assign(defaults, target);
     },
 
     /**
@@ -91,29 +125,33 @@ util = {
 
     array: {
         div: function (a, f) {
-            return _.map(a, function (e) {
+            return a.map(function (e) {
                 return e / f;
             });
         },
 
         addValue: function (a, f) {
-            return _.map(a, function (e) {
+            return a.map(function (e) {
                 return e + f;
             });
         },
 
         addArray: function (a, f) {
-            return _.map(a, function (e, i) {
+            return a.map(function (e, i) {
                 return e + f[i];
             });
         },
 
         add: function (a, f) {
-            if (_.isArray(f)) {
+            if (Array.isArray(f)) {
                 return util.array.addArray(a, f);
             } else {
                 return util.array.addValue(a, f);
             }
+        },
+
+        fromxyz: function (object) {
+            return Array.isArray(object) ? object : [object.x, object.y, object.z];
         },
 
         toxyz: function (a) {
@@ -122,20 +160,84 @@ util = {
                 y: a[1],
                 z: a[2]
             };
+        },
+
+        first: function (a) {
+            return a ? a[0] : undefined;
+        },
+
+        last: function (a) {
+            return a && a.length > 0 ? a[a.length - 1] : undefined;
+        },
+
+        min: function (a) {
+            return a.reduce(function (result, value) {
+                return value < result ? value : result;
+            }, Number.MAX_VALUE);
+        },
+
+        range: function (a, b) {
+            var result = [];
+            for (var i = a; i < b; i++) {
+                result.push(i);
+            }
+
+            return result;
         }
+
+
     },
 
 
-    map: function (o, callback) {
-        _.forIn(o, function (value, key) {
-            // echo('util.map', key);
-            if (value instanceof CSG) {
-                // echo('key', value instanceof CSG);
-                return value = callback(value, key);
-            }
-            return value;
+    zipObject: function (names, values) {
+        return names.reduce(function (result, value, idx) {
+            result[value] = values[idx];
+            return result;
+        }, {});
+    },
+
+    // map: function (o, callback) {
+    //     _.forIn(o, function (value, key) {
+    //         // echo('util.map', key);
+    //         if (value instanceof CSG) {
+    //             // echo('key', value instanceof CSG);
+    //             return value = callback(value, key);
+    //         }
+    //         return value;
+    //     });
+    //     return o;
+    // },
+
+    /**
+     * Object map function, returns an array of the object mapped into an array.
+     * @param  {object} o Object to map
+     * @param  {function} f function to apply on each key
+     * @return {array}   an array of the mapped object.
+     */
+    map: function (o, f) {
+        return Object.keys(o).map(function (key) {
+            return f(o[key], key, o);
         });
-        return o;
+    },
+
+    mapValues: function (o, f) {
+        return Object.keys(o).map(function (key) {
+            return f(o[key], key);
+        });
+    },
+
+    pick: function (o, names) {
+        return names.reduce(function (result, name) {
+            result[name] = o[name];
+            return result;
+        }, {});
+    },
+
+    mapPick: function (o, names, f) {
+        return names.reduce(function (result, name) {
+            result.push(f ? f(o[name]) : o[name]);
+            return result;
+        }, []);
     },
 
     divA: function divA(a, f) {
@@ -223,7 +325,7 @@ util = {
      */
     enlarge: function enlarge(object, x, y, z) {
         var a;
-        if (_.isArray(x)) {
+        if (Array.isArray(x)) {
             a = x;
         } else {
             a = [x, y, z];
@@ -233,7 +335,8 @@ util = {
         var centroid = util.centroid(object, size);
 
         var idx = 0;
-        var t = _.map(size, function (i) {
+
+        var t = util.map(size, function (i) {
             return util.scale(i, a[idx++]);
         });
 
@@ -258,7 +361,7 @@ util = {
      */
     fit: function fit(object, x, y, z, keep_aspect_ratio) {
         var a;
-        if (_.isArray(x)) {
+        if (Array.isArray(x)) {
             a = x;
             keep_aspect_ratio = y;
             x = a[0];
@@ -277,8 +380,7 @@ util = {
         }
 
         var s = [scale(size.x, x), scale(size.y, y), scale(size.z, z)];
-        var min = _.min(s);
-
+        var min = util.array.min(s);
         return util.centerWith(object.scale(s.map(function (d, i) {
             if (a[i] === 0) return 1; // don't scale when value is zero
             return keep_aspect_ratio ? min : d;
@@ -478,7 +580,13 @@ util = {
 
         self.names = names.split(',');
 
-        self.parts = (objects instanceof Array) ? _.zipObject(self.names, objects) : objects;
+        if (Array.isArray(objects)) {
+            self.parts = util.zipObject(self.names, objects);
+        } else if (objects instanceof CSG) {
+            self.parts = util.zipObject(self.names, [objects]);
+        } else {
+            self.parts = objects;
+        }
 
         /**
          * Apply a function to each element in the group.
@@ -488,15 +596,15 @@ util = {
          */
         self.map = function (cb) {
 
-            self.parts = _.transform(self.parts, function (result, value, key) {
-                result[key] = cb(value, key);
-            });
+            self.parts = Object.keys(self.parts).reduce(function (result, key) {
+                result[key] = cb(self.parts[key], key);
+                return result;
+            }, {});
 
             if (self.holes) {
 
-                if (_.isArray(self.holes)) {
+                if (Array.isArray(self.holes)) {
                     self.holes = self.holes.map(function (hole, idx) {
-
                         return cb(hole, idx);
                     });
                 } else {
@@ -512,15 +620,35 @@ util = {
          * @param {string} name   Name of the part
          * @param {boolean} hidden If true, then the part not be added during a default `combine()`
          */
-        self.add = function (object, name, hidden) {
-            if (!hidden) self.names.push(name);
-            self.parts[name] = object;
+        self.add = function (object, name, hidden, subparts) {
+            if (object.parts) {
+                if (name) {
+                    // add the combined part
+                    if (!hidden) self.names.push(name);
+                    self.parts[name] = object.combine();
+
+                    if (subparts) {
+                        Object.keys(object.parts).forEach(function (key) {
+                            self.parts[name + key] = object.parts[key];
+                        });
+                    }
+
+                } else {
+                    Object.assign(self.parts, object.parts);
+                    self.names = self.names.concat(object.names);
+                }
+
+            } else {
+                if (!hidden) self.names.push(name);
+                self.parts[name] = object;
+            }
+
             return self;
         };
 
         self.clone = function (map) {
             if (!map) map = util.identity;
-            var group = util.group(self.names.join(','), _.mapValues(self.parts, function (part, name) {
+            var group = util.group(self.names.join(','), util.mapValues(self.parts, function (part, name) {
                 return map(CSG.fromPolygons(part.toPolygons()), name);
             }));
             if (self.holes) {
@@ -548,36 +676,29 @@ util = {
 
         self.combine = function (pieces, options, map) {
 
-            options = _.defaults(options, {
+            options = Object.assign({
                 noholes: false
-            });
+            }, options);
+
             pieces = pieces ? pieces.split(',') : self.names;
             // console.log('pieces', pieces);
-            var g;
-            if (map) {
-                g = union(
-                    _.chain(this.parts)
-                    .pick(pieces)
-                    .mapValues(function (value, key, object) {
-                        return map(value, key, object);
-                    })
-                    .values()
-                    .value());
 
-            } else {
-                g = union(
-                    _.chain(this.parts)
-                    .pick(pieces)
-                    .values()
-                    .value());
+            var g = union(util.mapPick(this.parts, pieces, function (value, key, object) {
+                return map ? map(value, key, object) : util.identity(value);
+            }));
 
-            }
+            return g.subtractIf(Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
 
-            if (self.holes && !options.noholes) {
-                return g.subtract(_.isArray(self.holes) ? union(self.holes) : self.holes);
-            } else {
-                return g;
-            }
+        };
+
+        self.snap = function snap(part, to, axis, orientation, delta) {
+            // console.log('group.snap', part);
+            var t = util.calcSnap(self.combine(part), to, axis, orientation, delta);
+            self.map(function (part) {
+                return part.translate(t);
+            });
+
+            return self;
         };
 
         return self;
@@ -596,6 +717,9 @@ util = {
         var bounds = object.getBounds();
         var size = util.size(object);
 
+        // if the offset is negative, then it's an offset from
+        // the positive side of the axis
+        if (offset < 0) offset = size[axis] + offset;
 
         // console.log('bisect', axis, offset, info);
         var cutDelta = util.axisApply(axis, function (i, a) {
@@ -623,8 +747,8 @@ util = {
         var polygons = [];
 
         // bottom and top
-        var first = _.first(slices);
-        var last = _.last(slices);
+        var first = util.array.first(slices);
+        var last = util.array.last(slices);
         var up = first.offset[axis] > last.offset[axis];
 
         // _toPlanePolygons only works in the 'z' axis.  It's hard coded
@@ -715,7 +839,7 @@ util = {
 
         var info = dirInfo['dir' + direction];
 
-        return _.assign({
+        return Object.assign({
             axis: axis,
             cutDelta: util.axisApply(axis, function (i, a) {
                 return bounds[info.sizeIdx][a] + (Math.abs(radius) * info.sizeDir);
@@ -726,15 +850,15 @@ util = {
         }, info, util.normalVector(axis));
     },
 
-    solidFromSlices: function (slices, heights) {
-        var si = {
-            axis: 'z',
-            cutDelta: {},
-            moveDelta: {},
-            orthoNormalCartesian: ['X', 'Y'],
-            normalVector: CSG.Vector3D.Create(0, 1, 0)
-        }
-    },
+    // solidFromSlices: function (slices, heights) {
+    //     var si = {
+    //         axis: 'z',
+    //         cutDelta: {},
+    //         moveDelta: {},
+    //         orthoNormalCartesian: ['X', 'Y'],
+    //         normalVector: CSG.Vector3D.Create(0, 1, 0)
+    //     };
+    // },
 
     reShape: function reShape(object, radius, orientation, options, slicer) {
         options = options || {};
@@ -761,7 +885,7 @@ util = {
 
         var slices = slicer(first, last, slice);
 
-        var delta = util.slices2poly(slices, _.assign(options, {
+        var delta = util.slices2poly(slices, Object.assign(options, {
             si: si
         }), si.axis).color(options.color);
 
@@ -791,7 +915,7 @@ util = {
 
             var res = options.resolution || CSG.defaultResolution3D;
 
-            var slices = _.range(0, res).map(function (i) {
+            var slices = util.array.range(0, res).map(function (i) {
                 var p = i > 0 ? i / (res - 1) : 0;
                 var v = v1.lerp(v2, p);
 
@@ -957,10 +1081,13 @@ util = {
             return util.centerWith(this, axis, to);
         };
 
-        if (CSG.center) echo('CSG already has .center');
         CSG.prototype.center = function centerWith(to, axis) {
             util.depreciated('center', false, 'Use align instead.');
             return util.centerWith(this, axis, to);
+        };
+
+        CSG.prototype.calcCenter = function centerWith(axis) {
+            return util.calcCenterWith(this, axis || 'xyz', util.unitCube(), 0);
         };
 
         /**
@@ -1155,11 +1282,11 @@ util = {
         };
 
         CSG.prototype.unionIf = function unionIf(object, condition) {
-            return condition ? this.union(object) : this;
+            return condition ? this.union(util.result(this, object)) : this;
         };
 
         CSG.prototype.subtractIf = function subtractIf(object, condition) {
-            return condition ? this.subtract(object) : this;
+            return condition ? this.subtract(util.result(this, object)) : this;
         };
 
     }

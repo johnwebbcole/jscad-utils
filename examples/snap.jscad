@@ -1,6 +1,3 @@
-include('lodash.js');
-include('utils.jscad');
-
 function main() {
     util.init(CSG);
 
@@ -14,3 +11,6 @@ function main() {
 
     return cube.union(sphere.snap(cube, 'z', 'outside-'));
 }
+
+// include:js
+// endinject

@@ -18,13 +18,19 @@ To use the utilities, you need to include the `jscad-utils.jscad` file and a cop
 
 ```javascript
 include('node_modules/jscad-utils/jscad-utils.jscad');
-include('node_modules/lodash/lodash.js');
 
 main() {
   util.init(CSG);
 
 }
 ```
+
+## Examples
+Examples are placed in the `dist` directory with the `jscad-utils.jscad` file injected into them.  This allows the files to be included directly into openjscad.org.
+
+Here are some of the examples:
+
+* [snap](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/snap.jscad) an example showing how to use the `snap` function.
 
 ## API Reference
 
@@ -43,6 +49,7 @@ main() {
     * [.bisect(axis, offset)](#module_CSG.bisect) ⇒ <code>object</code>
 
 <a name="module_CSG.color"></a>
+
 ### CSG.color([red or css name], [green or alpha], [blue], [alpha]) ⇒ <code>CSG</code>
 Set the color of a CSG object using a css color name.  Also accepts the normal `setColor()` values.
 
@@ -71,6 +78,7 @@ var bluecube =  CSG.cube({radius: [1, 1, 1]}).color('blue', 0.5);
 var greencube =  CSG.cube({radius: [1, 1, 1]}).color(0, 1, 0, 0.25);
 ```
 <a name="module_CSG.snap"></a>
+
 ### CSG.snap(to, axis, orientation) ⇒ <code>CSG</code>
 Snap the object to another object.  You can snap to the inside or outside
 of an object.  Snapping to the `z`
@@ -110,6 +118,7 @@ function mainx() {
 }
 ```
 <a name="module_CSG.midlineTo"></a>
+
 ### CSG.midlineTo(axis, to) ⇒ <code>CGE</code>
 Moves an objects midpoint on an axis a certain distance.  This is very useful when creating parts
 from mechanical drawings.
@@ -193,6 +202,7 @@ function mainx() {
 }
 ```
 <a name="module_CSG.align"></a>
+
 ### CSG.align(to, axis) ↩︎
 Align with another object on the selected axis.
 
@@ -206,6 +216,7 @@ Align with another object on the selected axis.
 | axis | <code>string</code> | A string indicating which axis to align, 'x', 'y', 'z', or any combination including 'xyz'. |
 
 <a name="module_CSG.fit"></a>
+
 ### CSG.fit(x, y, z, a) ⇒ <code>CSG</code>
 Fit an object inside a bounding box. Often
 used to fit text on the face of an object.
@@ -250,6 +261,7 @@ function mainx() {
 }
 ```
 <a name="module_CSG.size"></a>
+
 ### CSG.size() ⇒ <code>CSG.Vector3D</code>
 Returns the size of the object in a `Vector3D` object.
 
@@ -267,6 +279,7 @@ var size = cube.size()
 // size = {"x":20,"y":20,"z":20}
 ```
 <a name="module_CSG.centroid"></a>
+
 ### CSG.centroid() ⇒ <code>CSG.Vector3D</code>
 Returns the centroid of the current objects bounding box.
 
@@ -274,6 +287,7 @@ Returns the centroid of the current objects bounding box.
 **Extends:** <code>CSG</code>  
 **Returns**: <code>CSG.Vector3D</code> - A `CSG.Vector3D` with the center of the object bounds.  
 <a name="module_CSG.fillet"></a>
+
 ### CSG.fillet(radius, orientation, options) ⇒ <code>CSG</code>
 Add a fillet or roundover to an object.
 ![fillet example](jsdoc2md/fillet.png)
@@ -307,6 +321,7 @@ return cube
 }
 ```
 <a name="module_CSG.chamfer"></a>
+
 ### CSG.chamfer(radius, orientation) ⇒ <code>CSG</code>
 Add a chamfer to an object.  This modifies the object by removing part of the object and reducing its size over the radius of the chamfer.
 ![chamfer example](jsdoc2md/chamfer.png)
@@ -338,6 +353,7 @@ return cube.chamfer(2, 'z+').color('orange');
 }
 ```
 <a name="module_CSG.bisect"></a>
+
 ### CSG.bisect(axis, offset) ⇒ <code>object</code>
 Cuts an object into two parts.  You can modify the offset, otherwise two equal parts are created.  The `group` part returned has a `positive` and `negative` half, cut along the desired axis.
 ![bisect example](jsdoc2md/bisect.png)
@@ -357,7 +373,11 @@ jscad-utils
 
 
 * [util](#module_util) : <code>Object</code>
+    * [.identity(solid)](#module_util.identity) ⇒ <code>object</code>
+    * [.result(object, f)](#module_util.result) ⇒ <code>object</code>
+    * [.defaults(target, defaults)](#module_util.defaults) ⇒ <code>object</code>
     * [.print(msg, o)](#module_util.print)
+    * [.map(o, f)](#module_util.map) ⇒ <code>array</code>
     * [.size(o)](#module_util.size) ⇒ <code>CSG.Vector3D</code>
     * [.scale(size, value)](#module_util.scale) ⇒ <code>number</code>
     * [.enlarge(object, x, y, z)](#module_util.enlarge) ⇒ <code>CSG</code>
@@ -367,7 +387,51 @@ jscad-utils
     * [.bisect(object, axis, offset)](#module_util.bisect) ⇒ <code>object</code>
     * [.init(CSG)](#module_util.init) ⇐ <code>CSG</code>
 
+<a name="module_util.identity"></a>
+
+### util.identity(solid) ⇒ <code>object</code>
+A function that reutrns the first argument.  Useful when
+passing in a callback to modify something, and you want a
+default functiont hat does nothing.
+
+**Kind**: static method of <code>[util](#module_util)</code>  
+**Returns**: <code>object</code> - the first parameter passed into the function.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| solid | <code>object</code> | an object that will be returned |
+
+<a name="module_util.result"></a>
+
+### util.result(object, f) ⇒ <code>object</code>
+If `f` is a funciton, it is executed with `object` as the parameter.  This is used in
+`CSG.unionIf` and `CSG.subtractIf`, allowing you to pass a function instead of an object.  Since the
+function isn't exeuted until called, the object to `union` or `subtract` can be assembled only if
+the conditional is true.
+
+**Kind**: static method of <code>[util](#module_util)</code>  
+**Returns**: <code>object</code> - the result of the function or the object.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| object | <code>object</code> | the context to run the function with. |
+| f | <code>function</code> &#124; <code>object</code> | if a funciton it is executed, othewise the object is returned. |
+
+<a name="module_util.defaults"></a>
+
+### util.defaults(target, defaults) ⇒ <code>object</code>
+Returns target object with default values assigned. If values already exist, they are not set.
+
+**Kind**: static method of <code>[util](#module_util)</code>  
+**Returns**: <code>object</code> - Target object with default values assigned.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| target | <code>object</code> | The target object to return. |
+| defaults | <code>object</code> | Defalut values to add to the object if they don't already exist. |
+
 <a name="module_util.print"></a>
+
 ### util.print(msg, o)
 Print a message and CSG object bounds and size to the conosle.
 
@@ -378,7 +442,21 @@ Print a message and CSG object bounds and size to the conosle.
 | msg | <code>String</code> | Message to print |
 | o | <code>CSG</code> | A CSG object to print the bounds and size of. |
 
+<a name="module_util.map"></a>
+
+### util.map(o, f) ⇒ <code>array</code>
+Object map function, returns an array of the object mapped into an array.
+
+**Kind**: static method of <code>[util](#module_util)</code>  
+**Returns**: <code>array</code> - an array of the mapped object.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| o | <code>object</code> | Object to map |
+| f | <code>function</code> | function to apply on each key |
+
 <a name="module_util.size"></a>
+
 ### util.size(o) ⇒ <code>CSG.Vector3D</code>
 Returns a `Vector3D` with the size of the object.
 
@@ -390,6 +468,7 @@ Returns a `Vector3D` with the size of the object.
 | o | <code>CSG</code> | A `CSG` like object or an array of `CSG.Vector3D` objects (the result of getBounds()). |
 
 <a name="module_util.scale"></a>
+
 ### util.scale(size, value) ⇒ <code>number</code>
 Returns a scale factor (0.0-1.0) for an object
 that will resize it by a value in size units instead
@@ -404,6 +483,7 @@ of percentages.
 | value | <code>number</code> | Amount to add (negative values subtract) from the size of the object. |
 
 <a name="module_util.enlarge"></a>
+
 ### util.enlarge(object, x, y, z) ⇒ <code>CSG</code>
 Enlarge an object by scale units, while keeping the same
 centroid.  For example util.enlarge(o, 1, 1, 1) enlarges
@@ -420,6 +500,7 @@ object o by 1mm in each access, while the centroid stays the same.
 | z | <code>number</code> | [description] |
 
 <a name="module_util.fit"></a>
+
 ### util.fit(object, x, y, z, keep_aspect_ratio) ⇒ <code>CSG</code>
 Fit an object inside a bounding box.  Often used
 with text labels.
@@ -436,6 +517,7 @@ with text labels.
 | keep_aspect_ratio | <code>boolean</code> | [description] |
 
 <a name="module_util.flush"></a>
+
 ### util.flush(moveobj, withobj, axis, mside, wside) ⇒ <code>CSG</code>
 Moves an object flush with another object
 
@@ -451,6 +533,7 @@ Moves an object flush with another object
 | wside | <code>Number</code> | 0 or 1 |
 
 <a name="module_util.group"></a>
+
 ### util.group(names, objects) ⇒ <code>object</code>
 Creates a `group` object given a comma separated
 list of names, and an array or object.  If an object
@@ -471,6 +554,7 @@ contained in the group object.
 | objects | <code>array</code> &#124; <code>object</code> | Array or object of parts.  If Array, the names list is used as names for each part. |
 
 <a name="module_util.bisect"></a>
+
 ### util.bisect(object, axis, offset) ⇒ <code>object</code>
 Cut an object into two pieces, along a given axis.
 ![bisect example](jsdoc2md/bisect.png)
@@ -485,6 +569,7 @@ Cut an object into two pieces, along a given axis.
 | offset | <code>number</code> | offset to cut at |
 
 <a name="module_util.init"></a>
+
 ### util.init(CSG) ⇐ <code>CSG</code>
 Initialize `jscad-utils` and add utilities to the `CSG` object.
 
@@ -512,6 +597,7 @@ function mainx(params) {
 }
 ```
 <a name="module_jscad-utils-color.init"></a>
+
 ### jscad-utils-color.init(CSG) ⇐ <code>CSG</code>
 Initialize the Color utility.  This adds a `.color()` prototype to the `CSG` object.
 
@@ -521,6 +607,26 @@ Initialize the Color utility.  This adds a `.color()` prototype to the `CSG` obj
 | Param | Type | Description |
 | --- | --- | --- |
 | CSG | <code>CSG</code> | The global `CSG` object |
+
+
+### Parts
+A collection of parts for use in jscad.  Requires jscad-utils.
+![parts example](jsdoc2md/hexagon.png)
+
+**Example**  
+```js
+include('jscad-utils-color.jscad');
+
+function mainx(params) {
+  util.init(CSG);
+
+  // draws a blue hexagon
+  return Parts.Hexagon(10, 5).color('blue');
+}
+```
+
+### Boxes
+jscad box and join utilities.  This should be considered experimental (indicated by the amount of commented out code).
 
 
 &copy; 2016 John Cole <johnwebbcole@gmail.com>. Documented by [jsdoc-to-markdown](https://github.com/75lb/jsdoc-to-markdown).

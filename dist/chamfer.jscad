@@ -1,3 +1,172 @@
+function main() {
+    util.init(CSG);
+
+    var cube = CSG.cube({
+        radius: 10
+    });
+
+    return cube.chamfer(2, 'z+').color('orange');
+}
+
+// include:js
+// ../dist/utils.jscad
+/**
+ * jscad box and join utilities.  This should be considered experimental (indicated by the amount of commented out code).
+ * @type {Object}
+ * @module jscad-utils-boxes
+ */
+Boxes = {
+
+    /**
+     * Create a [rabbet joint](https://en.wikipedia.org/wiki/Rabbet) in a CSG solid.
+     * This was designed for cubes, but should work on other types of objects.
+     *
+     * Splits a CGS object into a top and bottom objects.  The two objects will
+     * fit together with a rabbet join.
+     * @param {CGS} box          [description]
+     * @param {Number} thickness    [description]
+     * @param {Number} cutHeight    [description]
+     * @param {Number} rabbetHeight [description]
+     * @param {Number} cheekGap     [description]
+     * @return {Object} An object with `top` and `bottom` CGS objects.
+     */
+    RabbetJoin: function RabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
+        return rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap);
+    },
+
+    TopMiddleBottom: function topMiddleBottom(box, thickness) {
+
+        var r = util.array.add(getRadius(box), 1);
+
+        var negative = CSG.cube({
+            center: r,
+            radius: r
+        }).align(box, 'xyz').color('green');
+
+        // var top = box.subtract(negative.translate([0, 0, -(thickness + 1)])).color('red');
+        var bottom = box.bisect('z', thickness);
+        var top = bottom.parts.positive.bisect('z', -thickness);
+        // var bottom = box.subtract(negative.translate([0, 0, thickness])).color('blue');
+        // var middle = box.subtract([top, bottom]);
+
+        // return util.group('top,middle,bottom,negative', [top, middle, bottom, negative.translate([0, 0, -(thickness + 1)])]);
+        return util.group('top,middle,bottom', [top.parts.positive, top.parts.negative.color('green'), bottom.parts.negative]);
+    },
+
+    RabetTopBottom: function rabbetTMB(box, thickness, gap, options) {
+        // console.log('rabbetTMB', gap, options)
+        options = util.defaults(options, {
+            removableTop: true,
+            removableBottom: true
+        });
+
+        gap = gap || 0.25;
+        var r = util.array.add(getRadius(box), -thickness / 2);
+        r[2] = thickness / 2;
+        var cutter = CSG.cube({
+            center: r,
+            radius: r
+        }).align(box, 'xy').color('green');
+
+        var topCutter = cutter.snap(box, 'z', 'inside+');
+
+        var placeholder = Boxes.TopMiddleBottom(box, thickness);
+
+        var group = util.group('', {
+            topCutter: topCutter,
+            bottomCutter: cutter,
+            // top: box.intersect(topCutter.enlarge([-gap, -gap, 0])),
+            // middle: box.subtract(cutter.enlarge([gap, gap, 0])).subtract(topCutter.enlarge([gap, gap, 0])),
+            // bottom: placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0]))
+        });
+
+        if (options.removableTop && options.removableBottom) {
+            group.add(box.intersect(topCutter.enlarge([-gap, -gap, 0])), 'top');
+            group.add(box.subtract(cutter.enlarge([gap, gap, 0])).subtract(topCutter.enlarge([gap, gap, 0])), 'middle');
+            group.add(placeholder.parts.bottom.intersect(cutter.enlarge([-gap, -gap, 0])), 'bottom');
+        }
+
+        if (options.removableTop && !options.removableBottom) {
+            group.add(box.intersect(topCutter.enlarge([-gap, -gap, 0])), 'top');
+            group.add(box.subtract(topCutter.enlarge([gap, gap, 0])), 'bottom');
+            // group.add(placeholder.parts.bottom.intersect(cutter.enlarge([-gap, -gap, 0])), 'bottom');
+        }
+
+        if (!options.removableTop && options.removableBottom) {
+            // group.add(box.intersect(topCutter.enlarge([-gap, -gap, 0])), 'top');
+            group.add(box.subtract(cutter.enlarge([gap, gap, 0])), 'top');
+            group.add(placeholder.parts.bottom.intersect(cutter.enlarge([-gap, -gap, 0])), 'bottom');
+        }
+
+        return group;
+    },
+
+    CutOut: function cutOut(o, h, box, plug, gap) {
+        gap = gap || 0.25;
+        // console.log('cutOut', o.size(), h, b.size());
+        // var r = getRadius(o);
+        var s = o.size();
+
+        var cutout = o.intersect(box);
+        var cs = o.size();
+
+        var clear = Parts.Cube([s.x, s.y, h]).align(o, 'xy').color('yellow');
+        var top = clear.snap(o, 'z', 'center+').union(o);
+        var back = Parts.Cube([cs.x + 6, 2, cs.z + 2.5])
+            .align(cutout, 'x')
+            .snap(cutout, 'z', 'center+')
+            .snap(cutout, 'y', 'outside-');
+
+        var clip = Parts.Cube([cs.x + 2 - gap, 1 - gap, cs.z + 2.5])
+            .align(cutout, 'x')
+            .snap(cutout, 'z', 'center+')
+            .snap(cutout, 'y', 'outside-');
+
+        return util.group('insert', {
+            top: top,
+            bottom: clear.snap(o, 'z', 'center-').union(o),
+            cutout: union([o, top]),
+            back: back.subtract(plug).subtract(clip.enlarge(gap, gap, gap)).subtract(clear.translate([0, 5, 0])),
+            clip: clip.subtract(plug).color('red'),
+            insert: union([o, top])
+                .intersect(box)
+                .subtract(o)
+                .enlarge([-gap, 0, 0])
+                .union(clip.subtract(plug).enlarge(-gap, -gap, 0))
+                .color('blue')
+        });
+    },
+
+    Rectangle: function (size, thickness, cb) {
+        thickness = thickness || 2;
+        var s = util.array.div(util.xyz2array(size), 2);
+
+        var r = util.array.add(s, thickness);
+        var box = CSG.cube({
+            center: r,
+            radius: r
+        }).subtract(CSG.cube({
+            center: r,
+            radius: s
+        }));
+
+        if (cb) box = cb(box);
+
+        // return rabbetTMB(box.color('gray'), thickness, gap, options);
+        return box;
+    },
+
+
+
+    BBox: function (o) {
+        var s = util.array.div(util.xyz2array(o.size()), 2);
+        return CSG.cube({
+            center: s,
+            radius: s
+        });
+    }
+};
+
 function getRadius(o) {
     return util.array.div(util.xyz2array(o.size()), 2);
 }
@@ -39,29 +208,12 @@ function getRadius(o) {
 //     };
 // }
 
-function topMiddleBottom(box, thickness) {
 
-    var r = util.array.add(getRadius(box), 1);
 
-    var negative = CSG.cube({
-        center: r,
-        radius: r
-    }).color('green');
 
-    var top = box.subtract(negative.translate([0, 0, -(thickness + 2)])).color('red');
-    var bottom = box.subtract(negative.translate([0, 0, thickness])).color('blue');
-    var middle = box.subtract([top, bottom]);
-
-    return {
-        top: top,
-        bottom: bottom,
-        middle: middle
-    };
-}
-
-function rabbetTMB(box, thickness, gap, options) {
+function rabbetJoin(box, thickness, gap, options) {
     // console.log('rabbetTMB', gap, options)
-    options = _.defaults(options, {
+    options = util.defaults(options, {
         removableTop: true,
         removableBottom: true
     });
@@ -76,7 +228,7 @@ function rabbetTMB(box, thickness, gap, options) {
 
     var topCutter = cutter.snap(box, 'z', 'inside+');
 
-    var placeholder = topMiddleBottom(box, thickness);
+    var placeholder = Boxes.topMiddleBottom(box, thickness);
 
     var group = util.group('', {
         topCutter: topCutter,
@@ -86,160 +238,72 @@ function rabbetTMB(box, thickness, gap, options) {
         // bottom: placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0]))
     });
 
-    if (options.removableTop && options.removableBottom) {
-        group.add(box.intersect(topCutter.enlarge([-gap, -gap, 0])), 'top');
-        group.add(box.subtract(cutter.enlarge([gap, gap, 0])).subtract(topCutter.enlarge([gap, gap, 0])), 'middle');
-        group.add(placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0])), 'bottom');
-    }
-
-    if (options.removableTop && !options.removableBottom) {
-        group.add(box.intersect(topCutter.enlarge([-gap, -gap, 0])), 'top');
-        group.add(box.subtract(topCutter.enlarge([gap, gap, 0])), 'bottom');
-        // group.add(placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0])), 'bottom');
-    }
-
-    if (!options.removableTop && options.removableBottom) {
-        // group.add(box.intersect(topCutter.enlarge([-gap, -gap, 0])), 'top');
-        group.add(box.subtract(cutter.enlarge([gap, gap, 0])), 'top');
-        group.add(placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0])), 'bottom');
-    }
+    // if (options.removableTop && options.removableBottom) {
+    //     group.add(box.intersect(topCutter.enlarge([-gap, -gap, 0])), 'top');
+    //     group.add(box.subtract(cutter.enlarge([gap, gap, 0])).subtract(topCutter.enlarge([gap, gap, 0])), 'middle');
+    //     group.add(placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0])), 'bottom');
+    // }
+    //
+    // if (options.removableTop && !options.removableBottom) {
+    //     group.add(box.intersect(topCutter.enlarge([-gap, -gap, 0])), 'top');
+    //     group.add(box.subtract(topCutter.enlarge([gap, gap, 0])), 'bottom');
+    //     // group.add(placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0])), 'bottom');
+    // }
+    //
+    // if (!options.removableTop && options.removableBottom) {
+    //     // group.add(box.intersect(topCutter.enlarge([-gap, -gap, 0])), 'top');
+    //     group.add(box.subtract(cutter.enlarge([gap, gap, 0])), 'top');
+    //     group.add(placeholder.bottom.intersect(cutter.enlarge([-gap, -gap, 0])), 'bottom');
+    // }
+    group.add(box.subtract(cutter.enlarge([gap, gap, 0])).color('blue'), 'top');
+    group.add(box.subtract(topCutter.enlarge([gap, gap, 0])).color('red'), 'bottom');
 
     return group;
 }
 
-function rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
-    var r = util.array.add(getRadius(box), 1);
-
-    rabbetHeight = rabbetHeight || 5;
-    var rh = rabbetHeight / 2;
-    // console.log('rabbetJoin', cutHeight, rabbetHeight, getRadius(box), r)
-    var cutter = CSG.cube({
-            center: [r[0], r[1], rh],
-            radius: [r[0], r[1], rh]
-        })
-        .midlineTo('z', cutHeight);
-
-    var c = box.intersect(cutter).color('green');
-
-    cheekGap = cheekGap || 0.25;
-    var fRabbet = -thickness - cheekGap;
-    var female = c.subtract(c.enlarge(fRabbet, fRabbet, 0)).color('purple');
-    var mRabbet = -thickness + cheekGap;
-    var male = c.subtract(c.enlarge(mRabbet, mRabbet, 0)).color('orange');
-
-    var airGap = airGap || 0.35;
-
-    var b = util.bisect(box, 'z', cutHeight);
-    b.parts.positive = b.parts.positive.subtract(female);
-    b.parts.positiveCutout = util.bisect(female, 'z', rh + (cheekGap / 2)).parts.positive.color('orange');
-    b.parts.positiveSupport = union([
-            b.parts.positiveCutout.enlarge([airGap * 2, airGap * 2, 0]),
-            b.parts.positiveCutout.enlarge([thickness / 2, thickness / 2, 0]),
-            b.parts.positiveCutout.enlarge([thickness, thickness, 0])
-        ])
-        .enlarge([0, 0, -airGap]).translate([0, 0, -airGap / 2]).color('gray');
-    b.parts.negative = b.parts.negative.subtract(c.subtract(male));
-    b.parts.negativeCutout = util.bisect(c.subtract(male), 'z', rh + (cheekGap / 2)).parts.negative.color('orange');
-    b.parts.negativeSupport = union([
-            b.parts.negativeCutout.enlarge([-airGap * 2, -airGap * 2, 0]),
-            b.parts.negativeCutout.enlarge([-thickness / 2, -thickness / 2, 0]),
-            b.parts.negativeCutout.enlarge([-thickness, -thickness, 0])
-        ])
-        .enlarge([0, 0, -airGap]).translate([0, 0, airGap / 2]).color('gray');
-    // b.parts.negativeCutout = c.subtract(male).color('orange');
-    // console.log('b', b);
-    return b;
-}
-
-function cutOut(o, h, box, plug, gap) {
-    gap = gap || 0.25;
-    // console.log('cutOut', o.size(), h, b.size());
-    // var r = getRadius(o);
-    var s = o.size();
-
-    var cutout = o.intersect(box);
-    var cs = o.size();
-
-    var clear = Parts.Cube([s.x, s.y, h]).align(o, 'xy').color('yellow');
-    var top = clear.snap(o, 'z', 'center+').union(o);
-    var back = Parts.Cube([cs.x + 6, 2, cs.z + 2.5])
-        .align(cutout, 'x')
-        .snap(cutout, 'z', 'center+')
-        .snap(cutout, 'y', 'outside-');
-
-    var clip = Parts.Cube([cs.x + 2 - gap, 1 - gap, cs.z + 2.5])
-        .align(cutout, 'x')
-        .snap(cutout, 'z', 'center+')
-        .snap(cutout, 'y', 'outside-');
-
-    return util.group('insert', {
-        top: top,
-        bottom: clear.snap(o, 'z', 'center-').union(o),
-        cutout: union([o, top]),
-        back: back.subtract(plug).subtract(clip.enlarge(gap, gap, gap)).subtract(clear.translate([0, 5, 0])),
-        clip: clip.subtract(plug).color('red'),
-        insert: union([o, top])
-            .intersect(box)
-            .subtract(o)
-            .enlarge([-gap, 0, 0])
-            .union(clip.subtract(plug).enlarge(-gap, -gap, 0))
-            .color('blue')
-    });
-}
-
-/**
- * Box and join utilities for jscad.
- * @type {Object}
- */
-Boxes = {
-
-    /**
-     * Create a [rabbet joint](https://en.wikipedia.org/wiki/Rabbet) in a CSG solid.
-     * This was designed for cubes, but should work on other types of objects.
-     *
-     * Splits a CGS object into a top and bottom objects.  The two objects will
-     * fit together with a rabbet join.
-     * @param {CGS} box          [description]
-     * @param {Number} thickness    [description]
-     * @param {Number} cutHeight    [description]
-     * @param {Number} rabbetHeight [description]
-     * @param {Number} cheekGap     [description]
-     * @return {Object} An object with `top` and `bottom` CGS objects.
-     */
-    RabbetJoin: function RabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
-        return rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap);
-    },
-
-    CutOut: function CutOut(o, height, box, plug) {
-        return cutOut(o, height, box, plug);
-    },
-
-    Rectangle: function (size, thickness, gap, options, cb) {
-        thickness = thickness || 2;
-        var s = util.array.div(util.xyz2array(size), 2);
-
-        var r = util.array.add(s, thickness);
-        var box = CSG.cube({
-            center: r,
-            radius: r
-        }).subtract(CSG.cube({
-            center: r,
-            radius: s
-        }));
-
-        if (cb) box = cb(box);
-
-        return rabbetTMB(box.color('gray'), thickness, gap, options);
-    },
-
-    BBox: function (o) {
-        var s = util.array.div(util.xyz2array(o.size()), 2);
-        return CSG.cube({
-            center: s,
-            radius: s
-        });
-    }
-};
+// function rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
+//     var r = util.array.add(getRadius(box), 1);
+//
+//     rabbetHeight = rabbetHeight || 5;
+//     var rh = rabbetHeight / 2;
+//     // console.log('rabbetJoin', cutHeight, rabbetHeight, getRadius(box), r)
+//     var cutter = CSG.cube({
+//             center: [r[0], r[1], rh],
+//             radius: [r[0], r[1], rh]
+//         })
+//         .midlineTo('z', cutHeight);
+//
+//     var c = box.intersect(cutter).color('green');
+//
+//     cheekGap = cheekGap || 0.25;
+//     var fRabbet = -thickness - cheekGap;
+//     var female = c.subtract(c.enlarge(fRabbet, fRabbet, 0)).color('purple');
+//     var mRabbet = -thickness + cheekGap;
+//     var male = c.subtract(c.enlarge(mRabbet, mRabbet, 0)).color('orange');
+//
+//     var airGap = airGap || 0.35;
+//
+//     var b = util.bisect(box, 'z', cutHeight);
+//     b.parts.positive = b.parts.positive.subtract(female);
+//     b.parts.positiveCutout = util.bisect(female, 'z', rh + (cheekGap / 2)).parts.positive.color('orange');
+//     b.parts.positiveSupport = union([
+//             b.parts.positiveCutout.enlarge([airGap * 2, airGap * 2, 0]),
+//             b.parts.positiveCutout.enlarge([thickness / 2, thickness / 2, 0]),
+//             b.parts.positiveCutout.enlarge([thickness, thickness, 0])
+//         ])
+//         .enlarge([0, 0, -airGap]).translate([0, 0, -airGap / 2]).color('gray');
+//     b.parts.negative = b.parts.negative.subtract(c.subtract(male));
+//     b.parts.negativeCutout = util.bisect(c.subtract(male), 'z', rh + (cheekGap / 2)).parts.negative.color('orange');
+//     b.parts.negativeSupport = union([
+//             b.parts.negativeCutout.enlarge([-airGap * 2, -airGap * 2, 0]),
+//             b.parts.negativeCutout.enlarge([-thickness / 2, -thickness / 2, 0]),
+//             b.parts.negativeCutout.enlarge([-thickness, -thickness, 0])
+//         ])
+//         .enlarge([0, 0, -airGap]).translate([0, 0, airGap / 2]).color('gray');
+//     // b.parts.negativeCutout = c.subtract(male).color('orange');
+//     // console.log('b', b);
+//     return b;
+// }
 
 /**
  * Color utilities for jscad.  Makes setting colors easier using css color names.  Using `.init()` adds a `.color()` function to the CSG object.
@@ -481,18 +545,33 @@ Colors = {
     }
 };
 
+/**
+ * A collection of parts for use in jscad.  Requires jscad-utils.
+ * ![parts example](jsdoc2md/hexagon.png)
+ * @example
+ *include('jscad-utils-color.jscad');
+ *
+ *function mainx(params) {
+ *   util.init(CSG);
+ *
+ *   // draws a blue hexagon
+ *   return Parts.Hexagon(10, 5).color('blue');
+ *}
+ * @type {Object}
+ * @module jscad-utils-parts
+ * @exports Parts
+ */
 Parts = {
     Cube: function (width) {
-        var r = util.divA(width, 2);
+        var r = util.divA(util.array.fromxyz(width), 2);
         return CSG.cube({
-                center: r,
-                radius: r
-            })
-            .setColor(0.25, 0.25, 0.25, 0.5);
+            center: r,
+            radius: r
+        });
     },
 
     Cylinder: function (diameter, height, options) {
-        options = _.defaults(options, {
+        options = util.defaults(options, {
             start: [0, 0, 0],
             end: [0, 0, height],
             radius: diameter / 2
@@ -500,15 +579,12 @@ Parts = {
         return CSG.cylinder(options);
     },
 
-    Cone: function (diameter1, diameter2, height, options) {
-        options = options || {};
-        var h = height / 2;
+    Cone: function (diameter1, diameter2, height) {
         return CSG.cylinder({
-            start: [0, 0, -h],
-            end: [0, 0, h],
+            start: [0, 0, 0],
+            end: [0, 0, height],
             radiusStart: diameter1 / 2,
-            radiusEnd: diameter2 / 2,
-            resolution: options.resolution
+            radiusEnd: diameter2 / 2
         });
     },
 
@@ -576,6 +652,28 @@ Parts = {
             }
         },
 
+        Screw: function (head, thread, headClearSpace, options) {
+            options = util.defaults(options, {
+                orientation: 'up',
+                clearance: [0, 0, 0]
+            });
+
+            var orientation = Parts.Hardware.Orientation[options.orientation];
+            var group = util.group('head,thread', {
+                head: head.color('gray'),
+                thread: thread.snap(head, 'z', orientation.head).color('silver'),
+            });
+
+            if (headClearSpace) {
+                group.add(headClearSpace
+                    .enlarge(options.clearance)
+                    .snap(head, 'z', orientation.clear)
+                    .color('red'), 'headClearSpace', true);
+            }
+
+            return group;
+        },
+
         /**
          * Creates a `Group` object with a Pan Head Screw.
          * @param {number} headDiameter Diameter of the head of the screw
@@ -586,20 +684,26 @@ Parts = {
          * @param {object} options      Screw options include orientation and clerance scale.
          */
         PanHeadScrew: function (headDiameter, headLength, diameter, length, clearLength, options) {
-            options = _.defaults(options, {
-                orientation: 'up',
-                clearance: [0, 0, 0]
-            });
-            var orientation = Parts.Hardware.Orientation[options.orientation];
+            var head = Parts.Cylinder(headDiameter, headLength);
+            var thread = Parts.Cylinder(diameter, length);
 
-            var head = Parts.Cylinder(headDiameter, headLength).color('gray');
-            var thread = Parts.Cylinder(diameter, length).snap(head, 'z', orientation.head).color('silver');
-            var group = util.group('head,thread', [head, thread]);
             if (clearLength) {
-                var headClearSpace = Parts.Cylinder(headDiameter, clearLength).enlarge(options.clearance).snap(head, 'z', orientation.clear).color('red');
-                group.add(headClearSpace, 'headClearSpace', true);
+                var headClearSpace = Parts.Cylinder(headDiameter, clearLength);
             }
-            return group;
+
+            return Parts.Hardware.Screw(head, thread, headClearSpace, options);
+        },
+
+        FlatHeadScrew: function (headDiameter, headLength, diameter, length, clearLength, options) {
+            var head = Parts.Cone(headDiameter, diameter, headLength);
+            // var head = Parts.Cylinder(headDiameter, headLength);
+            var thread = Parts.Cylinder(diameter, length);
+
+            if (clearLength) {
+                var headClearSpace = Parts.Cylinder(headDiameter, clearLength);
+            }
+
+            return Parts.Hardware.Screw(head, thread, headClearSpace, options);
         }
     }
 };
@@ -616,8 +720,42 @@ Parts = {
  */
 util = {
 
+    /**
+     * A function that reutrns the first argument.  Useful when
+     * passing in a callback to modify something, and you want a
+     * default functiont hat does nothing.
+     * @param  {object} solid an object that will be returned
+     * @return {object}       the first parameter passed into the function.
+     */
     identity: function (solid) {
         return solid;
+    },
+
+    /**
+     * If `f` is a funciton, it is executed with `object` as the parameter.  This is used in
+     * `CSG.unionIf` and `CSG.subtractIf`, allowing you to pass a function instead of an object.  Since the
+     * function isn't exeuted until called, the object to `union` or `subtract` can be assembled only if
+     * the conditional is true.
+     * @param  {object} object the context to run the function with.
+     * @param  {function|object} f      if a funciton it is executed, othewise the object is returned.
+     * @return {object}        the result of the function or the object.
+     */
+    result: function (object, f) {
+        if (typeof (f) === 'function') {
+            return f.call(object);
+        } else {
+            return f;
+        }
+    },
+
+    /**
+     * Returns target object with default values assigned. If values already exist, they are not set.
+     * @param  {object} target   The target object to return.
+     * @param  {object} defaults Defalut values to add to the object if they don't already exist.
+     * @return {object}          Target object with default values assigned.
+     */
+    defaults: function (target, defaults) {
+        return Object.assign(defaults, target);
     },
 
     /**
@@ -697,29 +835,33 @@ util = {
 
     array: {
         div: function (a, f) {
-            return _.map(a, function (e) {
+            return a.map(function (e) {
                 return e / f;
             });
         },
 
         addValue: function (a, f) {
-            return _.map(a, function (e) {
+            return a.map(function (e) {
                 return e + f;
             });
         },
 
         addArray: function (a, f) {
-            return _.map(a, function (e, i) {
+            return a.map(function (e, i) {
                 return e + f[i];
             });
         },
 
         add: function (a, f) {
-            if (_.isArray(f)) {
+            if (Array.isArray(f)) {
                 return util.array.addArray(a, f);
             } else {
                 return util.array.addValue(a, f);
             }
+        },
+
+        fromxyz: function (object) {
+            return Array.isArray(object) ? object : [object.x, object.y, object.z];
         },
 
         toxyz: function (a) {
@@ -728,20 +870,84 @@ util = {
                 y: a[1],
                 z: a[2]
             };
+        },
+
+        first: function (a) {
+            return a ? a[0] : undefined;
+        },
+
+        last: function (a) {
+            return a && a.length > 0 ? a[a.length - 1] : undefined;
+        },
+
+        min: function (a) {
+            return a.reduce(function (result, value) {
+                return value < result ? value : result;
+            }, Number.MAX_VALUE);
+        },
+
+        range: function (a, b) {
+            var result = [];
+            for (var i = a; i < b; i++) {
+                result.push(i);
+            }
+
+            return result;
         }
+
+
     },
 
 
-    map: function (o, callback) {
-        _.forIn(o, function (value, key) {
-            // echo('util.map', key);
-            if (value instanceof CSG) {
-                // echo('key', value instanceof CSG);
-                return value = callback(value, key);
-            }
-            return value;
+    zipObject: function (names, values) {
+        return names.reduce(function (result, value, idx) {
+            result[value] = values[idx];
+            return result;
+        }, {});
+    },
+
+    // map: function (o, callback) {
+    //     _.forIn(o, function (value, key) {
+    //         // echo('util.map', key);
+    //         if (value instanceof CSG) {
+    //             // echo('key', value instanceof CSG);
+    //             return value = callback(value, key);
+    //         }
+    //         return value;
+    //     });
+    //     return o;
+    // },
+
+    /**
+     * Object map function, returns an array of the object mapped into an array.
+     * @param  {object} o Object to map
+     * @param  {function} f function to apply on each key
+     * @return {array}   an array of the mapped object.
+     */
+    map: function (o, f) {
+        return Object.keys(o).map(function (key) {
+            return f(o[key], key, o);
         });
-        return o;
+    },
+
+    mapValues: function (o, f) {
+        return Object.keys(o).map(function (key) {
+            return f(o[key], key);
+        });
+    },
+
+    pick: function (o, names) {
+        return names.reduce(function (result, name) {
+            result[name] = o[name];
+            return result;
+        }, {});
+    },
+
+    mapPick: function (o, names, f) {
+        return names.reduce(function (result, name) {
+            result.push(f ? f(o[name]) : o[name]);
+            return result;
+        }, []);
     },
 
     divA: function divA(a, f) {
@@ -829,7 +1035,7 @@ util = {
      */
     enlarge: function enlarge(object, x, y, z) {
         var a;
-        if (_.isArray(x)) {
+        if (Array.isArray(x)) {
             a = x;
         } else {
             a = [x, y, z];
@@ -839,7 +1045,8 @@ util = {
         var centroid = util.centroid(object, size);
 
         var idx = 0;
-        var t = _.map(size, function (i) {
+
+        var t = util.map(size, function (i) {
             return util.scale(i, a[idx++]);
         });
 
@@ -864,7 +1071,7 @@ util = {
      */
     fit: function fit(object, x, y, z, keep_aspect_ratio) {
         var a;
-        if (_.isArray(x)) {
+        if (Array.isArray(x)) {
             a = x;
             keep_aspect_ratio = y;
             x = a[0];
@@ -883,8 +1090,7 @@ util = {
         }
 
         var s = [scale(size.x, x), scale(size.y, y), scale(size.z, z)];
-        var min = _.min(s);
-
+        var min = util.array.min(s);
         return util.centerWith(object.scale(s.map(function (d, i) {
             if (a[i] === 0) return 1; // don't scale when value is zero
             return keep_aspect_ratio ? min : d;
@@ -1084,7 +1290,13 @@ util = {
 
         self.names = names.split(',');
 
-        self.parts = (objects instanceof Array) ? _.zipObject(self.names, objects) : objects;
+        if (Array.isArray(objects)) {
+            self.parts = util.zipObject(self.names, objects);
+        } else if (objects instanceof CSG) {
+            self.parts = util.zipObject(self.names, [objects]);
+        } else {
+            self.parts = objects;
+        }
 
         /**
          * Apply a function to each element in the group.
@@ -1094,15 +1306,15 @@ util = {
          */
         self.map = function (cb) {
 
-            self.parts = _.transform(self.parts, function (result, value, key) {
-                result[key] = cb(value, key);
-            });
+            self.parts = Object.keys(self.parts).reduce(function (result, key) {
+                result[key] = cb(self.parts[key], key);
+                return result;
+            }, {});
 
             if (self.holes) {
 
-                if (_.isArray(self.holes)) {
+                if (Array.isArray(self.holes)) {
                     self.holes = self.holes.map(function (hole, idx) {
-
                         return cb(hole, idx);
                     });
                 } else {
@@ -1118,15 +1330,35 @@ util = {
          * @param {string} name   Name of the part
          * @param {boolean} hidden If true, then the part not be added during a default `combine()`
          */
-        self.add = function (object, name, hidden) {
-            if (!hidden) self.names.push(name);
-            self.parts[name] = object;
+        self.add = function (object, name, hidden, subparts) {
+            if (object.parts) {
+                if (name) {
+                    // add the combined part
+                    if (!hidden) self.names.push(name);
+                    self.parts[name] = object.combine();
+
+                    if (subparts) {
+                        Object.keys(object.parts).forEach(function (key) {
+                            self.parts[name + key] = object.parts[key];
+                        });
+                    }
+
+                } else {
+                    Object.assign(self.parts, object.parts);
+                    self.names = self.names.concat(object.names);
+                }
+
+            } else {
+                if (!hidden) self.names.push(name);
+                self.parts[name] = object;
+            }
+
             return self;
         };
 
         self.clone = function (map) {
             if (!map) map = util.identity;
-            var group = util.group(self.names.join(','), _.mapValues(self.parts, function (part, name) {
+            var group = util.group(self.names.join(','), util.mapValues(self.parts, function (part, name) {
                 return map(CSG.fromPolygons(part.toPolygons()), name);
             }));
             if (self.holes) {
@@ -1154,36 +1386,29 @@ util = {
 
         self.combine = function (pieces, options, map) {
 
-            options = _.defaults(options, {
+            options = Object.assign({
                 noholes: false
-            });
+            }, options);
+
             pieces = pieces ? pieces.split(',') : self.names;
             // console.log('pieces', pieces);
-            var g;
-            if (map) {
-                g = union(
-                    _.chain(this.parts)
-                    .pick(pieces)
-                    .mapValues(function (value, key, object) {
-                        return map(value, key, object);
-                    })
-                    .values()
-                    .value());
 
-            } else {
-                g = union(
-                    _.chain(this.parts)
-                    .pick(pieces)
-                    .values()
-                    .value());
+            var g = union(util.mapPick(this.parts, pieces, function (value, key, object) {
+                return map ? map(value, key, object) : util.identity(value);
+            }));
 
-            }
+            return g.subtractIf(Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
 
-            if (self.holes && !options.noholes) {
-                return g.subtract(_.isArray(self.holes) ? union(self.holes) : self.holes);
-            } else {
-                return g;
-            }
+        };
+
+        self.snap = function snap(part, to, axis, orientation, delta) {
+            // console.log('group.snap', part);
+            var t = util.calcSnap(self.combine(part), to, axis, orientation, delta);
+            self.map(function (part) {
+                return part.translate(t);
+            });
+
+            return self;
         };
 
         return self;
@@ -1202,6 +1427,9 @@ util = {
         var bounds = object.getBounds();
         var size = util.size(object);
 
+        // if the offset is negative, then it's an offset from
+        // the positive side of the axis
+        if (offset < 0) offset = size[axis] + offset;
 
         // console.log('bisect', axis, offset, info);
         var cutDelta = util.axisApply(axis, function (i, a) {
@@ -1229,8 +1457,8 @@ util = {
         var polygons = [];
 
         // bottom and top
-        var first = _.first(slices);
-        var last = _.last(slices);
+        var first = util.array.first(slices);
+        var last = util.array.last(slices);
         var up = first.offset[axis] > last.offset[axis];
 
         // _toPlanePolygons only works in the 'z' axis.  It's hard coded
@@ -1321,7 +1549,7 @@ util = {
 
         var info = dirInfo['dir' + direction];
 
-        return _.assign({
+        return Object.assign({
             axis: axis,
             cutDelta: util.axisApply(axis, function (i, a) {
                 return bounds[info.sizeIdx][a] + (Math.abs(radius) * info.sizeDir);
@@ -1332,15 +1560,15 @@ util = {
         }, info, util.normalVector(axis));
     },
 
-    solidFromSlices: function (slices, heights) {
-        var si = {
-            axis: 'z',
-            cutDelta: {},
-            moveDelta: {},
-            orthoNormalCartesian: ['X', 'Y'],
-            normalVector: CSG.Vector3D.Create(0, 1, 0)
-        }
-    },
+    // solidFromSlices: function (slices, heights) {
+    //     var si = {
+    //         axis: 'z',
+    //         cutDelta: {},
+    //         moveDelta: {},
+    //         orthoNormalCartesian: ['X', 'Y'],
+    //         normalVector: CSG.Vector3D.Create(0, 1, 0)
+    //     };
+    // },
 
     reShape: function reShape(object, radius, orientation, options, slicer) {
         options = options || {};
@@ -1367,7 +1595,7 @@ util = {
 
         var slices = slicer(first, last, slice);
 
-        var delta = util.slices2poly(slices, _.assign(options, {
+        var delta = util.slices2poly(slices, Object.assign(options, {
             si: si
         }), si.axis).color(options.color);
 
@@ -1397,7 +1625,7 @@ util = {
 
             var res = options.resolution || CSG.defaultResolution3D;
 
-            var slices = _.range(0, res).map(function (i) {
+            var slices = util.array.range(0, res).map(function (i) {
                 var p = i > 0 ? i / (res - 1) : 0;
                 var v = v1.lerp(v2, p);
 
@@ -1563,10 +1791,13 @@ util = {
             return util.centerWith(this, axis, to);
         };
 
-        if (CSG.center) echo('CSG already has .center');
         CSG.prototype.center = function centerWith(to, axis) {
             util.depreciated('center', false, 'Use align instead.');
             return util.centerWith(this, axis, to);
+        };
+
+        CSG.prototype.calcCenter = function centerWith(axis) {
+            return util.calcCenterWith(this, axis || 'xyz', util.unitCube(), 0);
         };
 
         /**
@@ -1761,12 +1992,14 @@ util = {
         };
 
         CSG.prototype.unionIf = function unionIf(object, condition) {
-            return condition ? this.union(object) : this;
+            return condition ? this.union(util.result(this, object)) : this;
         };
 
         CSG.prototype.subtractIf = function subtractIf(object, condition) {
-            return condition ? this.subtract(object) : this;
+            return condition ? this.subtract(util.result(this, object)) : this;
         };
 
     }
 };
+
+// endinject

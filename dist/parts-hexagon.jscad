@@ -1,3 +1,12 @@
+function main() {
+    util.init(CSG);
+
+    // draws a blue hexagon
+    return Parts.Hexagon(10, 5).color('blue');
+}
+
+// include:js
+// ../dist/utils.jscad
 /**
  * jscad box and join utilities.  This should be considered experimental (indicated by the amount of commented out code).
  * @type {Object}
@@ -1989,3 +1998,5 @@ util = {
 
     }
 };
+
+// endinject

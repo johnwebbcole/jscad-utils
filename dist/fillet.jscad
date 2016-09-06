@@ -1,3 +1,21 @@
+function main() {
+    util.init(CSG);
+
+    var cube = Parts.Cube([10, 10, 10]).fillet(2, 'z+') // roundover on top (positive fillet)
+        .fillet(-2, 'z-') // fillet on the bottom (negative fillet)
+        .color('orange');
+
+    var cylinder = Parts.Cylinder(10, 10)
+        .translate([0, 20, 0])
+        .align(cube, 'x')
+        .fillet(2, 'z+')
+        .color('blue');
+
+    return union(cube, cylinder);
+}
+
+// include:js
+// ../dist/utils.jscad
 /**
  * jscad box and join utilities.  This should be considered experimental (indicated by the amount of commented out code).
  * @type {Object}
@@ -1989,3 +2007,5 @@ util = {
 
     }
 };
+
+// endinject

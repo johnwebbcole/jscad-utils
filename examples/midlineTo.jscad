@@ -1,6 +1,3 @@
-include('lodash.js');
-include('utils.jscad');
-
 function main() {
     util.init(CSG);
 
@@ -58,3 +55,6 @@ function main() {
         .subtract(round1)
         .subtract(round2);
 }
+
+// include:js
+// endinject

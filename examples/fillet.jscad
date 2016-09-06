@@ -1,6 +1,3 @@
-include('lodash.js');
-include('utils.jscad');
-
 function main() {
     util.init(CSG);
 
@@ -16,3 +13,6 @@ function main() {
 
     return union(cube, cylinder);
 }
+
+// include:js
+// endinject

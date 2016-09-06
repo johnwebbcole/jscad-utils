@@ -1,3 +1,17 @@
+function main() {
+    util.init(CSG);
+
+    var cube = CSG.cube({
+        radius: 10
+    })
+
+    var p = util.bisect(cube, 'x', 2);
+
+    return p.combine();
+}
+
+// include:js
+// ../dist/utils.jscad
 /**
  * jscad box and join utilities.  This should be considered experimental (indicated by the amount of commented out code).
  * @type {Object}
@@ -1989,3 +2003,5 @@ util = {
 
     }
 };
+
+// endinject
