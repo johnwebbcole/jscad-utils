@@ -1655,10 +1655,11 @@ util = {
          * of an object.  Snapping to the `z`
          * axis `outside-` will place the object on top of the `to` object.  `sphere.snap(cube, 'z', 'outside-')` is saying that you want the bottom of the `sphere` (`-`) to be placed on the outside of the `z` axis of the `cube`.
          *
+         * Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/snap.jscad) for an example in openjscad.
+         *
          * ![snap example](jsdoc2md/snap.gif)
          * @example
-         * include('lodash.js');
-         * include('jscad-utils.jscad');
+         * include('dist/utils.jscad');
          *
          * // rename mainx to main
          * function mainx() {
@@ -1698,10 +1699,12 @@ util = {
          * For example, the [RaspberryPi Hat Board Specification](https://github.com/raspberrypi/hats/blob/master/hat-board-mechanical.pdf) has several pieces with the midpoint measured.
          * ![pi hat drawing](jsdoc2md/rpi-hat.png)
          * To avoid converting the midpoint to the relative position, you can use `midpointTo`.
+         *
+         * Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/midlineTo.jscad) for an example in openjscad.
+         *
          * ![midlineTo example](jsdoc2md/midlineto.gif)
          * @example
-         * include('lodash.js');
-         * include('utils.jscad');
+         * include('dist/utils.jscad');
          *
          * // rename mainx to main
          * function mainx() {
@@ -1823,6 +1826,9 @@ util = {
          * Fit an object inside a bounding box. Often
          * used to fit text on the face of an object.
          *  A zero for a size value will leave that axis untouched.
+         *
+         * Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/fit.jscad) for an example in openjscad.
+         *
          * ![fit example](jsdoc2md/fit.png)
          * @param  {number | array} x size of x or array of axes
          * @param  {number | boolean} y size of y axis or a boolean too keep the aspect ratio if `x` is an array
@@ -1833,8 +1839,7 @@ util = {
          * @augments CSG
          * @return {CSG}   The new object fitted inside a bounding box
          * @example
-         * include('lodash.js');
-         * include('utils.jscad');
+         * include('dist/utils.jscad');
          *
          * // rename mainx to main
          * function mainx() {
@@ -1905,11 +1910,13 @@ util = {
 
         /**
          * Add a fillet or roundover to an object.
+         *
+         * Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/fillet.jscad) for an example in openjscad.
+         *
          * ![fillet example](jsdoc2md/fillet.png)
          *
          * @example
-         * include('lodash.js');
-         * include('utils.jscad');
+         * include('dist/utils.jscad');
          *
          * // rename mainx to main
          * function mainx() {
@@ -1937,10 +1944,12 @@ util = {
 
         /**
          * Add a chamfer to an object.  This modifies the object by removing part of the object and reducing its size over the radius of the chamfer.
+         *
+         * Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/chamfer.jscad) for an example in openjscad.
+         *
          * ![chamfer example](jsdoc2md/chamfer.png)
          * @example
-         * include('lodash.js');
-         * include('jscad-utils.jscad');
+         * include('dist/utils.jscad');
          *
          * // rename mainx to main
          * function mainx() {
@@ -1967,6 +1976,9 @@ util = {
 
         /**
          * Cuts an object into two parts.  You can modify the offset, otherwise two equal parts are created.  The `group` part returned has a `positive` and `negative` half, cut along the desired axis.
+         *
+         * Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/bisect.jscad) for an example in openjscad.
+         *
          * ![bisect example](jsdoc2md/bisect.png)
          * @param  {string} axis   Axis to cut the object
          * @param  {number} offset Offset to cut the object.  Defaults to the middle of the object
@@ -1979,10 +1991,28 @@ util = {
             return util.bisect(this, axis, offset);
         };
 
+        /**
+         * Union only if the condition is true, otherwise the original object is returned.  You can pass in a function that returns a `CSG` object that only gets evaluated if the condition is true.
+         * @param  {CSG|function} object    A CSG object to union with, or a function that reutrns a CSG object.
+         * @param  {boolean} condition boolean value to determin if the object should perform the union.
+         * @return {CSG}           The resulting object.
+         * @alias unionIf
+         * @memberof module:CSG
+         * @augments CSG
+         */
         CSG.prototype.unionIf = function unionIf(object, condition) {
             return condition ? this.union(util.result(this, object)) : this;
         };
 
+        /**
+         * Subtract only if the condition is true, otherwise the original object is returned.  You can pass in a function that returns a `CSG` object that only gets evaluated if the condition is true.
+         * @param  {CSG|function} object     A CSG object to union with, or a function that reutrns a CSG object.
+         * @param  {boolean} condition boolean value to determin if the object should perform the subtraction.
+         * @return {CSG}           The resulting object.
+         * @alias subtractIf
+         * @memberof module:CSG
+         * @augments CSG
+         */
         CSG.prototype.subtractIf = function subtractIf(object, condition) {
             return condition ? this.subtract(util.result(this, object)) : this;
         };

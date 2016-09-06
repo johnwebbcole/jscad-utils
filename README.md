@@ -7,7 +7,7 @@ This is a collection of utilities for openjscad projects.  These modify the `CSG
 For an example, see the [yeoman jscad generator](https://www.npmjs.com/package/generator-jscad) which will create a project that uses this library.
 
 ## Installation
-Install `jscad-utils` using NPM:
+You will need [Node.js](https://nodejs.org) version 6.4 installed.  Other versions will probobly work, but that's what it's tested with. Install `jscad-utils` using NPM:
 
 ```bash
 npm install --save jscad-utils
@@ -30,7 +30,10 @@ Examples are placed in the `dist` directory with the `jscad-utils.jscad` file in
 
 Here are some of the examples:
 
-* [snap](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/snap.jscad) an example showing how to use the `snap` function.
+  * [snap](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/snap.jscad) an example showing how to use the `snap` function.
+  * [bisect](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/bisect.jscad) an example cutting an object in two with the `bisect` function.
+  * [fillet](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/fillet.jscad) an example adding a roundover and fillet with the `fillet` function.
+  * [chamfer](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/chamfer.jscad) an example cutting a chamfer into an object with the `chamfer` function.
 
 ## API Reference
 
@@ -47,6 +50,8 @@ Here are some of the examples:
     * [.fillet(radius, orientation, options)](#module_CSG.fillet) ⇒ <code>CSG</code>
     * [.chamfer(radius, orientation)](#module_CSG.chamfer) ⇒ <code>CSG</code>
     * [.bisect(axis, offset)](#module_CSG.bisect) ⇒ <code>object</code>
+    * [.unionIf(object, condition)](#module_CSG.unionIf) ⇒ <code>CSG</code>
+    * [.subtractIf(object, condition)](#module_CSG.subtractIf) ⇒ <code>CSG</code>
 
 <a name="module_CSG.color"></a>
 
@@ -84,6 +89,8 @@ Snap the object to another object.  You can snap to the inside or outside
 of an object.  Snapping to the `z`
 axis `outside-` will place the object on top of the `to` object.  `sphere.snap(cube, 'z', 'outside-')` is saying that you want the bottom of the `sphere` (`-`) to be placed on the outside of the `z` axis of the `cube`.
 
+Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/snap.jscad) for an example in openjscad.
+
 ![snap example](jsdoc2md/snap.gif)
 
 **Kind**: static method of <code>[CSG](#module_CSG)</code>  
@@ -99,8 +106,7 @@ axis `outside-` will place the object on top of the `to` object.  `sphere.snap(c
 
 **Example**  
 ```js
-include('lodash.js');
-include('jscad-utils.jscad');
+include('dist/utils.jscad');
 
 // rename mainx to main
 function mainx() {
@@ -125,6 +131,9 @@ from mechanical drawings.
 For example, the [RaspberryPi Hat Board Specification](https://github.com/raspberrypi/hats/blob/master/hat-board-mechanical.pdf) has several pieces with the midpoint measured.
 ![pi hat drawing](jsdoc2md/rpi-hat.png)
 To avoid converting the midpoint to the relative position, you can use `midpointTo`.
+
+Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/midlineTo.jscad) for an example in openjscad.
+
 ![midlineTo example](jsdoc2md/midlineto.gif)
 
 **Kind**: static method of <code>[CSG](#module_CSG)</code>  
@@ -139,8 +148,7 @@ To avoid converting the midpoint to the relative position, you can use `midpoint
 
 **Example**  
 ```js
-include('lodash.js');
-include('utils.jscad');
+include('dist/utils.jscad');
 
 // rename mainx to main
 function mainx() {
@@ -221,6 +229,9 @@ Align with another object on the selected axis.
 Fit an object inside a bounding box. Often
 used to fit text on the face of an object.
  A zero for a size value will leave that axis untouched.
+
+Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/fit.jscad) for an example in openjscad.
+
 ![fit example](jsdoc2md/fit.png)
 
 **Kind**: static method of <code>[CSG](#module_CSG)</code>  
@@ -236,8 +247,7 @@ used to fit text on the face of an object.
 
 **Example**  
 ```js
-include('lodash.js');
-include('utils.jscad');
+include('dist/utils.jscad');
 
 // rename mainx to main
 function mainx() {
@@ -290,6 +300,9 @@ Returns the centroid of the current objects bounding box.
 
 ### CSG.fillet(radius, orientation, options) ⇒ <code>CSG</code>
 Add a fillet or roundover to an object.
+
+Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/fillet.jscad) for an example in openjscad.
+
 ![fillet example](jsdoc2md/fillet.png)
 
 **Kind**: static method of <code>[CSG](#module_CSG)</code>  
@@ -305,8 +318,7 @@ Add a fillet or roundover to an object.
 
 **Example**  
 ```js
-include('lodash.js');
-include('utils.jscad');
+include('dist/utils.jscad');
 
 // rename mainx to main
 function mainx() {
@@ -324,6 +336,9 @@ return cube
 
 ### CSG.chamfer(radius, orientation) ⇒ <code>CSG</code>
 Add a chamfer to an object.  This modifies the object by removing part of the object and reducing its size over the radius of the chamfer.
+
+Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/chamfer.jscad) for an example in openjscad.
+
 ![chamfer example](jsdoc2md/chamfer.png)
 
 **Kind**: static method of <code>[CSG](#module_CSG)</code>  
@@ -338,8 +353,7 @@ Add a chamfer to an object.  This modifies the object by removing part of the ob
 
 **Example**  
 ```js
-include('lodash.js');
-include('jscad-utils.jscad');
+include('dist/utils.jscad');
 
 // rename mainx to main
 function mainx() {
@@ -356,6 +370,9 @@ return cube.chamfer(2, 'z+').color('orange');
 
 ### CSG.bisect(axis, offset) ⇒ <code>object</code>
 Cuts an object into two parts.  You can modify the offset, otherwise two equal parts are created.  The `group` part returned has a `positive` and `negative` half, cut along the desired axis.
+
+Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/bisect.jscad) for an example in openjscad.
+
 ![bisect example](jsdoc2md/bisect.png)
 
 **Kind**: static method of <code>[CSG](#module_CSG)</code>  
@@ -366,6 +383,34 @@ Cuts an object into two parts.  You can modify the offset, otherwise two equal p
 | --- | --- | --- |
 | axis | <code>string</code> | Axis to cut the object |
 | offset | <code>number</code> | Offset to cut the object.  Defaults to the middle of the object |
+
+<a name="module_CSG.unionIf"></a>
+
+### CSG.unionIf(object, condition) ⇒ <code>CSG</code>
+Union only if the condition is true, otherwise the original object is returned.  You can pass in a function that returns a `CSG` object that only gets evaluated if the condition is true.
+
+**Kind**: static method of <code>[CSG](#module_CSG)</code>  
+**Extends:** <code>CSG</code>  
+**Returns**: <code>CSG</code> - The resulting object.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| object | <code>CSG</code> &#124; <code>function</code> | A CSG object to union with, or a function that reutrns a CSG object. |
+| condition | <code>boolean</code> | boolean value to determin if the object should perform the union. |
+
+<a name="module_CSG.subtractIf"></a>
+
+### CSG.subtractIf(object, condition) ⇒ <code>CSG</code>
+Subtract only if the condition is true, otherwise the original object is returned.  You can pass in a function that returns a `CSG` object that only gets evaluated if the condition is true.
+
+**Kind**: static method of <code>[CSG](#module_CSG)</code>  
+**Extends:** <code>CSG</code>  
+**Returns**: <code>CSG</code> - The resulting object.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| object | <code>CSG</code> &#124; <code>function</code> | A CSG object to union with, or a function that reutrns a CSG object. |
+| condition | <code>boolean</code> | boolean value to determin if the object should perform the subtraction. |
 
 
 ### util
