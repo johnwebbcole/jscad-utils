@@ -1,15 +1,12 @@
 function main() {
     util.init(CSG);
 
-    var cube = CSG.cube({
-        radius: 10
-    }).setColor(1, 0, 0);
 
-    var sphere = CSG.sphere({
-        radius: 5
-    }).setColor(0, 0, 1);
+    // create a label, place it on top of the cube
+    // and center it on the top face
+    var label = util.text('H');
 
-    return cube.union(sphere.snap(cube, 'z', 'outside-'));
+    return label;
 }
 
 // include:js

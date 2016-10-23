@@ -1,15 +1,17 @@
 function main() {
     util.init(CSG);
 
-    var cube = CSG.cube({
-        radius: 10
-    }).setColor(1, 0, 0);
+    var part = Parts.Hexagon(20, 10).color('orange');
+    var cbox = Boxes.Hollow(part, 3);
 
-    var sphere = CSG.sphere({
-        radius: 5
-    }).setColor(0, 0, 1);
+    var box = Boxes.RabettTopBottom(cbox, 3, 0.25);
 
-    return cube.union(sphere.snap(cube, 'z', 'outside-'));
+
+    return union([
+        box.parts.top.translate([0, 0, 20]),
+        box.parts.middle.translate([0, 0, 10]),
+        box.parts.bottom
+    ]);
 }
 
 // include:js

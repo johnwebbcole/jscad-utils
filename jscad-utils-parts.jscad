@@ -15,6 +15,13 @@
  * @exports Parts
  */
 Parts = {
+    BBox: function (object) {
+        return CSG.cube({
+            center: object.centroid(),
+            radius: object.size().dividedBy(2)
+        });
+    },
+
     Cube: function (width) {
         var r = util.divA(util.array.fromxyz(width), 2);
         return CSG.cube({
@@ -88,7 +95,7 @@ Parts = {
             roundradius: corner_radius
         }).extrude({
             offset: [0, 0, thickness || 1.62]
-        }).setColor(0.5, 0.5, 0.5, 0.25);
+        });
 
         return board;
     },
@@ -147,6 +154,15 @@ Parts = {
             return Parts.Hardware.Screw(head, thread, headClearSpace, options);
         },
 
+        /**
+         * Create a Flat Head Screw
+         * @param {number} headDiameter head diameter
+         * @param {number} headLength   head length
+         * @param {number} diameter     thread diameter
+         * @param {number} length       thread length
+         * @param {number} clearLength  clearance length
+         * @param {object} options      options
+         */
         FlatHeadScrew: function (headDiameter, headLength, diameter, length, clearLength, options) {
             var head = Parts.Cone(headDiameter, diameter, headLength);
             // var head = Parts.Cylinder(headDiameter, headLength);

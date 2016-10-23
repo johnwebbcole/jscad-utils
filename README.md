@@ -422,6 +422,7 @@ jscad-utils
     * [.result(object, f)](#module_util.result) ⇒ <code>object</code>
     * [.defaults(target, defaults)](#module_util.defaults) ⇒ <code>object</code>
     * [.print(msg, o)](#module_util.print)
+    * [.segment(object, segments, axis)](#module_util.segment) ⇒ <code>Array</code>
     * [.map(o, f)](#module_util.map) ⇒ <code>array</code>
     * [.size(o)](#module_util.size) ⇒ <code>CSG.Vector3D</code>
     * [.scale(size, value)](#module_util.scale) ⇒ <code>number</code>
@@ -430,6 +431,7 @@ jscad-utils
     * [.flush(moveobj, withobj, axis, mside, wside)](#module_util.flush) ⇒ <code>CSG</code>
     * [.group(names, objects)](#module_util.group) ⇒ <code>object</code>
     * [.bisect(object, axis, offset)](#module_util.bisect) ⇒ <code>object</code>
+    * [.poly2solid(top, bottom, height)](#module_util.poly2solid) ⇒ <code>CSG</code>
     * [.init(CSG)](#module_util.init) ⇐ <code>CSG</code>
 
 <a name="module_util.identity"></a>
@@ -486,6 +488,20 @@ Print a message and CSG object bounds and size to the conosle.
 | --- | --- | --- |
 | msg | <code>String</code> | Message to print |
 | o | <code>CSG</code> | A CSG object to print the bounds and size of. |
+
+<a name="module_util.segment"></a>
+
+### util.segment(object, segments, axis) ⇒ <code>Array</code>
+Returns an array of positions along an object on a given axis.
+
+**Kind**: static method of <code>[util](#module_util)</code>  
+**Returns**: <code>Array</code> - An array of segment positions.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| object | <code>CSG</code> | The object to calculate the segments on. |
+| segments | <code>number</code> | The number of segments to create. |
+| axis | <code>string</code> | Axis to create the sgements on. |
 
 <a name="module_util.map"></a>
 
@@ -613,6 +629,22 @@ Cut an object into two pieces, along a given axis.
 | axis | <code>string</code> | axis to cut along |
 | offset | <code>number</code> | offset to cut at |
 
+<a name="module_util.poly2solid"></a>
+
+### util.poly2solid(top, bottom, height) ⇒ <code>CSG</code>
+Takes two CSG polygons and createds a solid of `height`.
+Similar to `CSG.extrude`, excdept you can resize either
+polygon.
+
+**Kind**: static method of <code>[util](#module_util)</code>  
+**Returns**: <code>CSG</code> - generated solid  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| top | <code>CAG</code> | Top polygon |
+| bottom | <code>CAG</code> | Bottom polygon |
+| height | <code>number</code> | heigth of solid |
+
 <a name="module_util.init"></a>
 
 ### util.init(CSG) ⇐ <code>CSG</code>
@@ -671,7 +703,105 @@ function mainx(params) {
 ```
 
 ### Boxes
-jscad box and join utilities.  This should be considered experimental (indicated by the amount of commented out code).
+jscad box and join utilities.  This should be considered experimental,
+but there are some usefull utilities here.
+
+![parts example](jsdoc2md/rabett.png)
+
+**Example**  
+```js
+include('dist/jscad-utils.jscad');
+
+function mainx(params) {
+    util.init(CSG);
+
+    var cyl = Parts.Cylinder(20, 20)
+    var cbox = Boxes.Hollow(cyl, 3, function (box) {
+      return box
+          .fillet(2, 'z+')
+          .fillet(2, 'z-');
+    });
+    var box = Boxes.Rabett(cbox, 3, 0.5, 11, 2)
+    return box.parts.top.translate([0, 0, 10]).union(box.parts.bottom);
+}
+```
+
+* [Boxes](#module_Boxes) : <code>Object</code>
+    * [.Rabett(box, thickness, gap, height, face)](#module_Boxes.Rabett) ⇒ <code>group</code>
+    * [.RabettTopBottom(box, thickness, gap, options)](#module_Boxes.RabettTopBottom) ⇒ <code>group</code>
+    * [.Hollow(object, thickness, cb)](#module_Boxes.Hollow) ⇒ <code>CSG</code>
+
+<a name="module_Boxes.Rabett"></a>
+
+### Boxes.Rabett(box, thickness, gap, height, face) ⇒ <code>group</code>
+This will bisect an object using a rabett join.  Returns a
+`group` object with `positive` and `negative` parts.
+
+**Kind**: static method of <code>[Boxes](#module_Boxes)</code>  
+**Returns**: <code>group</code> - A group object with `positive`, `negative` parts.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| box | <code>CSG</code> | The object to bisect. |
+| thickness | <code>number</code> | Thickness of the objects walls. |
+| gap | <code>number</code> | Gap between the join cheeks. |
+| height | <code>number</code> | Offset from the bottom to bisect the object at.  Negative numbers offset from the top. |
+| face | <code>number</code> | Size of the join face. |
+
+<a name="module_Boxes.RabettTopBottom"></a>
+
+### Boxes.RabettTopBottom(box, thickness, gap, options) ⇒ <code>group</code>
+Used on a hollow object, this will rabett out the top and/or
+bottom of the object.
+
+![A hollow hexagon with removable top and bottom](jsdoc2md/rabett-tb.png)
+
+**Kind**: static method of <code>[Boxes](#module_Boxes)</code>  
+**Returns**: <code>group</code> - An A hollow version of the original object..  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| box | <code>CSG</code> | A hollow object. |
+| thickness | <code>number</code> | The thickness of the object walls |
+| gap | <code>number</code> | The gap between the top/bottom and the walls. |
+| options | <code>object</code> | Options to have a `removableTop` or `removableBottom`.  Both default to `true`. |
+
+**Example**  
+```js
+include('dist/jscad-utils.jscad');
+
+function mainx(params) {
+    util.init(CSG);
+    var part = Parts.Hexagon(20, 10).color('orange');
+    var cbox = Boxes.Hollow(part, 3);
+
+    var box = Boxes.RabettTopBottom(cbox, 3, 0.25);
+
+
+    return union([
+        box.parts.top.translate([0, 0, 20]),
+        box.parts.middle.translate([0, 0, 10]),
+        box.parts.bottom
+    ]);
+}
+```
+<a name="module_Boxes.Hollow"></a>
+
+### Boxes.Hollow(object, thickness, cb) ⇒ <code>CSG</code>
+Takes a solid object and returns a hollow version with a selected
+wall thickness.  This is done by reducing the object by half the
+thickness and subtracting the reduced version from the original object.
+
+![A hollowed out cylinder](jsdoc2md/rabett.png)
+
+**Kind**: static method of <code>[Boxes](#module_Boxes)</code>  
+**Returns**: <code>CSG</code> - An A hollow version of the original object..  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| object | <code>CSG</code> | A CSG object |
+| thickness | <code>number</code> | The thickness of the walls. |
+| cb | <code>function</code> | A callback that allows processing the object before returning. |
 
 
 &copy; 2016 John Cole <johnwebbcole@gmail.com>. Documented by [jsdoc-to-markdown](https://github.com/75lb/jsdoc-to-markdown).

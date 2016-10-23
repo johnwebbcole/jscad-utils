@@ -46,18 +46,19 @@ gulp.task('build', function () {
 gulp.task('examples', ['build'], function () {
     return gulp.src('examples/*.jscad')
         .pipe(plugins.plumber())
-        .pipe(plugins.inject(gulp.src(['dist/utils.jscad']), {
-            relative: true,
-            starttag: '// include:js',
-            endtag: '// endinject',
-            transform: function (filepath, file) {
-                return '// ' + filepath + '\n' + file.contents.toString('utf8');
-            }
-        }))
+        .pipe(plugins.inject(
+            gulp.src('dist/utils.jscad'), {
+                relative: true,
+                starttag: '// include:js',
+                endtag: '// endinject',
+                transform: function (filepath, file) {
+                    return '// ' + filepath + '\n' + file.contents.toString('utf8');
+                }
+            }))
         .pipe(gulp.dest('dist'));
 });
 
-gulp.task('all', ['docs', 'lint', 'build', 'examples'])
+gulp.task('all', ['docs', 'lint', 'build', 'examples']);
 
 gulp.task('default', ['all'], function () {
     gulp.watch(['*.jscad', 'examples/*.jscad', 'jsdoc2md/README.hbs', 'node_modules/'], {
