@@ -704,13 +704,15 @@ util = {
          * @param {CSG} object Object to add the parts dictionary.
          * @param {string} name   Name of the part
          * @param {boolean} hidden If true, then the part not be added during a default `combine()`
+         * @param {string} subparts   Prefix for subparts if adding a group
+         * @param {string} parts   When adding a group, you can pick the parts you want to include as the named part.
          */
-        self.add = function (object, name, hidden, subparts) {
+        self.add = function (object, name, hidden, subparts, parts) {
             if (object.parts) {
                 if (name) {
                     // add the combined part
                     if (!hidden) self.names.push(name);
-                    self.parts[name] = object.combine();
+                    self.parts[name] = object.combine(parts);
 
                     if (subparts) {
                         Object.keys(object.parts).forEach(function (key) {
@@ -1593,7 +1595,7 @@ util = {
          * multiple translations, addign the translations together.
          * The original translate is available on `CSG._translate` and
          * a short circut is applied when only one parameter is given.
-         * @return {[type]} [description]
+         * @return {CSG} The resulting object.
          */
         CSG.prototype.translate = function translate() {
             if (arguments.length === 1) {

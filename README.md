@@ -49,7 +49,7 @@ Here are some of the examples:
     * [.centroid()](#module_CSG.centroid) ⇒ <code>CSG.Vector3D</code>
     * [.fillet(radius, orientation, options)](#module_CSG.fillet) ⇒ <code>CSG</code>
     * [.chamfer(radius, orientation)](#module_CSG.chamfer) ⇒ <code>CSG</code>
-    * [.bisect(axis, offset)](#module_CSG.bisect) ⇒ <code>object</code>
+    * [.bisect(axis, offset, angle, rotateaxis, rotateoffset)](#module_CSG.bisect) ⇒ <code>object</code>
     * [.unionIf(object, condition)](#module_CSG.unionIf) ⇒ <code>CSG</code>
     * [.subtractIf(object, condition)](#module_CSG.subtractIf) ⇒ <code>CSG</code>
 
@@ -368,7 +368,7 @@ return cube.chamfer(2, 'z+').color('orange');
 ```
 <a name="module_CSG.bisect"></a>
 
-### CSG.bisect(axis, offset) ⇒ <code>object</code>
+### CSG.bisect(axis, offset, angle, rotateaxis, rotateoffset) ⇒ <code>object</code>
 Cuts an object into two parts.  You can modify the offset, otherwise two equal parts are created.  The `group` part returned has a `positive` and `negative` half, cut along the desired axis.
 
 Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcole/jscad-utils/master/dist/bisect.jscad) for an example in openjscad.
@@ -383,6 +383,9 @@ Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcol
 | --- | --- | --- |
 | axis | <code>string</code> | Axis to cut the object |
 | offset | <code>number</code> | Offset to cut the object.  Defaults to the middle of the object |
+| angle | <code>number</code> | angle to rotate the cut plane to |
+| rotateaxis | <code>number</code> | axis to rotate the cut plane around. |
+| rotateoffset | <code>number</code> | offset in the rotateaxis for the rotation point of the cut plane. |
 
 <a name="module_CSG.unionIf"></a>
 
@@ -430,7 +433,7 @@ jscad-utils
     * [.fit(object, x, y, z, keep_aspect_ratio)](#module_util.fit) ⇒ <code>CSG</code>
     * [.flush(moveobj, withobj, axis, mside, wside)](#module_util.flush) ⇒ <code>CSG</code>
     * [.group(names, objects)](#module_util.group) ⇒ <code>object</code>
-    * [.bisect(object, axis, offset)](#module_util.bisect) ⇒ <code>object</code>
+    * [.bisect(object, axis, offset, angle)](#module_util.bisect) ⇒ <code>object</code>
     * [.poly2solid(top, bottom, height)](#module_util.poly2solid) ⇒ <code>CSG</code>
     * [.init(CSG)](#module_util.init) ⇐ <code>CSG</code>
 
@@ -616,8 +619,15 @@ contained in the group object.
 
 <a name="module_util.bisect"></a>
 
-### util.bisect(object, axis, offset) ⇒ <code>object</code>
-Cut an object into two pieces, along a given axis.
+### util.bisect(object, axis, offset, angle) ⇒ <code>object</code>
+Cut an object into two pieces, along a given axis. The offset
+allows you to move the cut plane along the cut axis.  For example,
+a 10mm cube with an offset of 2, will create a 2mm side and an 8mm side.
+
+Negative offsets operate off of the larger side of the axes.  In the previous example, an offset of -2 creates a 8mm side and a 2mm side.
+
+You can angle the cut plane and poistion the rotation point.
+
 ![bisect example](jsdoc2md/bisect.png)
 
 **Kind**: static method of <code>[util](#module_util)</code>  
@@ -628,6 +638,7 @@ Cut an object into two pieces, along a given axis.
 | object | <code>CSG</code> | object to bisect |
 | axis | <code>string</code> | axis to cut along |
 | offset | <code>number</code> | offset to cut at |
+| angle | <code>number</code> | angle to rotate the cut plane to |
 
 <a name="module_util.poly2solid"></a>
 
@@ -729,7 +740,7 @@ function mainx(params) {
 * [Boxes](#module_Boxes) : <code>Object</code>
     * [.Rabett(box, thickness, gap, height, face)](#module_Boxes.Rabett) ⇒ <code>group</code>
     * [.RabettTopBottom(box, thickness, gap, options)](#module_Boxes.RabettTopBottom) ⇒ <code>group</code>
-    * [.Hollow(object, thickness, cb)](#module_Boxes.Hollow) ⇒ <code>CSG</code>
+    * [.Hollow(object, thickness, interiorcb)](#module_Boxes.Hollow) ⇒ <code>CSG</code>
 
 <a name="module_Boxes.Rabett"></a>
 
@@ -787,7 +798,7 @@ function mainx(params) {
 ```
 <a name="module_Boxes.Hollow"></a>
 
-### Boxes.Hollow(object, thickness, cb) ⇒ <code>CSG</code>
+### Boxes.Hollow(object, thickness, interiorcb) ⇒ <code>CSG</code>
 Takes a solid object and returns a hollow version with a selected
 wall thickness.  This is done by reducing the object by half the
 thickness and subtracting the reduced version from the original object.
@@ -801,7 +812,7 @@ thickness and subtracting the reduced version from the original object.
 | --- | --- | --- |
 | object | <code>CSG</code> | A CSG object |
 | thickness | <code>number</code> | The thickness of the walls. |
-| cb | <code>function</code> | A callback that allows processing the object before returning. |
+| interiorcb | <code>function</code> | A callback that allows processing the object before returning. * @param {Function} exteriorcb        A callback that allows processing the object before returning. |
 
 
 &copy; 2016 John Cole <johnwebbcole@gmail.com>. Documented by [jsdoc-to-markdown](https://github.com/75lb/jsdoc-to-markdown).
