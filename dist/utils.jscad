@@ -1530,6 +1530,8 @@ util = {
          * @param {CSG} object Object to add the parts dictionary.
          * @param {string} name   Name of the part
          * @param {boolean} hidden If true, then the part not be added during a default `combine()`
+         * @param {string} subparts   Prefix for subparts if adding a group
+         * @param {string} parts   When adding a group, you can pick the parts you want to include as the named part.
          */
         self.add = function (object, name, hidden, subparts, parts) {
             if (object.parts) {
@@ -1602,8 +1604,8 @@ util = {
             var g = union(util.mapPick(this.parts, pieces, function (value, key, object) {
                 return map ? map(value, key, object) : util.identity(value);
             }));
-
-            return g.subtractIf(Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
+            // console.log(self.holes)
+            return g.subtractIf(self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
 
         };
 

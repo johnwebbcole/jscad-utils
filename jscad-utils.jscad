@@ -778,8 +778,8 @@ util = {
             var g = union(util.mapPick(this.parts, pieces, function (value, key, object) {
                 return map ? map(value, key, object) : util.identity(value);
             }));
-
-            return g.subtractIf(Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
+            // console.log(self.holes)
+            return g.subtractIf(self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
 
         };
 
