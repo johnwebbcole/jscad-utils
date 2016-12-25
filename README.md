@@ -425,6 +425,8 @@ jscad-utils
     * [.result(object, f)](#module_util.result) ⇒ <code>object</code>
     * [.defaults(target, defaults)](#module_util.defaults) ⇒ <code>object</code>
     * [.print(msg, o)](#module_util.print)
+    * [.inch(x)](#module_util.inch) ⇒ <code>Number</code>
+    * [.cm(x)](#module_util.cm) ⇒ <code>Number</code>
     * [.segment(object, segments, axis)](#module_util.segment) ⇒ <code>Array</code>
     * [.map(o, f)](#module_util.map) ⇒ <code>array</code>
     * [.size(o)](#module_util.size) ⇒ <code>CSG.Vector3D</code>
@@ -491,6 +493,30 @@ Print a message and CSG object bounds and size to the conosle.
 | --- | --- | --- |
 | msg | <code>String</code> | Message to print |
 | o | <code>CSG</code> | A CSG object to print the bounds and size of. |
+
+<a name="module_util.inch"></a>
+
+### util.inch(x) ⇒ <code>Number</code>
+Convert an imperial `inch` to metric `mm`.
+
+**Kind**: static method of <code>[util](#module_util)</code>  
+**Returns**: <code>Number</code> - Result in mm  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>Number</code> | Value in inches |
+
+<a name="module_util.cm"></a>
+
+### util.cm(x) ⇒ <code>Number</code>
+Convert metric `cm` to imperial `inch`.
+
+**Kind**: static method of <code>[util](#module_util)</code>  
+**Returns**: <code>Number</code> - Result in inches  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>Number</code> | Value in cm |
 
 <a name="module_util.segment"></a>
 

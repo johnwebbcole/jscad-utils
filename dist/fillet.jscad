@@ -920,6 +920,24 @@ util = {
         if (error) throw new Error(msg);
     },
 
+    /**
+     * Convert an imperial `inch` to metric `mm`.
+     * @param  {Number} x Value in inches
+     * @return {Number}   Result in mm
+     */
+    inch: function inch(x) {
+        return x * 25.4;
+    },
+
+    /**
+     * Convert metric `cm` to imperial `inch`.
+     * @param  {Number} x Value in cm
+     * @return {Number}   Result in inches
+     */
+    cm: function cm(x) {
+        return x / 25.4;
+    },
+
     label: function label(text, x, y, width, height) {
         var l = vector_text(x || 0, y || 0, text); // l contains a list of polylines to draw
         var o = [];
@@ -2228,6 +2246,10 @@ util = {
          */
         CSG.prototype.enlarge = function enlarge(x, y, z) {
             return util.enlarge(this, x, y, z);
+        };
+
+        CAG.prototype.enlarge = function cag_enlarge(x, y) {
+          return util.enlarge(this, x, y);
         };
 
         /**
