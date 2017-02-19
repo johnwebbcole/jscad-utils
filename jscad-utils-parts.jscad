@@ -30,6 +30,38 @@ Parts = {
         });
     },
 
+    RoundedCube: function (...args) {
+      
+        if (args[0].getBounds) {
+            var size = util.size(args[0].getBounds());
+            var r = [size.x / 2, size.y / 2];
+            var thickness = size.z;
+            var corner_radius = args[1];
+        } else {
+            var r = [args[0] / 2, args[1] / 2]; // eslint-disable-line no-redeclare
+            var thickness = args[2]; // eslint-disable-line no-redeclare
+            var corner_radius = args[3]; // eslint-disable-line no-redeclare
+        }
+        
+        // console.log('RoundedCube.args', size, r, thickness, corner_radius);
+        var roundedcube = CAG.roundedRectangle({
+            center: [r[0], r[1], 0],
+            radius: r,
+            roundradius: corner_radius
+        }).extrude({
+            offset: [0, 0, thickness || 1.62]
+        });
+
+        return roundedcube;
+    },
+
+    /**
+     * [Cylinder description]
+     * @param {Number} diameter Diameter of the cylinder
+     * @param {Number} height   Height of the cylinder
+     * @param {Number} options  Options passed to the `CSG.cylinder` function.
+     * @return {CSG} A CSG Cylinder
+     */
     Cylinder: function (diameter, height, options) {
         options = util.defaults(options, {
             start: [0, 0, 0],
@@ -83,6 +115,15 @@ Parts = {
         });
     },
 
+    /**
+     * Create a tube
+     * @param {Number} outsideDiameter Outside diameter of the tube
+     * @param {Number} insideDiameter  Inside diameter of the tube
+     * @param {Number} height          Height of the tube
+     * @param {Object} outsideOptions  Options passed to the outside cylinder
+     * @param {Object} insideOptions   Options passed to the inside cylinder
+     * @returns {CSG}  A CSG Tube
+     */
     Tube: function Tube(outsideDiameter, insideDiameter, height, outsideOptions, insideOptions) {
         return Parts.Cylinder(outsideDiameter, height, outsideOptions).subtract(Parts.Cylinder(insideDiameter, height, insideOptions || outsideOptions));
     },
@@ -149,6 +190,26 @@ Parts = {
 
             if (clearLength) {
                 var headClearSpace = Parts.Cylinder(headDiameter, clearLength);
+            }
+
+            return Parts.Hardware.Screw(head, thread, headClearSpace, options);
+        },
+
+        /**
+         * Creates a `Group` object with a Hex Head Screw.
+         * @param {number} headDiameter Diameter of the head of the screw
+         * @param {number} headLength   Length of the head
+         * @param {number} diameter     Diameter of the threaded shaft
+         * @param {number} length       Length of the threaded shaft
+         * @param {number} clearLength  Length of the clearance section of the head.
+         * @param {object} options      Screw options include orientation and clerance scale.
+         */
+        HexHeadScrew: function (headDiameter, headLength, diameter, length, clearLength, options) {
+            var head = Parts.Hexagon(headDiameter, headLength);
+            var thread = Parts.Cylinder(diameter, length);
+
+            if (clearLength) {
+                var headClearSpace = Parts.Hexagon(headDiameter, clearLength);
             }
 
             return Parts.Hardware.Screw(head, thread, headClearSpace, options);

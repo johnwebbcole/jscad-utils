@@ -15,6 +15,7 @@
         "Parts": true,
         "_": true,
         "vector_text": true,
+        "vector_char": true,
         "rectangular_extrude": true
     },
     "plugins": [],

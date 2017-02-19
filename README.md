@@ -50,6 +50,7 @@ Here are some of the examples:
     * [.fillet(radius, orientation, options)](#module_CSG.fillet) ⇒ <code>CSG</code>
     * [.chamfer(radius, orientation)](#module_CSG.chamfer) ⇒ <code>CSG</code>
     * [.bisect(axis, offset, angle, rotateaxis, rotateoffset)](#module_CSG.bisect) ⇒ <code>object</code>
+    * [.stretch(object, axis, distance, offset)](#module_CSG.stretch) ⇒ <code>CSG</code>
     * [.unionIf(object, condition)](#module_CSG.unionIf) ⇒ <code>CSG</code>
     * [.subtractIf(object, condition)](#module_CSG.subtractIf) ⇒ <code>CSG</code>
 
@@ -387,6 +388,27 @@ Click [here](http://openjscad.org/#https://raw.githubusercontent.com/johnwebbcol
 | rotateaxis | <code>number</code> | axis to rotate the cut plane around. |
 | rotateoffset | <code>number</code> | offset in the rotateaxis for the rotation point of the cut plane. |
 
+<a name="module_CSG.stretch"></a>
+
+### CSG.stretch(object, axis, distance, offset) ⇒ <code>CSG</code>
+Wraps the `stretchAtPlane` call using the same
+logic as `bisect`. This cuts the object at the plane,
+and stretches the cross-section there by distance
+amount.  The plane is located at the center of the
+axis unless an `offset` is given, then it is the
+offset from either end of the axis.
+
+**Kind**: static method of <code>[CSG](#module_CSG)</code>  
+**Extends:** <code>CSG</code>  
+**Returns**: <code>CSG</code> - The stretched object.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| object | <code>CSG</code> | Object to stretch |
+| axis | <code>String</code> | Axis to streatch along |
+| distance | <code>Number</code> | Distance to stretch |
+| offset | <code>Number</code> | Offset along the axis to cut the object |
+
 <a name="module_CSG.unionIf"></a>
 
 ### CSG.unionIf(object, condition) ⇒ <code>CSG</code>
@@ -435,7 +457,9 @@ jscad-utils
     * [.fit(object, x, y, z, keep_aspect_ratio)](#module_util.fit) ⇒ <code>CSG</code>
     * [.flush(moveobj, withobj, axis, mside, wside)](#module_util.flush) ⇒ <code>CSG</code>
     * [.group(names, objects)](#module_util.group) ⇒ <code>object</code>
+    * [.getDelta(size, bounds, axis, offset, nonzero)](#module_util.getDelta) ⇒ <code>Point</code>
     * [.bisect(object, axis, offset, angle)](#module_util.bisect) ⇒ <code>object</code>
+    * [.stretch(object, axis, distance, offset)](#module_util.stretch) ⇒ <code>CSG</code>
     * [.poly2solid(top, bottom, height)](#module_util.poly2solid) ⇒ <code>CSG</code>
     * [.init(CSG)](#module_util.init) ⇐ <code>CSG</code>
 
@@ -643,6 +667,27 @@ contained in the group object.
 | names | <code>string</code> | Comma separated list of part names. |
 | objects | <code>array</code> &#124; <code>object</code> | Array or object of parts.  If Array, the names list is used as names for each part. |
 
+<a name="module_util.getDelta"></a>
+
+### util.getDelta(size, bounds, axis, offset, nonzero) ⇒ <code>Point</code>
+Given an size, bounds and an axis, a Point
+along the axis will be returned.  If no `offset`
+is given, then the midway point on the axis is returned.
+When the `offset` is positive, a point `offset` from the
+mininum axis is returned.  When the `offset` is negative,
+the `offset` is subtracted from the axis maximum.
+
+**Kind**: static method of <code>[util](#module_util)</code>  
+**Returns**: <code>Point</code> - The point along the axis.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| size | <code>Size</code> | Size array of the object |
+| bounds | <code>Bounds</code> | Bounds of the object |
+| axis | <code>String</code> | Axis to find the point on |
+| offset | <code>Number</code> | Offset from either end |
+| nonzero | <code>Boolean</code> | When true, no offset values under 1e-4 are allowed. |
+
 <a name="module_util.bisect"></a>
 
 ### util.bisect(object, axis, offset, angle) ⇒ <code>object</code>
@@ -665,6 +710,22 @@ You can angle the cut plane and poistion the rotation point.
 | axis | <code>string</code> | axis to cut along |
 | offset | <code>number</code> | offset to cut at |
 | angle | <code>number</code> | angle to rotate the cut plane to |
+
+<a name="module_util.stretch"></a>
+
+### util.stretch(object, axis, distance, offset) ⇒ <code>CSG</code>
+Wraps the `stretchAtPlane` call using the same
+logic as `bisect`.
+
+**Kind**: static method of <code>[util](#module_util)</code>  
+**Returns**: <code>CSG</code> - The stretched object.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| object | <code>CSG</code> | Object to stretch |
+| axis | <code>String</code> | Axis to streatch along |
+| distance | <code>Number</code> | Distance to stretch |
+| offset | <code>Number</code> | Offset along the axis to cut the object |
 
 <a name="module_util.poly2solid"></a>
 
@@ -767,6 +828,7 @@ function mainx(params) {
     * [.Rabett(box, thickness, gap, height, face)](#module_Boxes.Rabett) ⇒ <code>group</code>
     * [.RabettTopBottom(box, thickness, gap, options)](#module_Boxes.RabettTopBottom) ⇒ <code>group</code>
     * [.Hollow(object, thickness, interiorcb)](#module_Boxes.Hollow) ⇒ <code>CSG</code>
+    * [.BBox(o)](#module_Boxes.BBox) ⇒ <code>CSG</code>
 
 <a name="module_Boxes.Rabett"></a>
 
@@ -780,10 +842,10 @@ This will bisect an object using a rabett join.  Returns a
 | Param | Type | Description |
 | --- | --- | --- |
 | box | <code>CSG</code> | The object to bisect. |
-| thickness | <code>number</code> | Thickness of the objects walls. |
-| gap | <code>number</code> | Gap between the join cheeks. |
-| height | <code>number</code> | Offset from the bottom to bisect the object at.  Negative numbers offset from the top. |
-| face | <code>number</code> | Size of the join face. |
+| thickness | <code>Number</code> | Thickness of the objects walls. |
+| gap | <code>Number</code> | Gap between the join cheeks. |
+| height | <code>Number</code> | Offset from the bottom to bisect the object at.  Negative numbers offset from the top. |
+| face | <code>Number</code> | Size of the join face. |
 
 <a name="module_Boxes.RabettTopBottom"></a>
 
@@ -799,9 +861,11 @@ bottom of the object.
 | Param | Type | Description |
 | --- | --- | --- |
 | box | <code>CSG</code> | A hollow object. |
-| thickness | <code>number</code> | The thickness of the object walls |
-| gap | <code>number</code> | The gap between the top/bottom and the walls. |
-| options | <code>object</code> | Options to have a `removableTop` or `removableBottom`.  Both default to `true`. |
+| thickness | <code>Number</code> | The thickness of the object walls |
+| gap | <code>Number</code> | The gap between the top/bottom and the walls. |
+| options | <code>Object</code> | Options to have a `removableTop` or `removableBottom`.  Both default to `true`. |
+| options.removableTop | <code>Boolean</code> | The top will be removable. |
+| options.removableBottom | <code>Boolean</code> | The bottom will be removable. |
 
 **Example**  
 ```js
@@ -837,8 +901,20 @@ thickness and subtracting the reduced version from the original object.
 | Param | Type | Description |
 | --- | --- | --- |
 | object | <code>CSG</code> | A CSG object |
-| thickness | <code>number</code> | The thickness of the walls. |
+| thickness | <code>Number</code> | The thickness of the walls. |
 | interiorcb | <code>function</code> | A callback that allows processing the object before returning. * @param {Function} exteriorcb        A callback that allows processing the object before returning. |
+
+<a name="module_Boxes.BBox"></a>
+
+### Boxes.BBox(o) ⇒ <code>CSG</code>
+Create a box that surounds the object.
+
+**Kind**: static method of <code>[Boxes](#module_Boxes)</code>  
+**Returns**: <code>CSG</code> - The bounding box aligned with the object.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| o | <code>CSG</code> | The object to create a bounding box for. |
 
 
 &copy; 2016 John Cole <johnwebbcole@gmail.com>. Documented by [jsdoc-to-markdown](https://github.com/75lb/jsdoc-to-markdown).

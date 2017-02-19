@@ -562,7 +562,9 @@ util = {
             return w[side[0]][axis] - m[side[1]][axis];
         });
 
-        return delta ? util.array.add(t, delta) : t;
+        return delta ? this.axisApply(axes, function (i) {
+            return t[i] + delta;
+        }) : t;
     },
 
     snap: function snap(moveobj, withobj, axis, orientation, delta) {
@@ -753,9 +755,15 @@ util = {
 
         self.clone = function (map) {
             if (!map) map = util.identity;
-            var group = util.group(self.names.join(','), util.mapValues(self.parts, function (part, name) {
-                return map(CSG.fromPolygons(part.toPolygons()), name);
-            }));
+
+            // console.warn('clone() has been refactored');
+            var group = util.group();
+            Object.keys(self.parts).forEach(function (key) {
+                var part = self.parts[key];
+                var hidden = self.names.indexOf(key) == -1;
+                group.add(map(CSG.fromPolygons(part.toPolygons())), key, hidden);
+            });
+
             if (self.holes) {
                 group.holes = util.toArray(self.holes).map(function (part) {
                     return map(CSG.fromPolygons(part.toPolygons()), 'holes');
@@ -764,6 +772,13 @@ util = {
             return group;
         };
 
+        /**
+         * Rotate the group around a solids centroid. This mutates the group.
+         * @param  {CSG} solid The solid to rotate the group around
+         * @param  {String} axis  Axis to rotate
+         * @param  {Number} angle Angle in degrees
+         * @return {Group}       The rotoated group.
+         */
         self.rotate = function (solid, axis, angle) {
             var axes = {
                 'x': [1, 0, 0],
@@ -803,6 +818,15 @@ util = {
 
         self.combineAll = function (options, map) {
             return self.combine(Object.keys(self.parts).join(','), options, map);
+        };
+
+        self.toArray = function (pieces) {
+            pieces = pieces ? pieces.split(',') : self.names;
+
+            return pieces.map(function (piece) {
+                if (!self.parts[piece]) console.error(`Cannot find ${piece} in ${self.names}`);
+                return self.parts[piece];
+            });
         };
 
         self.snap = function snap(part, to, axis, orientation, delta) {
@@ -896,6 +920,34 @@ util = {
     },
 
     /**
+     * Given an size, bounds and an axis, a Point
+     * along the axis will be returned.  If no `offset`
+     * is given, then the midway point on the axis is returned.
+     * When the `offset` is positive, a point `offset` from the
+     * mininum axis is returned.  When the `offset` is negative,
+     * the `offset` is subtracted from the axis maximum.
+     * @param  {Size} size    Size array of the object
+     * @param  {Bounds} bounds  Bounds of the object
+     * @param  {String} axis    Axis to find the point on
+     * @param  {Number} offset  Offset from either end
+     * @param  {Boolean} nonzero When true, no offset values under 1e-4 are allowed.
+     * @return {Point}         The point along the axis.
+     */
+    getDelta: function getDelta(size, bounds, axis, offset, nonzero) {
+        if (!util.isEmpty(offset) && nonzero) {
+          if (Math.abs(offset) < 1e-4) {
+            offset = 1e-4 * (util.isNegative(offset) ? -1 : 1);
+          }
+        }
+        // if the offset is negative, then it's an offset from
+        // the positive side of the axis
+        var dist = util.isNegative(offset) ? offset = size[axis] + offset : offset;
+        return util.axisApply(axis, function (i, a) {
+            return bounds[0][a] + (util.isEmpty(dist) ? size[axis] / 2 : dist);
+        });
+    },
+
+    /**
      * Cut an object into two pieces, along a given axis. The offset
      * allows you to move the cut plane along the cut axis.  For example,
      * a 10mm cube with an offset of 2, will create a 2mm side and an 8mm side.
@@ -926,16 +978,16 @@ util = {
             z: 'x'
         }[axis];
 
-        function getDelta(axis, offset) {
-            // if the offset is negative, then it's an offset from
-            // the positive side of the axis
-            var dist = util.isNegative(offset) ? offset = size[axis] + offset : offset;
-            return util.axisApply(axis, function (i, a) {
-                return bounds[0][a] + (util.isEmpty(dist) ? size[axis] / 2 : dist);
-            });
-        }
+        // function getDelta(axis, offset) {
+        //     // if the offset is negative, then it's an offset from
+        //     // the positive side of the axis
+        //     var dist = util.isNegative(offset) ? offset = size[axis] + offset : offset;
+        //     return util.axisApply(axis, function (i, a) {
+        //         return bounds[0][a] + (util.isEmpty(dist) ? size[axis] / 2 : dist);
+        //     });
+        // }
 
-        var cutDelta = options.cutDelta || getDelta(axis, offset);
+        var cutDelta = options.cutDelta || util.getDelta(size, bounds, axis, offset);
         var rotateOffsetAxis = {
             'xy': 'z',
             'yz': 'x',
@@ -944,7 +996,7 @@ util = {
             [axis, rotateaxis].sort().join('')
         ];
         var centroid = object.centroid();
-        var rotateDelta = getDelta(rotateOffsetAxis, rotateoffset);
+        var rotateDelta = util.getDelta(size, bounds, rotateOffsetAxis, rotateoffset);
 
         var rotationCenter = options.rotationCenter ||
             new CSG.Vector3D(util.axisApply('xyz', function (i, a) {
@@ -962,6 +1014,28 @@ util = {
         if (options.addRotationCenter) g.add(util.unitAxis(size.length() + 10, 0.5, rotationCenter), 'rotationCenter');
 
         return g;
+    },
+
+    /**
+     * Wraps the `stretchAtPlane` call using the same
+     * logic as `bisect`.
+     * @param  {CSG} object   Object to stretch
+     * @param  {String} axis     Axis to streatch along
+     * @param  {Number} distance Distance to stretch
+     * @param  {Number} offset   Offset along the axis to cut the object
+     * @return {CSG}          The stretched object.
+     */
+    stretch: function stretch(object, axis, distance, offset) {
+        var normal = {
+            'x': [1, 0, 0],
+            'y': [0, 1, 0],
+            'z': [0, 0, 1]
+        };
+        var bounds = object.getBounds();
+        var size = util.size(object);
+        var cutDelta = util.getDelta(size, bounds, axis, offset, true);
+        // console.log('stretch.cutDelta', cutDelta, normal[axis]);
+        return object.stretchAtPlane(normal[axis], cutDelta, distance);
     },
 
     /**
@@ -1360,13 +1434,14 @@ util = {
         };
 
         CSG.prototype.centerWith = function centerWith(axis, to) {
-            util.depreciated('centerWith', false, 'Use align instead.');
+            util.depreciated('centerWith', true, 'Use align instead.');
             return util.centerWith(this, axis, to);
         };
 
-        CSG.prototype.center = function centerWith(to, axis) {
-            util.depreciated('center', false, 'Use align instead.');
-            return util.centerWith(this, axis, to);
+        if (CSG.center) echo('CSG already has .center');
+        CSG.prototype.center = function center(axis) {
+            // console.log('center', axis, this.getBounds());
+            return util.centerWith(this, axis || 'xyz', util.unitCube(), 0);
         };
 
         CSG.prototype.calcCenter = function centerWith(axis) {
@@ -1582,6 +1657,26 @@ util = {
          */
         CSG.prototype.bisect = function bisect(axis, offset, angle, rotateaxis, rotateoffset, options) {
             return util.bisect(this, axis, offset, angle, rotateaxis, rotateoffset, options);
+        };
+        
+        /**
+         * Wraps the `stretchAtPlane` call using the same
+         * logic as `bisect`. This cuts the object at the plane,
+         * and stretches the cross-section there by distance
+         * amount.  The plane is located at the center of the
+         * axis unless an `offset` is given, then it is the
+         * offset from either end of the axis.
+         * @param  {CSG} object   Object to stretch
+         * @param  {String} axis     Axis to streatch along
+         * @param  {Number} distance Distance to stretch
+         * @param  {Number} offset   Offset along the axis to cut the object
+         * @return {CSG}          The stretched object.
+         * @alias stretch
+         * @memberof module:CSG
+         * @augments CSG
+         */
+        CSG.prototype.stretch = function stretch(axis, distance, offset) {
+          return util.stretch(this, axis, distance, offset);
         };
 
         /**

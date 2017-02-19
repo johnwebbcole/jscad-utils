@@ -63,10 +63,10 @@ Boxes = {
      * This will bisect an object using a rabett join.  Returns a
      * `group` object with `positive` and `negative` parts.
      * @param {CSG} box       The object to bisect.
-     * @param {number} thickness Thickness of the objects walls.
-     * @param {number} gap       Gap between the join cheeks.
-     * @param {number} height    Offset from the bottom to bisect the object at.  Negative numbers offset from the top.
-     * @param {number} face      Size of the join face.
+     * @param {Number} thickness Thickness of the objects walls.
+     * @param {Number} gap       Gap between the join cheeks.
+     * @param {Number} height    Offset from the bottom to bisect the object at.  Negative numbers offset from the top.
+     * @param {Number} face      Size of the join face.
      * @return {group} A group object with `positive`, `negative` parts.
      * @memberof module:Boxes
      */
@@ -121,18 +121,22 @@ Boxes = {
      *}
      *
      * @param {CSG} box       A hollow object.
-     * @param {number} thickness The thickness of the object walls
-     * @param {number} gap       The gap between the top/bottom and the walls.
-     * @param {object} options   Options to have a `removableTop` or `removableBottom`.  Both default to `true`.
+     * @param {Number} thickness The thickness of the object walls
+     * @param {Number} gap       The gap between the top/bottom and the walls.
+     * @param {Object} options   Options to have a `removableTop` or `removableBottom`.  Both default to `true`.
+     * @param {Boolean} options.removableTop   The top will be removable.
+     * @param {Boolean} options.removableBottom   The bottom will be removable.
      * @return {group} An A hollow version of the original object..
      * @memberof module:Boxes
      */
     RabettTopBottom: function rabbetTMB(box, thickness, gap, options) {
         options = util.defaults(options, {
             removableTop: true,
-            removableBottom: true
+            removableBottom: true,
+            topWidth: -thickness,
+            bottomWidth: thickness
         });
-
+        // console.log('RabettTopBottom', options);
         gap = gap || 0.25;
 
         var group = util.group('', {
@@ -143,7 +147,7 @@ Boxes = {
         var outside = (-thickness) + gap;
 
         if (options.removableTop) {
-            var top = box.bisect('z', -thickness);
+            var top = box.bisect('z', options.topWidth);
             group.add(top.parts.positive.enlarge([inside, inside, 0]), 'top');
 
             if (!options.removableBottom) group.add(box.subtract(
@@ -152,7 +156,8 @@ Boxes = {
         }
 
         if (options.removableBottom) {
-            var bottom = box.bisect('z', thickness);
+            // console.log('bottomWidth', options.bottomWidth);
+            var bottom = box.bisect('z', options.bottomWidth);
 
             group.add(bottom.parts.negative.enlarge([outside, outside, 0]), 'bottomCutout', true);
 
@@ -238,7 +243,7 @@ Boxes = {
      * ![A hollowed out cylinder](jsdoc2md/rabett.png)
      *
      * @param {CSG}   object    A CSG object
-     * @param {number}   thickness The thickness of the walls.
+     * @param {Number}   thickness The thickness of the walls.
      * @param {Function} interiorcb        A callback that allows processing the object before returning.
      * * @param {Function} exteriorcb        A callback that allows processing the object before returning.
      * @return {CSG} An A hollow version of the original object..
@@ -258,12 +263,18 @@ Boxes = {
     },
 
 
+    /**
+     * Create a box that surounds the object.
+     * @param {CSG} o The object to create a bounding box for.
+     * @return {CSG} The bounding box aligned with the object.
+     * @memberof module:Boxes
+     */
     BBox: function (o) {
         var s = util.array.div(util.xyz2array(o.size()), 2);
         return CSG.cube({
             center: s,
             radius: s
-        });
+        }).align(o, 'xyz');
     }
 };
 

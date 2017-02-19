@@ -72,10 +72,10 @@ Boxes = {
      * This will bisect an object using a rabett join.  Returns a
      * `group` object with `positive` and `negative` parts.
      * @param {CSG} box       The object to bisect.
-     * @param {number} thickness Thickness of the objects walls.
-     * @param {number} gap       Gap between the join cheeks.
-     * @param {number} height    Offset from the bottom to bisect the object at.  Negative numbers offset from the top.
-     * @param {number} face      Size of the join face.
+     * @param {Number} thickness Thickness of the objects walls.
+     * @param {Number} gap       Gap between the join cheeks.
+     * @param {Number} height    Offset from the bottom to bisect the object at.  Negative numbers offset from the top.
+     * @param {Number} face      Size of the join face.
      * @return {group} A group object with `positive`, `negative` parts.
      * @memberof module:Boxes
      */
@@ -130,18 +130,22 @@ Boxes = {
      *}
      *
      * @param {CSG} box       A hollow object.
-     * @param {number} thickness The thickness of the object walls
-     * @param {number} gap       The gap between the top/bottom and the walls.
-     * @param {object} options   Options to have a `removableTop` or `removableBottom`.  Both default to `true`.
+     * @param {Number} thickness The thickness of the object walls
+     * @param {Number} gap       The gap between the top/bottom and the walls.
+     * @param {Object} options   Options to have a `removableTop` or `removableBottom`.  Both default to `true`.
+     * @param {Boolean} options.removableTop   The top will be removable.
+     * @param {Boolean} options.removableBottom   The bottom will be removable.
      * @return {group} An A hollow version of the original object..
      * @memberof module:Boxes
      */
     RabettTopBottom: function rabbetTMB(box, thickness, gap, options) {
         options = util.defaults(options, {
             removableTop: true,
-            removableBottom: true
+            removableBottom: true,
+            topWidth: -thickness,
+            bottomWidth: thickness
         });
-
+        // console.log('RabettTopBottom', options);
         gap = gap || 0.25;
 
         var group = util.group('', {
@@ -152,7 +156,7 @@ Boxes = {
         var outside = (-thickness) + gap;
 
         if (options.removableTop) {
-            var top = box.bisect('z', -thickness);
+            var top = box.bisect('z', options.topWidth);
             group.add(top.parts.positive.enlarge([inside, inside, 0]), 'top');
 
             if (!options.removableBottom) group.add(box.subtract(
@@ -161,7 +165,8 @@ Boxes = {
         }
 
         if (options.removableBottom) {
-            var bottom = box.bisect('z', thickness);
+            // console.log('bottomWidth', options.bottomWidth);
+            var bottom = box.bisect('z', options.bottomWidth);
 
             group.add(bottom.parts.negative.enlarge([outside, outside, 0]), 'bottomCutout', true);
 
@@ -247,7 +252,7 @@ Boxes = {
      * ![A hollowed out cylinder](jsdoc2md/rabett.png)
      *
      * @param {CSG}   object    A CSG object
-     * @param {number}   thickness The thickness of the walls.
+     * @param {Number}   thickness The thickness of the walls.
      * @param {Function} interiorcb        A callback that allows processing the object before returning.
      * * @param {Function} exteriorcb        A callback that allows processing the object before returning.
      * @return {CSG} An A hollow version of the original object..
@@ -267,12 +272,18 @@ Boxes = {
     },
 
 
+    /**
+     * Create a box that surounds the object.
+     * @param {CSG} o The object to create a bounding box for.
+     * @return {CSG} The bounding box aligned with the object.
+     * @memberof module:Boxes
+     */
     BBox: function (o) {
         var s = util.array.div(util.xyz2array(o.size()), 2);
         return CSG.cube({
             center: s,
             radius: s
-        });
+        }).align(o, 'xyz');
     }
 };
 
@@ -686,6 +697,38 @@ Parts = {
         });
     },
 
+    RoundedCube: function (...args) {
+      
+        if (args[0].getBounds) {
+            var size = util.size(args[0].getBounds());
+            var r = [size.x / 2, size.y / 2];
+            var thickness = size.z;
+            var corner_radius = args[1];
+        } else {
+            var r = [args[0] / 2, args[1] / 2]; // eslint-disable-line no-redeclare
+            var thickness = args[2]; // eslint-disable-line no-redeclare
+            var corner_radius = args[3]; // eslint-disable-line no-redeclare
+        }
+        
+        // console.log('RoundedCube.args', size, r, thickness, corner_radius);
+        var roundedcube = CAG.roundedRectangle({
+            center: [r[0], r[1], 0],
+            radius: r,
+            roundradius: corner_radius
+        }).extrude({
+            offset: [0, 0, thickness || 1.62]
+        });
+
+        return roundedcube;
+    },
+
+    /**
+     * [Cylinder description]
+     * @param {Number} diameter Diameter of the cylinder
+     * @param {Number} height   Height of the cylinder
+     * @param {Number} options  Options passed to the `CSG.cylinder` function.
+     * @return {CSG} A CSG Cylinder
+     */
     Cylinder: function (diameter, height, options) {
         options = util.defaults(options, {
             start: [0, 0, 0],
@@ -739,6 +782,15 @@ Parts = {
         });
     },
 
+    /**
+     * Create a tube
+     * @param {Number} outsideDiameter Outside diameter of the tube
+     * @param {Number} insideDiameter  Inside diameter of the tube
+     * @param {Number} height          Height of the tube
+     * @param {Object} outsideOptions  Options passed to the outside cylinder
+     * @param {Object} insideOptions   Options passed to the inside cylinder
+     * @returns {CSG}  A CSG Tube
+     */
     Tube: function Tube(outsideDiameter, insideDiameter, height, outsideOptions, insideOptions) {
         return Parts.Cylinder(outsideDiameter, height, outsideOptions).subtract(Parts.Cylinder(insideDiameter, height, insideOptions || outsideOptions));
     },
@@ -811,6 +863,26 @@ Parts = {
         },
 
         /**
+         * Creates a `Group` object with a Hex Head Screw.
+         * @param {number} headDiameter Diameter of the head of the screw
+         * @param {number} headLength   Length of the head
+         * @param {number} diameter     Diameter of the threaded shaft
+         * @param {number} length       Length of the threaded shaft
+         * @param {number} clearLength  Length of the clearance section of the head.
+         * @param {object} options      Screw options include orientation and clerance scale.
+         */
+        HexHeadScrew: function (headDiameter, headLength, diameter, length, clearLength, options) {
+            var head = Parts.Hexagon(headDiameter, headLength);
+            var thread = Parts.Cylinder(diameter, length);
+
+            if (clearLength) {
+                var headClearSpace = Parts.Hexagon(headDiameter, clearLength);
+            }
+
+            return Parts.Hardware.Screw(head, thread, headClearSpace, options);
+        },
+
+        /**
          * Create a Flat Head Screw
          * @param {number} headDiameter head diameter
          * @param {number} headLength   head length
@@ -832,7 +904,6 @@ Parts = {
         }
     }
 };
-
 /**
  * @module CSG
  */
@@ -1397,7 +1468,9 @@ util = {
             return w[side[0]][axis] - m[side[1]][axis];
         });
 
-        return delta ? util.array.add(t, delta) : t;
+        return delta ? this.axisApply(axes, function (i) {
+            return t[i] + delta;
+        }) : t;
     },
 
     snap: function snap(moveobj, withobj, axis, orientation, delta) {
@@ -1588,9 +1661,15 @@ util = {
 
         self.clone = function (map) {
             if (!map) map = util.identity;
-            var group = util.group(self.names.join(','), util.mapValues(self.parts, function (part, name) {
-                return map(CSG.fromPolygons(part.toPolygons()), name);
-            }));
+
+            // console.warn('clone() has been refactored');
+            var group = util.group();
+            Object.keys(self.parts).forEach(function (key) {
+                var part = self.parts[key];
+                var hidden = self.names.indexOf(key) == -1;
+                group.add(map(CSG.fromPolygons(part.toPolygons())), key, hidden);
+            });
+
             if (self.holes) {
                 group.holes = util.toArray(self.holes).map(function (part) {
                     return map(CSG.fromPolygons(part.toPolygons()), 'holes');
@@ -1599,6 +1678,13 @@ util = {
             return group;
         };
 
+        /**
+         * Rotate the group around a solids centroid. This mutates the group.
+         * @param  {CSG} solid The solid to rotate the group around
+         * @param  {String} axis  Axis to rotate
+         * @param  {Number} angle Angle in degrees
+         * @return {Group}       The rotoated group.
+         */
         self.rotate = function (solid, axis, angle) {
             var axes = {
                 'x': [1, 0, 0],
@@ -1638,6 +1724,15 @@ util = {
 
         self.combineAll = function (options, map) {
             return self.combine(Object.keys(self.parts).join(','), options, map);
+        };
+
+        self.toArray = function (pieces) {
+            pieces = pieces ? pieces.split(',') : self.names;
+
+            return pieces.map(function (piece) {
+                if (!self.parts[piece]) console.error(`Cannot find ${piece} in ${self.names}`);
+                return self.parts[piece];
+            });
         };
 
         self.snap = function snap(part, to, axis, orientation, delta) {
@@ -1731,6 +1826,34 @@ util = {
     },
 
     /**
+     * Given an size, bounds and an axis, a Point
+     * along the axis will be returned.  If no `offset`
+     * is given, then the midway point on the axis is returned.
+     * When the `offset` is positive, a point `offset` from the
+     * mininum axis is returned.  When the `offset` is negative,
+     * the `offset` is subtracted from the axis maximum.
+     * @param  {Size} size    Size array of the object
+     * @param  {Bounds} bounds  Bounds of the object
+     * @param  {String} axis    Axis to find the point on
+     * @param  {Number} offset  Offset from either end
+     * @param  {Boolean} nonzero When true, no offset values under 1e-4 are allowed.
+     * @return {Point}         The point along the axis.
+     */
+    getDelta: function getDelta(size, bounds, axis, offset, nonzero) {
+        if (!util.isEmpty(offset) && nonzero) {
+          if (Math.abs(offset) < 1e-4) {
+            offset = 1e-4 * (util.isNegative(offset) ? -1 : 1);
+          }
+        }
+        // if the offset is negative, then it's an offset from
+        // the positive side of the axis
+        var dist = util.isNegative(offset) ? offset = size[axis] + offset : offset;
+        return util.axisApply(axis, function (i, a) {
+            return bounds[0][a] + (util.isEmpty(dist) ? size[axis] / 2 : dist);
+        });
+    },
+
+    /**
      * Cut an object into two pieces, along a given axis. The offset
      * allows you to move the cut plane along the cut axis.  For example,
      * a 10mm cube with an offset of 2, will create a 2mm side and an 8mm side.
@@ -1761,16 +1884,16 @@ util = {
             z: 'x'
         }[axis];
 
-        function getDelta(axis, offset) {
-            // if the offset is negative, then it's an offset from
-            // the positive side of the axis
-            var dist = util.isNegative(offset) ? offset = size[axis] + offset : offset;
-            return util.axisApply(axis, function (i, a) {
-                return bounds[0][a] + (util.isEmpty(dist) ? size[axis] / 2 : dist);
-            });
-        }
+        // function getDelta(axis, offset) {
+        //     // if the offset is negative, then it's an offset from
+        //     // the positive side of the axis
+        //     var dist = util.isNegative(offset) ? offset = size[axis] + offset : offset;
+        //     return util.axisApply(axis, function (i, a) {
+        //         return bounds[0][a] + (util.isEmpty(dist) ? size[axis] / 2 : dist);
+        //     });
+        // }
 
-        var cutDelta = options.cutDelta || getDelta(axis, offset);
+        var cutDelta = options.cutDelta || util.getDelta(size, bounds, axis, offset);
         var rotateOffsetAxis = {
             'xy': 'z',
             'yz': 'x',
@@ -1779,7 +1902,7 @@ util = {
             [axis, rotateaxis].sort().join('')
         ];
         var centroid = object.centroid();
-        var rotateDelta = getDelta(rotateOffsetAxis, rotateoffset);
+        var rotateDelta = util.getDelta(size, bounds, rotateOffsetAxis, rotateoffset);
 
         var rotationCenter = options.rotationCenter ||
             new CSG.Vector3D(util.axisApply('xyz', function (i, a) {
@@ -1797,6 +1920,28 @@ util = {
         if (options.addRotationCenter) g.add(util.unitAxis(size.length() + 10, 0.5, rotationCenter), 'rotationCenter');
 
         return g;
+    },
+
+    /**
+     * Wraps the `stretchAtPlane` call using the same
+     * logic as `bisect`.
+     * @param  {CSG} object   Object to stretch
+     * @param  {String} axis     Axis to streatch along
+     * @param  {Number} distance Distance to stretch
+     * @param  {Number} offset   Offset along the axis to cut the object
+     * @return {CSG}          The stretched object.
+     */
+    stretch: function stretch(object, axis, distance, offset) {
+        var normal = {
+            'x': [1, 0, 0],
+            'y': [0, 1, 0],
+            'z': [0, 0, 1]
+        };
+        var bounds = object.getBounds();
+        var size = util.size(object);
+        var cutDelta = util.getDelta(size, bounds, axis, offset, true);
+        // console.log('stretch.cutDelta', cutDelta, normal[axis]);
+        return object.stretchAtPlane(normal[axis], cutDelta, distance);
     },
 
     /**
@@ -2195,13 +2340,14 @@ util = {
         };
 
         CSG.prototype.centerWith = function centerWith(axis, to) {
-            util.depreciated('centerWith', false, 'Use align instead.');
+            util.depreciated('centerWith', true, 'Use align instead.');
             return util.centerWith(this, axis, to);
         };
 
-        CSG.prototype.center = function centerWith(to, axis) {
-            util.depreciated('center', false, 'Use align instead.');
-            return util.centerWith(this, axis, to);
+        if (CSG.center) echo('CSG already has .center');
+        CSG.prototype.center = function center(axis) {
+            // console.log('center', axis, this.getBounds());
+            return util.centerWith(this, axis || 'xyz', util.unitCube(), 0);
         };
 
         CSG.prototype.calcCenter = function centerWith(axis) {
@@ -2240,7 +2386,7 @@ util = {
         };
 
         CAG.prototype.enlarge = function cag_enlarge(x, y) {
-          return util.enlarge(this, x, y);
+            return util.enlarge(this, x, y);
         };
 
         /**
@@ -2418,6 +2564,26 @@ util = {
         CSG.prototype.bisect = function bisect(axis, offset, angle, rotateaxis, rotateoffset, options) {
             return util.bisect(this, axis, offset, angle, rotateaxis, rotateoffset, options);
         };
+        
+        /**
+         * Wraps the `stretchAtPlane` call using the same
+         * logic as `bisect`. This cuts the object at the plane,
+         * and stretches the cross-section there by distance
+         * amount.  The plane is located at the center of the
+         * axis unless an `offset` is given, then it is the
+         * offset from either end of the axis.
+         * @param  {CSG} object   Object to stretch
+         * @param  {String} axis     Axis to streatch along
+         * @param  {Number} distance Distance to stretch
+         * @param  {Number} offset   Offset along the axis to cut the object
+         * @return {CSG}          The stretched object.
+         * @alias stretch
+         * @memberof module:CSG
+         * @augments CSG
+         */
+        CSG.prototype.stretch = function stretch(axis, distance, offset) {
+          return util.stretch(this, axis, distance, offset);
+        };
 
         /**
          * Union only if the condition is true, otherwise the original object is returned.  You can pass in a function that returns a `CSG` object that only gets evaluated if the condition is true.
@@ -2472,5 +2638,4 @@ util = {
 
     }
 };
-
 // endinject
