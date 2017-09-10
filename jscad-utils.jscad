@@ -3,6 +3,7 @@
  */
 
 
+
 /**
  * jscad-utils
  * @type {Object}
@@ -468,18 +469,31 @@ util = {
 
         // var c = util.centroid(object);
         var size = this.size(object.getBounds());
-
+        
+        var axesValues = ['x', 'y', 'z'];
+        var sizeAxes = [size.x, size.y, size.z];
+        var axes = sizeAxes.reduce(function(result, a, idx) {
+          if (a) result.push(axesValues[idx]);
+          return result;
+        }, []).join('');
+        
         function scale(size, value) {
             if (value == 0) return 1;
             return value / size;
         }
 
-        var s = [scale(size.x, x), scale(size.y, y), scale(size.z, z)];
+        var s = this.axisApply(axes, function(axis){
+          return scale(sizeAxes[axis], a[axis]);
+        }, sizeAxes).filter(x => x);
+        
         var min = util.array.min(s);
-        return util.centerWith(object.scale(s.map(function (d, i) {
+        
+        var sc = s.map(function (d, i) {
             if (a[i] === 0) return 1; // don't scale when value is zero
             return keep_aspect_ratio ? min : d;
-        })), 'xyz', object);
+        });
+        
+        return util.centerWith(object.transform(CSG.Matrix4x4.scaling(sc)), axes, object);
     },
 
     shift: function shift(object, x, y, z) {
@@ -496,59 +510,65 @@ util = {
         return x.union([x.mirroredY(90), x.mirroredX(90), x.mirroredY(90).mirroredX(90)]);
     },
 
-    flushSide: {
-        'above-outside': [1, 0],
-        'above-inside': [1, 1],
-        'below-outside': [0, 1],
-        'below-inside': [0, 0],
-        'outside+': [0, 1],
-        'outside-': [1, 0],
-        'inside+': [1, 1],
-        'inside-': [0, 0],
-        'center+': [-1, 1],
-        'center-': [-1, 0]
-    },
+    
 
-    calcFlush: function calcFlush(moveobj, withobj, axes, mside, wside) {
-        util.depreciated('calcFlush', false, 'Use util.calcSnap instead.');
-
-        var side;
-
-        if (mside === 0 || mside === 1) {
-            // wside = wside !== undefined ? wside : mside;
-            side = [wside !== undefined ? wside : mside, mside];
-        } else {
-            side = util.flushSide[mside];
-            if (!side) util.error('invalid side: ' + mside);
-        }
-
-        var m = moveobj.getBounds();
-        var w = withobj.getBounds();
-
-        // Add centroid if needed
-        if (side[0] === -1) {
-            w[-1] = util.array.toxyz(withobj.centroid());
-        }
-
-        return this.axisApply(axes, function (i, axis) {
-            return w[side[0]][axis] - m[side[1]][axis];
-        });
+    // calcFlush: function calcFlush(moveobj, withobj, axes, mside, wside) {
+    //     util.depreciated('calcFlush', false, 'Use util.calcSnap instead.');
+    // 
+    //     var side;
+    // 
+    //     if (mside === 0 || mside === 1) {
+    //         // wside = wside !== undefined ? wside : mside;
+    //         side = [wside !== undefined ? wside : mside, mside];
+    //     } else {
+    //         side = util.flushSide[mside];
+    //         if (!side) util.error('invalid side: ' + mside);
+    //     }
+    // 
+    //     var m = moveobj.getBounds();
+    //     var w = withobj.getBounds();
+    // 
+    //     // Add centroid if needed
+    //     if (side[0] === -1) {
+    //         w[-1] = util.array.toxyz(withobj.centroid());
+    //     }
+    // 
+    //     return this.axisApply(axes, function (i, axis) {
+    //         return w[side[0]][axis] - m[side[1]][axis];
+    //     });
+    // },
+    // 
+    flushSide: function flushSide(axis, orientation) {
+        var sides = {
+        'above-outside': () => [1, 0],
+        'above-inside': () =>  [1, 1],
+        'below-outside': () =>  [0, 1],
+        'below-inside': () =>  [0, 0],
+        'outside+': () =>  [0, 1],
+        'outside-': () =>  [1, 0],
+        'inside+': () =>  [1, 1],
+        'inside-': () =>  [0, 0],
+        'center+': () =>  [-1, 1],
+        'center-': () =>  [-1, 0]
+      };
+      
+      return sides[orientation]();
     },
 
     calcSnap: function calcSnap(moveobj, withobj, axes, orientation, delta) {
-        var side = util.flushSide[orientation];
+        var side = util.flushSide(axes, orientation);
 
-        if (!side) {
-            var fix = {
-                '01': 'outside+',
-                '10': 'outside-',
-                '11': 'inside+',
-                '00': 'inside-',
-                '-11': 'center+',
-                '-10': 'center-'
-            };
-            util.error('util.calcSnap: invalid side: ' + orientation + ' should be ' + fix['' + orientation + delta]);
-        }
+        // if (!side) {
+        //     var fix = {
+        //         '01': 'outside+',
+        //         '10': 'outside-',
+        //         '11': 'inside+',
+        //         '00': 'inside-',
+        //         '-11': 'center+',
+        //         '-10': 'center-'
+        //     };
+        //     util.error('util.calcSnap: invalid side: ' + orientation + ' should be ' + fix['' + orientation + delta]);
+        // }
 
         var m = moveobj.getBounds();
         var w = withobj.getBounds();
@@ -965,7 +985,10 @@ util = {
      */
     bisect: function bisect(object, axis, offset, angle, rotateaxis, rotateoffset, options) {
         options = util.defaults(options, {
-            addRotationCenter: false
+            addRotationCenter: false,
+            negativeColor: 'red',
+            positiveColor: 'blue',
+            colors: false
         });
         angle = angle || 0;
         var info = util.normalVector(axis);
@@ -1009,7 +1032,7 @@ util = {
         var cutplane = CSG.OrthoNormalBasis.GetCartesian(info.orthoNormalCartesian[0], info.orthoNormalCartesian[1])
             .translate(cutDelta).rotate(rotationCenter, rotationAxis, angle);
 
-        var g = util.group('negative,positive', [object.cutByPlane(cutplane.plane).color('red'), object.cutByPlane(cutplane.plane.flipped()).color('blue')]);
+        var g = util.group('negative,positive', [object.cutByPlane(cutplane.plane).color(options.colors ? options.negativeColor : ''), object.cutByPlane(cutplane.plane.flipped()).color(options.colors ? options.positiveColor : '')]);
 
         if (options.addRotationCenter) g.add(util.unitAxis(size.length() + 10, 0.5, rotationCenter), 'rotationCenter');
 
@@ -1020,7 +1043,7 @@ util = {
      * Wraps the `stretchAtPlane` call using the same
      * logic as `bisect`.
      * @param  {CSG} object   Object to stretch
-     * @param  {String} axis     Axis to streatch along
+     * @param  {String} axis     Axis to stretch along
      * @param  {Number} distance Distance to stretch
      * @param  {Number} offset   Offset along the axis to cut the object
      * @return {CSG}          The stretched object.
@@ -1706,6 +1729,14 @@ util = {
         };
 
         CSG.prototype._translate = CSG.prototype.translate;
+        
+        CSG.prototype.resultIf = function resultIf(condition, fn, ...args) {
+          return condition ? fn(this, ...args) : this;
+        };
+        
+        CSG.prototype.clone = function clone() {
+          return CSG.fromPolygons(this).toPolygons();
+        };
 
         /**
          * This modifies the normal `CSG.translate` method to accept

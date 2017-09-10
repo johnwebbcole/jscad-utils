@@ -192,6 +192,7 @@ Colors = {
 
     color: function (o, r, g, b, a) {
         if (typeof (r) !== 'string') return this.setColor(r, g, b, a);
+        if (r === '') return o; // shortcut for no color
         var c = Colors.name2rgb(r).map(function (x) {
             return x / 255;
         });

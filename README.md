@@ -25,6 +25,10 @@ main() {
 }
 ```
 
+## Publishing
+
+Use [np](https://github.com/sindresorhus/np) to publish to NPM.
+
 ## Examples
 Examples are placed in the `dist` directory with the `jscad-utils.jscad` file injected into them.  This allows the files to be included directly into openjscad.org.
 
@@ -723,7 +727,7 @@ logic as `bisect`.
 | Param | Type | Description |
 | --- | --- | --- |
 | object | <code>CSG</code> | Object to stretch |
-| axis | <code>String</code> | Axis to streatch along |
+| axis | <code>String</code> | Axis to stretch along |
 | distance | <code>Number</code> | Distance to stretch |
 | offset | <code>Number</code> | Offset along the axis to cut the object |
 
