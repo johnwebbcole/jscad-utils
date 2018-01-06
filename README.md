@@ -42,6 +42,8 @@ Here are some of the examples:
 ## API Reference
 
 ### Added `CSG` methods
+JWC jscad utilities
+
 
 * [CSG](#module_CSG)
     * [.color([red or css name], [green or alpha], [blue], [alpha])](#module_CSG.color) ⇒ <code>CSG</code>
@@ -457,7 +459,7 @@ jscad-utils
     * [.map(o, f)](#module_util.map) ⇒ <code>array</code>
     * [.size(o)](#module_util.size) ⇒ <code>CSG.Vector3D</code>
     * [.scale(size, value)](#module_util.scale) ⇒ <code>number</code>
-    * [.enlarge(object, x, y, z)](#module_util.enlarge) ⇒ <code>CSG</code>
+    * [.enlarge(object, x, y, z, [options])](#module_util.enlarge) ⇒ <code>CSG</code>
     * [.fit(object, x, y, z, keep_aspect_ratio)](#module_util.fit) ⇒ <code>CSG</code>
     * [.flush(moveobj, withobj, axis, mside, wside)](#module_util.flush) ⇒ <code>CSG</code>
     * [.group(names, objects)](#module_util.group) ⇒ <code>object</code>
@@ -602,7 +604,7 @@ of percentages.
 
 <a name="module_util.enlarge"></a>
 
-### util.enlarge(object, x, y, z) ⇒ <code>CSG</code>
+### util.enlarge(object, x, y, z, [options]) ⇒ <code>CSG</code>
 Enlarge an object by scale units, while keeping the same
 centroid.  For example util.enlarge(o, 1, 1, 1) enlarges
 object o by 1mm in each access, while the centroid stays the same.
@@ -610,12 +612,13 @@ object o by 1mm in each access, while the centroid stays the same.
 **Kind**: static method of <code>[util](#module_util)</code>  
 **Returns**: <code>CSG</code> - [description]  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| object | <code>CSG</code> | [description] |
-| x | <code>number</code> | [description] |
-| y | <code>number</code> | [description] |
-| z | <code>number</code> | [description] |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| object | <code>CSG</code> |  | [description] |
+| x | <code>number</code> |  | [description] |
+| y | <code>number</code> |  | [description] |
+| z | <code>number</code> |  | [description] |
+| [options] | <code>Object</code> | <code>{ centroid:     true }</code> | [description] |
 
 <a name="module_util.fit"></a>
 
