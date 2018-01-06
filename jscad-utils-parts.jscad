@@ -15,14 +15,19 @@
  * @exports Parts
  */
 Parts = {
-    BBox: function (object) {
-        return CSG.cube({
-            center: object.centroid(),
-            radius: object.size().dividedBy(2)
+    BBox: function(...objects) {
+        var box = object =>
+            CSG.cube({
+                center: object.centroid(),
+                radius: object.size().dividedBy(2)
+            });
+        return objects.reduce(function(bbox, part) {
+            var object = bbox ? union([bbox, box(part)]) : part;
+            return box(object);
         });
     },
 
-    Cube: function (width) {
+    Cube: function(width) {
         var r = util.divA(util.array.fromxyz(width), 2);
         return CSG.cube({
             center: r,
@@ -30,8 +35,7 @@ Parts = {
         });
     },
 
-    RoundedCube: function (...args) {
-      
+    RoundedCube: function(...args) {
         if (args[0].getBounds) {
             var size = util.size(args[0].getBounds());
             var r = [size.x / 2, size.y / 2];
@@ -42,7 +46,7 @@ Parts = {
             var thickness = args[2]; // eslint-disable-line no-redeclare
             var corner_radius = args[3]; // eslint-disable-line no-redeclare
         }
-        
+
         // console.log('RoundedCube.args', size, r, thickness, corner_radius);
         var roundedcube = CAG.roundedRectangle({
             center: [r[0], r[1], 0],
@@ -62,7 +66,7 @@ Parts = {
      * @param {Number} options  Options passed to the `CSG.cylinder` function.
      * @return {CSG} A CSG Cylinder
      */
-    Cylinder: function (diameter, height, options) {
+    Cylinder: function(diameter, height, options) {
         options = util.defaults(options, {
             start: [0, 0, 0],
             end: [0, 0, height],
@@ -71,7 +75,7 @@ Parts = {
         return CSG.cylinder(options);
     },
 
-    Cone: function (diameter1, diameter2, height) {
+    Cone: function(diameter1, diameter2, height) {
         return CSG.cylinder({
             start: [0, 0, 0],
             end: [0, 0, height],
@@ -85,7 +89,7 @@ Parts = {
      * @param {number} diameter Outside diameter of the hexagon
      * @param {number} height   height of the hexagon
      */
-    Hexagon: function (diameter, height) {
+    Hexagon: function(diameter, height) {
         var radius = diameter / 2;
         var sqrt3 = Math.sqrt(3) / 2;
         var hex = CAG.fromPoints([
@@ -102,7 +106,7 @@ Parts = {
         });
     },
 
-    Triangle: function (base, height) {
+    Triangle: function(base, height) {
         var radius = base / 2;
         var tri = CAG.fromPoints([
             [-radius, 0],
@@ -124,11 +128,23 @@ Parts = {
      * @param {Object} insideOptions   Options passed to the inside cylinder
      * @returns {CSG}  A CSG Tube
      */
-    Tube: function Tube(outsideDiameter, insideDiameter, height, outsideOptions, insideOptions) {
-        return Parts.Cylinder(outsideDiameter, height, outsideOptions).subtract(Parts.Cylinder(insideDiameter, height, insideOptions || outsideOptions));
+    Tube: function Tube(
+        outsideDiameter,
+        insideDiameter,
+        height,
+        outsideOptions,
+        insideOptions
+    ) {
+        return Parts.Cylinder(outsideDiameter, height, outsideOptions).subtract(
+            Parts.Cylinder(
+                insideDiameter,
+                height,
+                insideOptions || outsideOptions
+            )
+        );
     },
 
-    Board: function (width, height, corner_radius, thickness) {
+    Board: function(width, height, corner_radius, thickness) {
         var r = util.divA([width, height], 2);
         var board = CAG.roundedRectangle({
             center: [r[0], r[1], 0],
@@ -153,7 +169,7 @@ Parts = {
             }
         },
 
-        Screw: function (head, thread, headClearSpace, options) {
+        Screw: function(head, thread, headClearSpace, options) {
             options = util.defaults(options, {
                 orientation: 'up',
                 clearance: [0, 0, 0]
@@ -162,14 +178,18 @@ Parts = {
             var orientation = Parts.Hardware.Orientation[options.orientation];
             var group = util.group('head,thread', {
                 head: head.color('gray'),
-                thread: thread.snap(head, 'z', orientation.head).color('silver'),
+                thread: thread.snap(head, 'z', orientation.head).color('silver')
             });
 
             if (headClearSpace) {
-                group.add(headClearSpace
-                    .enlarge(options.clearance)
-                    .snap(head, 'z', orientation.clear)
-                    .color('red'), 'headClearSpace', true);
+                group.add(
+                    headClearSpace
+                        .enlarge(options.clearance)
+                        .snap(head, 'z', orientation.clear)
+                        .color('red'),
+                    'headClearSpace',
+                    true
+                );
             }
 
             return group;
@@ -184,7 +204,14 @@ Parts = {
          * @param {number} clearLength  Length of the clearance section of the head.
          * @param {object} options      Screw options include orientation and clerance scale.
          */
-        PanHeadScrew: function (headDiameter, headLength, diameter, length, clearLength, options) {
+        PanHeadScrew: function(
+            headDiameter,
+            headLength,
+            diameter,
+            length,
+            clearLength,
+            options
+        ) {
             var head = Parts.Cylinder(headDiameter, headLength);
             var thread = Parts.Cylinder(diameter, length);
 
@@ -204,7 +231,14 @@ Parts = {
          * @param {number} clearLength  Length of the clearance section of the head.
          * @param {object} options      Screw options include orientation and clerance scale.
          */
-        HexHeadScrew: function (headDiameter, headLength, diameter, length, clearLength, options) {
+        HexHeadScrew: function(
+            headDiameter,
+            headLength,
+            diameter,
+            length,
+            clearLength,
+            options
+        ) {
             var head = Parts.Hexagon(headDiameter, headLength);
             var thread = Parts.Cylinder(diameter, length);
 
@@ -224,7 +258,14 @@ Parts = {
          * @param {number} clearLength  clearance length
          * @param {object} options      options
          */
-        FlatHeadScrew: function (headDiameter, headLength, diameter, length, clearLength, options) {
+        FlatHeadScrew: function(
+            headDiameter,
+            headLength,
+            diameter,
+            length,
+            clearLength,
+            options
+        ) {
             var head = Parts.Cone(headDiameter, diameter, headLength);
             // var head = Parts.Cylinder(headDiameter, headLength);
             var thread = Parts.Cylinder(diameter, length);

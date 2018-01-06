@@ -1,0 +1,33 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "sourceType": "module"
+  },
+  "env": {
+    "browser": true,
+    "es6": true
+  },
+  "globals": {
+    "CSG": true,
+    "CAG": true,
+    "echo": true,
+    "util": true,
+    "include": true,
+    "union": true,
+    "Colors": true,
+    "RaspberryPi": true,
+    "Boxes": true,
+    "Parts": true,
+    "_": true,
+    "vector_text": true,
+    "vector_char": true,
+    "rectangular_extrude": true
+  },
+  "plugins": [],
+  "extends": "eslint:recommended",
+  "rules": {
+    "linebreak-style": [2, "unix"],
+    "quotes": [2, "single"],
+    "semi": [2, "always"]
+  }
+}

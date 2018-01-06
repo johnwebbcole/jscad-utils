@@ -1,38 +1,82 @@
 {
-  "name": "jscad-utils",
-  "version": "3.1.2",
-  "description": "Utilities for use in a jscad script.",
-  "main": "jscad-utils.jscad",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 0"
-  },
-  "keywords": [
-    "jscad"
-  ],
-  "homepage": "https://github.com/johnwebbcole/jscad-utils",
-  "bugs": "https://github.com/johnwebbcole/jscad-utils/issues",
-  "author": {
-    "name": "John Cole",
-    "email": "johnwebbcole@gmail.com",
-    "url": "http://github.com/johnwebbcole@gmail.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/johnwebbcole/jscad-utils.git"
-  },
-  "license": "ISC",
-  "dependencies": {},
-  "devDependencies": {
-    "del": "^2.2.0",
-    "gulp": "^3.9.1",
-    "gulp-concat": "^2.6.0",
-    "gulp-eslint": "^3.0.1",
-    "gulp-inject": "^4.1.0",
-    "gulp-jscad-files": "^2.0.1",
-    "gulp-jsdoc-to-markdown": "^1.2.1",
-    "gulp-load-plugins": "^1.2.4",
-    "gulp-plumber": "^1.1.0",
-    "gulp-util": "^3.0.7",
-    "gulp-watch": "^4.3.6"
-  }
+    "name": "jscad-utils",
+    "version": "3.1.2",
+    "description": "Utilities for use in a jscad script.",
+    "main": "dist/index.js",
+    "module": "src/index.js",
+    "scripts": {
+        "test": "ava",
+        "build": "rollup -c rollup.config.js"
+    },
+    "keywords": [
+        "jscad"
+    ],
+    "homepage": "https://github.com/johnwebbcole/jscad-utils",
+    "bugs": "https://github.com/johnwebbcole/jscad-utils/issues",
+    "author": {
+        "name": "John Cole",
+        "email": "johnwebbcole@gmail.com",
+        "url": "http://github.com/johnwebbcole@gmail.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/johnwebbcole/jscad-utils.git"
+    },
+    "license": "ISC",
+    "dependencies": {
+        "@jscad/csg": "^0.3.7",
+        "@jscad/scad-api": "^0.4.2"
+    },
+    "devDependencies": {
+        "ava": "^0.24.0",
+        "babel-cli": "^6.26.0",
+        "babel-preset-env": "^1.6.1",
+        "babelify": "^8.0.0",
+        "del": "^3.0.0",
+        "eslint": "^4.12.1",
+        "eslint-plugin-ava": "^4.3.0",
+        "gulp": "^3.9.1",
+        "gulp-concat": "^2.6.0",
+        "gulp-eslint": "^4.0.0",
+        "gulp-inject": "^4.1.0",
+        "gulp-jscad-files": "^2.0.1",
+        "gulp-jsdoc-to-markdown": "^1.2.1",
+        "gulp-load-plugins": "^1.2.4",
+        "gulp-plumber": "^1.1.0",
+        "gulp-util": "^3.0.7",
+        "gulp-watch": "^4.3.6",
+        "rollup": "^0.52.0",
+        "rollup-plugin-commonjs": "^8.2.6",
+        "rollup-plugin-node-resolve": "^3.0.0"
+    },
+    "ava": {
+        "files": [
+            "test/**/*.js"
+        ],
+        "source": [
+            "src/**/*.js"
+        ],
+        "tap": true,
+        "require": [
+            "babel-register"
+        ],
+        "babel": "inherit"
+    },
+    "babel": {
+        "presets": [
+            "env"
+        ]
+    },
+    "browserify": {
+        "transform": [
+            [
+                "babelify",
+                {
+                    "presets": [
+                        "env"
+                    ]
+                }
+            ]
+        ]
+    }
 }

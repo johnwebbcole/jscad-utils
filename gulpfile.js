@@ -7,6 +7,7 @@ var del = require('del');
 var gulpLoadPlugins = require('gulp-load-plugins');
 var plugins = gulpLoadPlugins();
 // var runSequence = require('run-sequence');
+var rollup = require('rollup');
 
 gulp.task('clean', function (done) {
     del(['README.md', 'dist/jscad-utils.js']).then(paths => {
