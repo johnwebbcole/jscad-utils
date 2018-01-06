@@ -730,7 +730,7 @@ logic as `bisect`.
 | Param | Type | Description |
 | --- | --- | --- |
 | object | <code>CSG</code> | Object to stretch |
-| axis | <code>String</code> | Axis to streatch along |
+| axis | <code>String</code> | Axis to stretch along |
 | distance | <code>Number</code> | Distance to stretch |
 | offset | <code>Number</code> | Offset along the axis to cut the object |
 

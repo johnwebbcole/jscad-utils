@@ -533,13 +533,23 @@ util = {
 
         // var c = util.centroid(object);
         var size = this.size(object.getBounds());
-
+        
+        var axesValues = ['x', 'y', 'z'];
+        var sizeAxes = [size.x, size.y, size.z];
+        var axes = sizeAxes.reduce(function(result, a, idx) {
+          if (a) result.push(axesValues[idx]);
+          return result;
+        }, []).join('');
+        
         function scale(size, value) {
             if (value == 0) return 1;
             return value / size;
         }
 
-        var s = [scale(size.x, x), scale(size.y, y), scale(size.z, z)];
+        var s = this.axisApply(axes, function(axis){
+          return scale(sizeAxes[axis], a[axis]);
+        }, sizeAxes).filter(x => x);
+        
         var min = util.array.min(s);
 
         return util.centerWith(
@@ -631,6 +641,7 @@ util = {
                     fix['' + orientation + delta]
             );
         }
+
 
         var m = moveobj.getBounds();
         var w = withobj.getBounds();
@@ -1119,7 +1130,10 @@ util = {
         options
     ) {
         options = util.defaults(options, {
-            addRotationCenter: false
+            addRotationCenter: false,
+            negativeColor: 'red',
+            positiveColor: 'blue',
+            colors: false
         });
         angle = angle || 0;
         var info = util.normalVector(axis);
@@ -1185,7 +1199,7 @@ util = {
      * Wraps the `stretchAtPlane` call using the same
      * logic as `bisect`.
      * @param  {CSG} object   Object to stretch
-     * @param  {String} axis     Axis to streatch along
+     * @param  {String} axis     Axis to stretch along
      * @param  {Number} distance Distance to stretch
      * @param  {Number} offset   Offset along the axis to cut the object
      * @return {CSG}          The stretched object.
@@ -1996,6 +2010,14 @@ util = {
         };
 
         CSG.prototype._translate = CSG.prototype.translate;
+        
+        CSG.prototype.resultIf = function resultIf(condition, fn, ...args) {
+          return condition ? fn(this, ...args) : this;
+        };
+        
+        CSG.prototype.clone = function clone() {
+          return CSG.fromPolygons(this).toPolygons();
+        };
 
         /**
          * This modifies the normal `CSG.translate` method to accept
