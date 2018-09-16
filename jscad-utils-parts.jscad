@@ -67,6 +67,7 @@ Parts = {
      * @return {CSG} A CSG Cylinder
      */
     Cylinder: function(diameter, height, options) {
+        console.log("jscad parts.Cylinder");
         options = util.defaults(options, {
             start: [0, 0, 0],
             end: [0, 0, height],
