@@ -1,5 +1,5 @@
 {
-  "name": "jscad-utils",
+  "name": "@jwc/jscad-utils",
   "version": "3.2.0",
   "description": "Utilities for use in a jscad script.",
   "main": "dist/index.js",
