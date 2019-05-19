@@ -4,6 +4,7 @@ import { fromxyz, div } from "./array";
 const scadApi = require("@jscad/scad-api");
 const { cube, sphere, cylinder } = scadApi.primitives3d;
 import * as util from "./util";
+import Group from "./group";
 
 export default { BBox, Cube, RoundedCube, Cylinder, Cone };
 
@@ -166,7 +167,7 @@ export const Hardware = {
     });
 
     var orientation = Parts.Hardware.Orientation[options.orientation];
-    var group = util.group("head,thread", {
+    var group = Group("head,thread", {
       head: head.color("gray"),
       thread: thread.snap(head, "z", orientation.head).color("silver")
     });

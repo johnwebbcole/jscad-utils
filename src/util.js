@@ -4,6 +4,7 @@ import jsCadCSG from "@jscad/csg";
 const { CSG } = jsCadCSG;
 import scadApi from "@jscad/scad-api";
 const { vector_text, rectangular_extrude, vector_char } = scadApi;
+import Group from "./group";
 
 export var NOZZEL_SIZE = 0.4;
 export const nearest = {
@@ -713,7 +714,7 @@ export function bisect(
     .translate(cutDelta)
     .rotate(rotationCenter, rotationAxis, angle);
 
-  var g = util.group("negative,positive", [
+  var g = Group("negative,positive", [
     object.cutByPlane(cutplane.plane).color("red"),
     object.cutByPlane(cutplane.plane.flipped()).color("blue")
   ]);

@@ -21,6 +21,7 @@ test("defaults", t => {
   var error = t.throws(() => util.defaults({ a: 0 }, { b: 1 }));
   t.is(error.message, "defaults is depreciated. use Object.assign instead");
 });
+
 test("isEmpty", t => {
   t.true(util.isEmpty(undefined));
   t.true(util.isEmpty(null));
