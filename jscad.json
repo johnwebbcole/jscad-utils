@@ -1,5 +1,3 @@
 {
-    "files": [
-        "dist/utils.jscad"
-    ]
+  "files": ["dist/compat.js"]
 }

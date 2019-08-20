@@ -1,10 +1,10 @@
-import jsCadCSG from "@jscad/csg";
+import jsCadCSG from '@jscad/csg';
 const { CSG } = jsCadCSG;
-import { fromxyz, div } from "./array";
-const scadApi = require("@jscad/scad-api");
-const { cube, sphere, cylinder } = scadApi.primitives3d;
-import * as util from "./util";
-import Group from "./group";
+import { fromxyz, div } from './array';
+// import scadApi from '@jscad/scad-api';
+// const { cube, sphere, cylinder } = scadApi.primitives3d;
+import * as util from './util';
+import Group from './group';
 
 export default { BBox, Cube, RoundedCube, Cylinder, Cone };
 
@@ -14,7 +14,7 @@ export function BBox(...objects) {
       center: object.centroid(),
       radius: object.size().dividedBy(2)
     });
-  return objects.reduce(function(bbox, part) {
+  return objects.reduce(function (bbox, part) {
     var object = bbox ? union([bbox, box(part)]) : part;
     return box(object);
   });
@@ -60,7 +60,7 @@ export function RoundedCube(...args) {
  * @return {CSG} A CSG Cylinder
  */
 export function Cylinder(diameter, height, options) {
-  console.log("parts.Cylinder", diameter, height, options);
+  console.log('parts.Cylinder', diameter, height, options);
   options = {
     ...options,
     start: [0, 0, 0],
@@ -130,9 +130,27 @@ export function Tube(
   outsideOptions,
   insideOptions
 ) {
-  return Parts.Cylinder(outsideDiameter, height, outsideOptions).subtract(
-    Parts.Cylinder(insideDiameter, height, insideOptions || outsideOptions)
+  return Cylinder(outsideDiameter, height, outsideOptions).subtract(
+    Cylinder(insideDiameter, height, insideOptions || outsideOptions)
   );
+}
+
+/**
+ *
+ * @param {Number} width
+ * @param {Number} height
+ */
+export function Anchor(width = 10, height = 10) {
+  var hole = Cylinder(width, height)
+    .Center()
+    .color('red');
+  var post = Cylinder(height / 2, width * 0.66)
+    .rotateX(90)
+    .align(hole, 'xz')
+    .snap(hole, 'y', 'inside-')
+    .translate([0, 0, -height / 6])
+    .color('purple');
+  return Group({ post, hole });
 }
 
 export function Board(width, height, corner_radius, thickness) {
@@ -151,34 +169,34 @@ export function Board(width, height, corner_radius, thickness) {
 export const Hardware = {
   Orientation: {
     up: {
-      head: "outside-",
-      clear: "inside+"
+      head: 'outside-',
+      clear: 'inside+'
     },
     down: {
-      head: "outside+",
-      clear: "inside-"
+      head: 'outside+',
+      clear: 'inside-'
     }
   },
 
-  Screw: function(head, thread, headClearSpace, options) {
+  Screw: function (head, thread, headClearSpace, options) {
     options = util.defaults(options, {
-      orientation: "up",
+      orientation: 'up',
       clearance: [0, 0, 0]
     });
 
-    var orientation = Parts.Hardware.Orientation[options.orientation];
-    var group = Group("head,thread", {
-      head: head.color("gray"),
-      thread: thread.snap(head, "z", orientation.head).color("silver")
+    var orientation = Hardware.Orientation[options.orientation];
+    var group = Group('head,thread', {
+      head: head.color('gray'),
+      thread: thread.snap(head, 'z', orientation.head).color('silver')
     });
 
     if (headClearSpace) {
       group.add(
         headClearSpace
           .enlarge(options.clearance)
-          .snap(head, "z", orientation.clear)
-          .color("red"),
-        "headClearSpace",
+          .snap(head, 'z', orientation.clear)
+          .color('red'),
+        'headClearSpace',
         true
       );
     }
@@ -187,15 +205,15 @@ export const Hardware = {
   },
 
   /**
-   * Creates a `Group` object with a Pan Head Screw.
-   * @param {number} headDiameter Diameter of the head of the screw
-   * @param {number} headLength   Length of the head
-   * @param {number} diameter     Diameter of the threaded shaft
-   * @param {number} length       Length of the threaded shaft
-   * @param {number} clearLength  Length of the clearance section of the head.
-   * @param {object} options      Screw options include orientation and clerance scale.
-   */
-  PanHeadScrew: function(
+     * Creates a `Group` object with a Pan Head Screw.
+     * @param {number} headDiameter Diameter of the head of the screw
+     * @param {number} headLength   Length of the head
+     * @param {number} diameter     Diameter of the threaded shaft
+     * @param {number} length       Length of the threaded shaft
+     * @param {number} clearLength  Length of the clearance section of the head.
+     * @param {object} options      Screw options include orientation and clerance scale.
+     */
+  PanHeadScrew: function (
     headDiameter,
     headLength,
     diameter,
@@ -203,26 +221,26 @@ export const Hardware = {
     clearLength,
     options
   ) {
-    var head = Parts.Cylinder(headDiameter, headLength);
-    var thread = Parts.Cylinder(diameter, length);
+    var head = Cylinder(headDiameter, headLength);
+    var thread = Cylinder(diameter, length);
 
     if (clearLength) {
-      var headClearSpace = Parts.Cylinder(headDiameter, clearLength);
+      var headClearSpace = Cylinder(headDiameter, clearLength);
     }
 
-    return Parts.Hardware.Screw(head, thread, headClearSpace, options);
+    return Hardware.Screw(head, thread, headClearSpace, options);
   },
 
   /**
-   * Creates a `Group` object with a Hex Head Screw.
-   * @param {number} headDiameter Diameter of the head of the screw
-   * @param {number} headLength   Length of the head
-   * @param {number} diameter     Diameter of the threaded shaft
-   * @param {number} length       Length of the threaded shaft
-   * @param {number} clearLength  Length of the clearance section of the head.
-   * @param {object} options      Screw options include orientation and clerance scale.
-   */
-  HexHeadScrew: function(
+     * Creates a `Group` object with a Hex Head Screw.
+     * @param {number} headDiameter Diameter of the head of the screw
+     * @param {number} headLength   Length of the head
+     * @param {number} diameter     Diameter of the threaded shaft
+     * @param {number} length       Length of the threaded shaft
+     * @param {number} clearLength  Length of the clearance section of the head.
+     * @param {object} options      Screw options include orientation and clerance scale.
+     */
+  HexHeadScrew: function (
     headDiameter,
     headLength,
     diameter,
@@ -230,26 +248,26 @@ export const Hardware = {
     clearLength,
     options
   ) {
-    var head = Parts.Hexagon(headDiameter, headLength);
-    var thread = Parts.Cylinder(diameter, length);
+    var head = Hexagon(headDiameter, headLength);
+    var thread = Cylinder(diameter, length);
 
     if (clearLength) {
-      var headClearSpace = Parts.Hexagon(headDiameter, clearLength);
+      var headClearSpace = Hexagon(headDiameter, clearLength);
     }
 
-    return Parts.Hardware.Screw(head, thread, headClearSpace, options);
+    return Hardware.Screw(head, thread, headClearSpace, options);
   },
 
   /**
-   * Create a Flat Head Screw
-   * @param {number} headDiameter head diameter
-   * @param {number} headLength   head length
-   * @param {number} diameter     thread diameter
-   * @param {number} length       thread length
-   * @param {number} clearLength  clearance length
-   * @param {object} options      options
-   */
-  FlatHeadScrew: function(
+     * Create a Flat Head Screw
+     * @param {number} headDiameter head diameter
+     * @param {number} headLength   head length
+     * @param {number} diameter     thread diameter
+     * @param {number} length       thread length
+     * @param {number} clearLength  clearance length
+     * @param {object} options      options
+     */
+  FlatHeadScrew: function (
     headDiameter,
     headLength,
     diameter,
@@ -257,14 +275,14 @@ export const Hardware = {
     clearLength,
     options
   ) {
-    var head = Parts.Cone(headDiameter, diameter, headLength);
-    // var head = Parts.Cylinder(headDiameter, headLength);
-    var thread = Parts.Cylinder(diameter, length);
+    var head = Cone(headDiameter, diameter, headLength);
+    // var head = Cylinder(headDiameter, headLength);
+    var thread = Cylinder(diameter, length);
 
     if (clearLength) {
-      var headClearSpace = Parts.Cylinder(headDiameter, clearLength);
+      var headClearSpace = Cylinder(headDiameter, clearLength);
     }
 
-    return Parts.Hardware.Screw(head, thread, headClearSpace, options);
+    return Hardware.Screw(head, thread, headClearSpace, options);
   }
 };

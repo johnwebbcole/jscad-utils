@@ -1,10 +1,11 @@
 // import array from 'src/array';
 // import triangle from 'src/triangle';
-import jsCadCSG from "@jscad/csg";
+import jsCadCSG from '@jscad/csg';
 const { CSG } = jsCadCSG;
-import scadApi from "@jscad/scad-api";
+import scadApi from '@jscad/scad-api';
 const { vector_text, rectangular_extrude, vector_char } = scadApi;
-import Group from "./group";
+import Group from './group';
+import * as array from './array';
 
 export var NOZZEL_SIZE = 0.4;
 export const nearest = {
@@ -54,7 +55,7 @@ export const identity = function(solid) {
  * @return {object}        the result of the function or the object.
  */
 export const result = function(object, f) {
-  if (typeof f === "function") {
+  if (typeof f === 'function') {
     return f.call(object);
   } else {
     return f;
@@ -68,12 +69,12 @@ export const result = function(object, f) {
  * @return {object}          Target object with default values assigned.
  */
 export const defaults = function(target, defaults) {
-  depreciated("defaults", true, "use Object.assign instead");
+  depreciated('defaults', true, 'use Object.assign instead');
   return Object.assign(defaults, target);
 };
 
 export const isEmpty = function(variable) {
-  return typeof variable === "undefined" || variable === null;
+  return typeof variable === 'undefined' || variable === null;
 };
 
 export const isNegative = function(n) {
@@ -99,10 +100,10 @@ export const error = function(msg) {
 };
 
 export const depreciated = function(method, error, message) {
-  var msg = method + " is depreciated." + (" " + message || "");
+  var msg = method + ' is depreciated.' + (' ' + message || '');
   // eslint-disable-next-line no-console
   if (!error && console && console.error)
-    console[error ? "error" : "warn"](msg); // eslint-disable-line no-console
+    console[error ? 'error' : 'warn'](msg); // eslint-disable-line no-console
   if (error) throw new Error(msg);
 };
 
@@ -246,7 +247,7 @@ export const mapPick = function(o, names, f, options) {
   return names.reduce(function(result, name) {
     if (!o[name]) {
       throw new Error(
-        `${name} not found in ${options.name}: ${Object.keys(o).join(",")}`
+        `${name} not found in ${options.name}: ${Object.keys(o).join(',')}`
       );
     }
     result.push(f ? f(o[name]) : o[name]);
@@ -255,7 +256,7 @@ export const mapPick = function(o, names, f, options) {
 };
 
 export const divA = function divA(a, f) {
-  return this.array.div(a, f);
+  return array.div(a, f);
 };
 
 export const divxyz = function(size, x, y, z) {
@@ -408,7 +409,7 @@ export const fit = function fit(object, x, y, z, keep_aspect_ratio) {
         return keep_aspect_ratio ? min : d;
       })
     ),
-    "xyz",
+    'xyz',
     object
   );
 };
@@ -432,20 +433,20 @@ export function mirrored4(x) {
 }
 
 export const flushSide = {
-  "above-outside": [1, 0],
-  "above-inside": [1, 1],
-  "below-outside": [0, 1],
-  "below-inside": [0, 0],
-  "outside+": [0, 1],
-  "outside-": [1, 0],
-  "inside+": [1, 1],
-  "inside-": [0, 0],
-  "center+": [-1, 1],
-  "center-": [-1, 0]
+  'above-outside': [1, 0],
+  'above-inside': [1, 1],
+  'below-outside': [0, 1],
+  'below-inside': [0, 0],
+  'outside+': [0, 1],
+  'outside-': [1, 0],
+  'inside+': [1, 1],
+  'inside-': [0, 0],
+  'center+': [-1, 1],
+  'center-': [-1, 0]
 };
 
 export function calcFlush(moveobj, withobj, axes, mside, wside) {
-  util.depreciated("calcFlush", false, "Use util.calcSnap instead.");
+  util.depreciated('calcFlush', false, 'Use util.calcSnap instead.');
 
   var side;
 
@@ -454,7 +455,7 @@ export function calcFlush(moveobj, withobj, axes, mside, wside) {
     side = [wside !== undefined ? wside : mside, mside];
   } else {
     side = util.flushSide[mside];
-    if (!side) util.error("invalid side: " + mside);
+    if (!side) util.error('invalid side: ' + mside);
   }
 
   var m = moveobj.getBounds();
@@ -475,18 +476,18 @@ export function calcSnap(moveobj, withobj, axes, orientation, delta) {
 
   if (!side) {
     var fix = {
-      "01": "outside+",
-      "10": "outside-",
-      "11": "inside+",
-      "00": "inside-",
-      "-11": "center+",
-      "-10": "center-"
+      '01': 'outside+',
+      '10': 'outside-',
+      '11': 'inside+',
+      '00': 'inside-',
+      '-11': 'center+',
+      '-10': 'center-'
     };
     util.error(
-      "util.calcSnap: invalid side: " +
+      'util.calcSnap: invalid side: ' +
         orientation +
-        " should be " +
-        fix["" + orientation + delta]
+        ' should be ' +
+        fix['' + orientation + delta]
     );
   }
 
@@ -504,8 +505,8 @@ export function calcSnap(moveobj, withobj, axes, orientation, delta) {
 
   return delta
     ? this.axisApply(axes, function(i) {
-        return t[i] + delta;
-      })
+      return t[i] + delta;
+    })
     : t;
 }
 
@@ -537,7 +538,7 @@ export const axisApply = function(axes, valfun, a) {
     y: 1,
     z: 2
   };
-  axes.split("").forEach(function(axis) {
+  axes.split('').forEach(function(axis) {
     retval[lookup[axis]] = valfun(lookup[axis], axis);
   });
 
@@ -545,7 +546,7 @@ export const axisApply = function(axes, valfun, a) {
 };
 
 export const axis2array = function(axes, valfun) {
-  util.depreciated("axis2array");
+  util.depreciated('axis2array');
   var a = [0, 0, 0];
   var lookup = {
     x: 0,
@@ -553,7 +554,7 @@ export const axis2array = function(axes, valfun) {
     z: 2
   };
 
-  axes.split("").forEach(function(axis) {
+  axes.split('').forEach(function(axis) {
     var i = lookup[axis];
     a[i] = valfun(i, axis);
   });
@@ -660,9 +661,9 @@ export function bisect(
   angle,
   rotateaxis,
   rotateoffset,
-  options
+  options = {}
 ) {
-  options = util.defaults(options, {
+  options = Object.assign(options, {
     addRotationCenter: false
   });
   angle = angle || 0;
@@ -673,9 +674,9 @@ export function bisect(
   rotateaxis =
     rotateaxis ||
     {
-      x: "y",
-      y: "x",
-      z: "x"
+      x: 'y',
+      y: 'x',
+      z: 'x'
     }[axis];
 
   // function getDelta(axis, offset) {
@@ -689,17 +690,17 @@ export function bisect(
 
   var cutDelta = options.cutDelta || util.getDelta(size, bounds, axis, offset);
   var rotateOffsetAxis = {
-    xy: "z",
-    yz: "x",
-    xz: "y"
-  }[[axis, rotateaxis].sort().join("")];
+    xy: 'z',
+    yz: 'x',
+    xz: 'y'
+  }[[axis, rotateaxis].sort().join('')];
   var centroid = object.centroid();
   var rotateDelta = util.getDelta(size, bounds, rotateOffsetAxis, rotateoffset);
 
   var rotationCenter =
     options.rotationCenter ||
     new CSG.Vector3D(
-      util.axisApply("xyz", function(i, a) {
+      util.axisApply('xyz', function(i, a) {
         if (a == axis) return cutDelta[i];
         if (a == rotateOffsetAxis) return rotateDelta[i];
         return centroid[a];
@@ -714,15 +715,15 @@ export function bisect(
     .translate(cutDelta)
     .rotate(rotationCenter, rotationAxis, angle);
 
-  var g = Group("negative,positive", [
-    object.cutByPlane(cutplane.plane).color("red"),
-    object.cutByPlane(cutplane.plane.flipped()).color("blue")
+  var g = Group('negative,positive', [
+    object.cutByPlane(cutplane.plane).color('red'),
+    object.cutByPlane(cutplane.plane.flipped()).color('blue')
   ]);
 
   if (options.addRotationCenter)
     g.add(
       util.unitAxis(size.length() + 10, 0.5, rotationCenter),
-      "rotationCenter"
+      'rotationCenter'
     );
 
   return g;
@@ -843,7 +844,7 @@ export function slices2poly(slices, options, axis) {
     })
   );
 
-  var rotateAxis = "rotate" + axis.toUpperCase();
+  var rotateAxis = 'rotate' + axis.toUpperCase();
   polygons = polygons.concat(
     last.poly._toPlanePolygons({
       translation: last.offset,
@@ -856,11 +857,11 @@ export function slices2poly(slices, options, axis) {
   var rotate =
     twistangle === 0
       ? function rotateZero(v) {
-          return v;
-        }
+        return v;
+      }
       : function rotate(v, angle, percent) {
-          return v[rotateAxis](angle * percent);
-        };
+        return v[rotateAxis](angle * percent);
+      };
 
   // walls
   var connectorAxis = last.offset.minus(first.offset).abs();
@@ -899,19 +900,19 @@ export function slices2poly(slices, options, axis) {
 export function normalVector(axis) {
   var axisInfo = {
     z: {
-      orthoNormalCartesian: ["X", "Y"],
+      orthoNormalCartesian: ['X', 'Y'],
       normalVector: CSG.Vector3D.Create(0, 1, 0)
     },
     x: {
-      orthoNormalCartesian: ["Y", "Z"],
+      orthoNormalCartesian: ['Y', 'Z'],
       normalVector: CSG.Vector3D.Create(0, 0, 1)
     },
     y: {
-      orthoNormalCartesian: ["X", "Z"],
+      orthoNormalCartesian: ['X', 'Z'],
       normalVector: CSG.Vector3D.Create(0, 0, 1)
     }
   };
-  if (!axisInfo[axis]) util.error("util.normalVector: invalid axis " + axis);
+  if (!axisInfo[axis]) util.error('util.normalVector: invalid axis ' + axis);
   return axisInfo[axis];
 }
 
@@ -920,13 +921,13 @@ export function sliceParams(orientation, radius, bounds) {
   var direction = orientation[1];
 
   var dirInfo = {
-    "dir+": {
+    'dir+': {
       sizeIdx: 1,
       sizeDir: -1,
       moveDir: -1,
       positive: true
     },
-    "dir-": {
+    'dir-': {
       sizeIdx: 0,
       sizeDir: 1,
       moveDir: 0,
@@ -934,7 +935,7 @@ export function sliceParams(orientation, radius, bounds) {
     }
   };
 
-  var info = dirInfo["dir" + direction];
+  var info = dirInfo['dir' + direction];
 
   return Object.assign(
     {
@@ -968,7 +969,7 @@ export function reShape(object, radius, orientation, options, slicer) {
   var ar = Math.abs(radius);
   var si = util.sliceParams(orientation, radius, b);
 
-  if (si.axis !== "z")
+  if (si.axis !== 'z')
     throw new Error(
       'util.reShape error: CAG._toPlanePolytons only uses the "z" axis.  You must use the "z" axis for now.'
     );
@@ -1056,7 +1057,7 @@ export function fillet(object, radius, orientation, options) {
   });
 }
 
-export function calcRotate(part, solid, axis, angle) {
+export function calcRotate(part, solid, axis /* , angle */) {
   var axes = {
     x: [1, 0, 0],
     y: [0, 1, 0],

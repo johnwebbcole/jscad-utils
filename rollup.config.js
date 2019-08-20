@@ -1,20 +1,26 @@
-import resolve from "rollup-plugin-node-resolve";
+import resolve from 'rollup-plugin-node-resolve';
+import babel from 'rollup-plugin-babel';
 // import commonjs from 'rollup-plugin-commonjs';
 
 export default {
-  input: "src/index.js",
+  input: 'src/index.js',
   output: {
-    file: "dist/index.js",
-    format: "cjs",
-    exports: "named"
+    name: 'jscadUtils',
+    file: 'dist/index.js',
+    format: 'iife',
+    exports: 'named',
+    globals: { '@jscad/csg': 'jsCadCSG', '@jscad/scad-api': 'scadApi' }
   },
-  external: ["@jscad/scad-api", "@jscad/csg"],
+  external: ['@jscad/scad-api', '@jscad/csg'],
   plugins: [
     resolve({
       customResolveOptions: {
-        moduleDirectory: "node_modules"
+        moduleDirectory: 'node_modules'
       },
       browser: true
+    }),
+    babel({
+      exclude: 'node_modules/**' // only transpile our source code
     })
     // commonjs({
     //     namedExports: {

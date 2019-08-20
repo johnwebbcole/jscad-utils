@@ -16,12 +16,12 @@ export { Group };
  * @return {object}         An object that has a parts dictionary, a `combine()` and `map()` function.
  */
 var Group = function Group(...args) {
-  var self = { name: "", names: [], parts: {} };
+  var self = { name: '', names: [], parts: {} };
   if (args && args.length > 0) {
     if (args.length === 2) {
       var [names, objects] = args;
 
-      self.names = (names && names.length > 0 && names.split(",")) || [];
+      self.names = (names && names.length > 0 && names.split(',')) || [];
 
       if (Array.isArray(objects)) {
         self.parts = util.zipObject(self.names, objects);
@@ -31,8 +31,8 @@ var Group = function Group(...args) {
         self.parts = objects || {};
       }
     } else {
-      var [objects] = args;
-      self.names = Object.keys(objects).filter(k => k !== "holes");
+      var [objects] = args; // eslint-disable-line no-redeclare
+      self.names = Object.keys(objects).filter(k => k !== 'holes');
       self.parts = Object.assign({}, objects);
       self.holes = objects.holes;
     }
@@ -44,21 +44,21 @@ var Group = function Group(...args) {
    * It is called with the parameters `(value, key)`
    * @return {Object}      Returns this object so it can be chained
    */
-  self.map = function(cb) {
+  self.map = function (cb) {
     self.parts = Object.keys(self.parts)
-      .filter(k => k !== "holes")
-      .reduce(function(result, key) {
+      .filter(k => k !== 'holes')
+      .reduce(function (result, key) {
         result[key] = cb(self.parts[key], key);
         return result;
       }, {});
 
     if (self.holes) {
       if (Array.isArray(self.holes)) {
-        self.holes = self.holes.map(function(hole, idx) {
+        self.holes = self.holes.map(function (hole, idx) {
           return cb(hole, idx);
         });
       } else {
-        self.holes = cb(self.holes, "holes");
+        self.holes = cb(self.holes, 'holes');
       }
     }
     return self;
@@ -72,7 +72,7 @@ var Group = function Group(...args) {
    * @param {string} subparts   Prefix for subparts if adding a group
    * @param {string} parts   When adding a group, you can pick the parts you want to include as the named part.
    */
-  self.add = function(object, name, hidden, subparts, parts) {
+  self.add = function (object, name, hidden, subparts, parts) {
     if (object.parts) {
       if (name) {
         // add the combined part
@@ -80,7 +80,7 @@ var Group = function Group(...args) {
         self.parts[name] = object.combine(parts);
 
         if (subparts) {
-          Object.keys(object.parts).forEach(function(key) {
+          Object.keys(object.parts).forEach(function (key) {
             self.parts[subparts + key] = object.parts[key];
           });
         }
@@ -96,20 +96,20 @@ var Group = function Group(...args) {
     return self;
   };
 
-  self.clone = function(map) {
+  self.clone = function (map) {
     if (!map) map = util.identity;
 
     // console.warn('clone() has been refactored');
     var group = util.group();
-    Object.keys(self.parts).forEach(function(key) {
+    Object.keys(self.parts).forEach(function (key) {
       var part = self.parts[key];
       var hidden = self.names.indexOf(key) == -1;
       group.add(map(CSG.fromPolygons(part.toPolygons())), key, hidden);
     });
 
     if (self.holes) {
-      group.holes = util.toArray(self.holes).map(function(part) {
-        return map(CSG.fromPolygons(part.toPolygons()), "holes");
+      group.holes = util.toArray(self.holes).map(function (part) {
+        return map(CSG.fromPolygons(part.toPolygons()), 'holes');
       });
     }
     return group;
@@ -122,27 +122,27 @@ var Group = function Group(...args) {
    * @param  {Number} angle Angle in degrees
    * @return {Group}       The rotoated group.
    */
-  self.rotate = function(solid, axis, angle) {
+  self.rotate = function (solid, axis, angle) {
     var axes = {
       x: [1, 0, 0],
       y: [0, 1, 0],
       z: [0, 0, 1]
     };
-    if (typeof solid === "string") {
+    if (typeof solid === 'string') {
       var _names = solid;
       solid = self.combine(_names);
     }
     var rotationCenter = solid.centroid();
     var rotationAxis = axes[axis];
 
-    self.map(function(part) {
+    self.map(function (part) {
       return part.rotate(rotationCenter, rotationAxis, angle);
     });
 
     return self;
   };
 
-  self.combine = function(pieces, options, map) {
+  self.combine = function (pieces, options, map) {
     options = Object.assign(
       {
         noholes: false
@@ -150,7 +150,7 @@ var Group = function Group(...args) {
       options
     );
 
-    pieces = pieces ? pieces.split(",") : self.names;
+    pieces = pieces ? pieces.split(',') : self.names;
     if (pieces.length === 0) {
       throw new Error(
         `no pieces found in ${self.name} pieces: ${pieces} parts: ${Object.keys(
@@ -162,7 +162,7 @@ var Group = function Group(...args) {
       util.mapPick(
         self.parts,
         pieces,
-        function(value, key, object) {
+        function (value, key, object) {
           return map ? map(value, key, object) : util.identity(value);
         },
         self.name
@@ -175,14 +175,14 @@ var Group = function Group(...args) {
     );
   };
 
-  self.combineAll = function(options, map) {
-    return self.combine(Object.keys(self.parts).join(","), options, map);
+  self.combineAll = function (options, map) {
+    return self.combine(Object.keys(self.parts).join(','), options, map);
   };
 
-  self.toArray = function(pieces) {
-    pieces = pieces ? pieces.split(",") : self.names;
+  self.toArray = function (pieces) {
+    pieces = pieces ? pieces.split(',') : self.names;
 
-    return pieces.map(function(piece) {
+    return pieces.map(function (piece) {
       if (!self.parts[piece])
         console.error(`Cannot find ${piece} in ${self.names}`);
       return self.parts[piece];
@@ -192,7 +192,7 @@ var Group = function Group(...args) {
   self.snap = function snap(part, to, axis, orientation, delta) {
     // console.log('group.snap', part, self);
     var t = util.calcSnap(self.combine(part), to, axis, orientation, delta);
-    self.map(function(part) {
+    self.map(function (part) {
       return part.translate(t);
     });
 
@@ -206,7 +206,7 @@ var Group = function Group(...args) {
       to,
       delta
     );
-    self.map(function(part, name) {
+    self.map(function (part /*, name */) {
       return part.translate(t);
     });
 
@@ -220,12 +220,12 @@ var Group = function Group(...args) {
 
   self.midlineTo = function midlineTo(part, axis, to) {
     var size = self.combine(part).size();
-    var t = util.axisApply(axis, function(i, a) {
+    var t = util.axisApply(axis, function (i, a) {
       return to - size[a] / 2;
     });
     // console.log('group.midlineTo', part, t);
     // var t = util.calcCenterWith(self.combine(part), axis, to, delta);
-    self.map(function(part) {
+    self.map(function (part) {
       return part.translate(t);
     });
 
@@ -239,7 +239,7 @@ var Group = function Group(...args) {
 
   self.translate = function translate() {
     var t = Array.prototype.slice.call(arguments, 0).reduce(
-      function(result, arg) {
+      function (result, arg) {
         // console.log('arg', arg);
         result = util.array.addArray(result, arg);
         return result;
@@ -248,7 +248,7 @@ var Group = function Group(...args) {
     );
 
     // console.log('group.translate', t);
-    self.map(function(part) {
+    self.map(function (part) {
       return part.translate(t);
     });
 
@@ -260,23 +260,23 @@ var Group = function Group(...args) {
     return self;
   };
 
-  self.pick = function(parts, map) {
-    var p = (parts && parts.length > 0 && parts.split(",")) || self.names;
+  self.pick = function (parts, map) {
+    var p = (parts && parts.length > 0 && parts.split(',')) || self.names;
     if (!map) map = util.identity;
 
     var g = util.group();
-    p.forEach(function(name) {
+    p.forEach(function (name) {
       g.add(map(CSG.fromPolygons(self.parts[name].toPolygons()), name), name);
     });
     return g;
   };
 
-  self.array = function(parts, map) {
-    var p = (parts && parts.length > 0 && parts.split(",")) || self.names;
+  self.array = function (parts, map) {
+    var p = (parts && parts.length > 0 && parts.split(',')) || self.names;
     if (!map) map = util.identity;
 
     var a = [];
-    p.forEach(function(name) {
+    p.forEach(function (name) {
       a.push(map(CSG.fromPolygons(self.parts[name].toPolygons()), name));
     });
     return a;

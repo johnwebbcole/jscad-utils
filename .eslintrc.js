@@ -7,11 +7,12 @@ module.exports = {
     },
     extends: 'eslint:recommended',
     parserOptions: {
-        sourceType: 'module'
+        sourceType: 'module',
+        ecmaVersion: 9
     },
-    plugins: ['ava'],
+    // plugins: ['ava'],
     rules: {
-        indent: ['error', 4],
+        indent: ['error', 2],
         'linebreak-style': ['error', 'unix'],
         quotes: ['error', 'single'],
         semi: ['error', 'always']
