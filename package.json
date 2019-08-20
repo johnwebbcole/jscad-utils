@@ -5,7 +5,9 @@
   "main": "dist/index.js",
   "module": "src/index.js",
   "files": [
-    "src"
+    "src",
+    "dist",
+    "jscad.json"
   ],
   "scripts": {
     "test": "ava",
