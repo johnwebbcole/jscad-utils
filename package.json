@@ -14,16 +14,16 @@
   "keywords": [
     "jscad"
   ],
-  "homepage": "https://github.com/johnwebbcole/jscad-utils",
-  "bugs": "https://github.com/johnwebbcole/jscad-utils/issues",
+  "homepage": "https://jwc.dev",
+  "bugs": "https://gitlab.com/johnwebbcole/jscad-utils/issues",
   "author": {
     "name": "John Cole",
     "email": "johnwebbcole@gmail.com",
-    "url": "http://github.com/johnwebbcole@gmail.com"
+    "url": "https://jwc.dev"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/johnwebbcole/jscad-utils.git"
+    "url": "git@gitlab.com:johnwebbcole/jscad-utils.git"
   },
   "license": "ISC",
   "dependencies": {
