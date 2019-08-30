@@ -647,7 +647,7 @@ export function getDelta(size, bounds, axis, offset, nonzero) {
  *
  * You can angle the cut plane and poistion the rotation point.
  *
- * ![bisect example](jsdoc2md/bisect.png)
+ * ![bisect example](../images/bisect.png)
  * @param  {CSG} object object to bisect
  * @param  {string} axis   axis to cut along
  * @param  {number} offset offset to cut at

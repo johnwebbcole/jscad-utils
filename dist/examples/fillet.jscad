@@ -1619,7 +1619,7 @@ function initJscadutils(_CSG, enableLogging) {
     }({}, jsCadCSG, scadApi);
     util = jscadUtils.compatV1;
     util.init.default(CSG);
-    if (enableLogging) console.log("initJscadutils:jscadUtils", jscadUtils);
+    console.log("initJscadutils:jscadUtils", jscadUtils);
     Parts = jscadUtils.parts;
     Boxes = jscadUtils.Boxes;
     return jscadUtils;

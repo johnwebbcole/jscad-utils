@@ -13,25 +13,21 @@ function initJscadutils(_CSG, enableLogging) {
     }
   };
 
-  // include:compat.js
+  // include:compat
   // endinject
 
   util = jscadUtils.compatV1;
 
   util.init.default(CSG);
 
-  if (enableLogging) console.log('initJscadutils:jscadUtils', jscadUtils);
+  console.log('initJscadutils:jscadUtils', jscadUtils);
   Parts = jscadUtils.parts;
   Boxes = jscadUtils.Boxes;
 
   return jscadUtils;
 }
 
-initJscadutils();
-
 var util = {
-  init: function unusedInit() {
-    return;
-  }
+  init: initJscadutils
 };
 /* eslint-enable */

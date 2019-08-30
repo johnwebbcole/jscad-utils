@@ -1062,7 +1062,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    *
    * You can angle the cut plane and poistion the rotation point.
    *
-   * ![bisect example](jsdoc2md/bisect.png)
+   * ![bisect example](../images/bisect.png)
    * @param  {CSG} object object to bisect
    * @param  {string} axis   axis to cut along
    * @param  {number} offset offset to cut at
@@ -2068,7 +2068,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * jscad box and join utilities.  This should be considered experimental,
    * but there are some usefull utilities here.
    *
-   * ![parts example](jsdoc2md/rabett.png)
+   * ![parts example](../images/rabett.png)
    * @example
    *include('dist/jscad-utils.jscad');
    *
@@ -2147,7 +2147,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
      * Used on a hollow object, this will rabett out the top and/or
      * bottom of the object.
      *
-     * ![A hollow hexagon with removable top and bottom](jsdoc2md/rabett-tb.png)
+     * ![A hollow hexagon with removable top and bottom](../images/rabett-tb.png)
      *
      * @example
      *include('dist/jscad-utils.jscad');
@@ -2253,7 +2253,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
      * wall thickness.  This is done by reducing the object by half the
      * thickness and subtracting the reduced version from the original object.
      *
-     * ![A hollowed out cylinder](jsdoc2md/rabett.png)
+     * ![A hollowed out cylinder](../images/rabett.png)
      *
      * @param {CSG}   object    A CSG object
      * @param {Number}   thickness The thickness of the walls.

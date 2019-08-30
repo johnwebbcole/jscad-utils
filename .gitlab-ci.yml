@@ -1,0 +1,12 @@
+image: node:lts-alpine
+
+pages:
+  script:
+    - npx vuepress-jsdoc --source ./src --dist ./docs
+    - npx vuepress build ./docs
+    - ls -al -R public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
