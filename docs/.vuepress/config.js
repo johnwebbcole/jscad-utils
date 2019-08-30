@@ -2,6 +2,7 @@
 const { fileTree } = require('../code/config');
 console.log('foo', fileTree);
 module.exports = {
+  base: process.env.CI ? '/jscad-utils/' : '/',
   dest: 'public',
   locales: {
     '/': {
