@@ -2,8 +2,8 @@ image: node:lts-alpine
 
 pages:
   script:
-    - npx vuepress-jsdoc --source ./src --dist ./docs
-    - npx vuepress build ./docs
+    - npm ci
+    - npm run docs
     - ls -al -R public
   artifacts:
     paths:

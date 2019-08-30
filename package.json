@@ -11,7 +11,8 @@
   ],
   "scripts": {
     "test": "ava",
-    "build": "gulp all"
+    "build": "gulp all",
+    "docs": "vuepress-jsdoc --source ./src --dist ./docs && vuepress build ./docs"
   },
   "keywords": [
     "jscad"
@@ -36,8 +37,6 @@
     "@babel/core": "^7.5.5",
     "@babel/preset-env": "^7.5.5",
     "@babel/register": "^7.5.5",
-    "@vuepress/plugin-active-header-links": "^1.0.0-rc.1",
-    "@vuepress/plugin-google-analytics": "^1.0.0-rc.1",
     "ava": "^2.2.0",
     "babelify": "^10.0.0",
     "del": "^5.0.0",
@@ -78,16 +77,10 @@
       "@babel/preset-env"
     ]
   },
-  "browserify": {
-    "transform": [
-      [
-        "babelify",
-        {
-          "presets": [
-            "@babel/preset-env"
-          ]
-        }
-      ]
-    ]
+  "optionalDependencies": {
+    "vuepress": "^1.0.3",
+    "vuepress-jsdoc": "^1.8.1",
+    "@vuepress/plugin-active-header-links": "^1.0.0-rc.1",
+    "@vuepress/plugin-google-analytics": "^1.0.0-rc.1"
   }
 }
