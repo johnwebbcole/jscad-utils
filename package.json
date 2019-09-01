@@ -12,6 +12,7 @@
   "scripts": {
     "test": "ava",
     "build": "gulp all",
+    "start": "gulp",
     "docs": "vuepress-jsdoc --source ./src --dist ./docs && vuepress build ./docs"
   },
   "keywords": [

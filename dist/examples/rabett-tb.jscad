@@ -1,24 +1,26 @@
 function main() {
-    util.init(CSG);
+  util.init(CSG);
 
-    var part = Parts.Hexagon(20, 10).color('orange');
-    var cbox = Boxes.Hollow(part, 3);
+  var part = Parts.Hexagon(20, 10).color('orange');
+  var cbox = Boxes.Hollow(part, 3);
 
-    var box = Boxes.RabettTopBottom(cbox, 3, 0.25);
+  var box = Boxes.RabettTopBottom(cbox, 3, 0.25);
 
-
-    return union([
-        box.parts.top.translate([0, 0, 20]),
-        box.parts.middle.translate([0, 0, 10]),
-        box.parts.bottom
-    ]);
+  return union([
+    box.parts.top.translate([0, 0, 20]),
+    box.parts.middle.translate([0, 0, 10]),
+    box.parts.bottom
+  ]);
 }
 
 // include:js
 // ../dist/compat.js
-var Parts, Boxes;
+var Parts, Boxes, Group, Debug;
 
-function initJscadutils(_CSG, enableLogging) {
+function initJscadutils(_CSG, options = {}) {
+    options = Object.assign({
+        debug: ""
+    }, options);
     var jsCadCSG = {
         CSG
     };
@@ -32,6 +34,17 @@ function initJscadutils(_CSG, enableLogging) {
             cylinder
         }
     };
+    const jscadUtilsDebug = (options.debug.split(",") || []).reduce((checks, check) => {
+        if (check.startsWith("-")) {
+            checks.disabled.push(new RegExp(`^${check.slice(1).replace(/\*/g, ".*?")}$`));
+        } else {
+            checks.enabled.push(new RegExp(`^${check.replace(/\*/g, ".*?")}$`));
+        }
+        return checks;
+    }, {
+        enabled: [],
+        disabled: []
+    });
     var jscadUtils = function(exports, jsCadCSG, scadApi) {
         "use strict";
         jsCadCSG = jsCadCSG && jsCadCSG.hasOwnProperty("default") ? jsCadCSG["default"] : jsCadCSG;
@@ -142,9 +155,9 @@ function initJscadutils(_CSG, enableLogging) {
         var add = function add(a) {
             return Array.prototype.slice.call(arguments, 1).reduce(function(result, arg) {
                 if (Array.isArray(arg)) {
-                    result = util.array.addArray(result, arg);
+                    result = addArray(result, arg);
                 } else {
-                    result = util.array.addValue(result, arg);
+                    result = addValue(result, arg);
                 }
                 return result;
             }, a);
@@ -189,10 +202,200 @@ function initJscadutils(_CSG, enableLogging) {
             min,
             range
         });
+        var debugColors = [ "#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", "#ffff33", "#a65628", "#f781bf", "#999999" ];
+        var debugCount = 0;
+        var Debug = function Debug(name) {
+            var style = "color:".concat(debugColors[debugCount++ % debugColors.length]);
+            var checks = jscadUtilsDebug || {
+                enabled: [],
+                disabled: []
+            };
+            var enabled = checks.enabled.some(function checkEnabled(check) {
+                return check.test(name);
+            }) && !checks.disabled.some(function checkEnabled(check) {
+                return check.test(name);
+            });
+            return enabled ? function() {
+                var _console;
+                for (var _len = arguments.length, msg = new Array(_len), _key = 0; _key < _len; _key++) {
+                    msg[_key] = arguments[_key];
+                }
+                (_console = console).log.apply(_console, [ "%c%s", style, name ].concat(msg));
+            } : function() {
+                return undefined;
+            };
+        };
+        var debug = Debug("jscadUtils:group");
+        function group() {
+            var names = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+            var parts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+            this.name = "";
+            this.names = names;
+            this.parts = parts;
+        }
+        group.prototype.add = function(object, name, hidden, subparts, parts) {
+            var self = this;
+            if (object.parts) {
+                if (name) {
+                    if (!hidden) self.names.push(name);
+                    self.parts[name] = object.combine(parts);
+                    if (subparts) {
+                        Object.keys(object.parts).forEach(function(key) {
+                            self.parts[subparts + key] = object.parts[key];
+                        });
+                    }
+                } else {
+                    Object.assign(self.parts, object.parts);
+                    self.names = self.names.concat(object.names);
+                }
+            } else {
+                if (!hidden) self.names.push(name);
+                self.parts[name] = object;
+            }
+            return self;
+        };
+        group.prototype.combine = function(pieces, options, map) {
+            var self = this;
+            options = Object.assign({
+                noholes: false
+            }, options);
+            pieces = pieces ? pieces.split(",") : self.names;
+            if (pieces.length === 0) {
+                throw new Error("no pieces found in ".concat(self.name, " pieces: ").concat(pieces, " parts: ").concat(Object.keys(self.parts), " names: ").concat(self.names));
+            }
+            var g = union(mapPick(self.parts, pieces, function(value, key, object) {
+                return map ? map(value, key, object) : identity(value);
+            }, self.name));
+            return g.subtractIf(self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
+        };
+        group.prototype.map = function(cb) {
+            var self = this;
+            self.parts = Object.keys(self.parts).filter(function(k) {
+                return k !== "holes";
+            }).reduce(function(result, key) {
+                result[key] = cb(self.parts[key], key);
+                return result;
+            }, {});
+            if (self.holes) {
+                if (Array.isArray(self.holes)) {
+                    self.holes = self.holes.map(function(hole, idx) {
+                        return cb(hole, idx);
+                    });
+                } else {
+                    self.holes = cb(self.holes, "holes");
+                }
+            }
+            return self;
+        };
+        group.prototype.clone = function(map) {
+            var self = this;
+            if (!map) map = identity;
+            var group = Group();
+            Object.keys(self.parts).forEach(function(key) {
+                var part = self.parts[key];
+                var hidden = self.names.indexOf(key) == -1;
+                group.add(map(CSG.fromPolygons(part.toPolygons())), key, hidden);
+            });
+            if (self.holes) {
+                group.holes = toArray(self.holes).map(function(part) {
+                    return map(CSG.fromPolygons(part.toPolygons()), "holes");
+                });
+            }
+            return group;
+        };
+        group.prototype.rotate = function(solid, axis, angle) {
+            var self = this;
+            var axes = {
+                x: [ 1, 0, 0 ],
+                y: [ 0, 1, 0 ],
+                z: [ 0, 0, 1 ]
+            };
+            if (typeof solid === "string") {
+                var _names = solid;
+                solid = self.combine(_names);
+            }
+            var rotationCenter = solid.centroid();
+            var rotationAxis = axes[axis];
+            self.map(function(part) {
+                return part.rotate(rotationCenter, rotationAxis, angle);
+            });
+            return self;
+        };
+        group.prototype.combineAll = function(options, map) {
+            var self = this;
+            return self.combine(Object.keys(self.parts).join(","), options, map);
+        };
+        group.prototype.snap = function snap(part, to, axis, orientation, delta) {
+            var self = this;
+            var t = calcSnap(self.combine(part), to, axis, orientation, delta);
+            self.map(function(part) {
+                return part.translate(t);
+            });
+            return self;
+        };
+        group.prototype.align = function align(part, to, axis, delta) {
+            var self = this;
+            var t = calcCenterWith(self.combine(part, {
+                noholes: true
+            }), axis, to, delta);
+            self.map(function(part) {
+                return part.translate(t);
+            });
+            return self;
+        };
+        group.prototype.midlineTo = function midlineTo(part, axis, to) {
+            var self = this;
+            var size = self.combine(part).size();
+            var t = axisApply(axis, function(i, a) {
+                return to - size[a] / 2;
+            });
+            self.map(function(part) {
+                return part.translate(t);
+            });
+            return self;
+        };
+        group.prototype.translate = function translate(x, y, z) {
+            var self = this;
+            var t = Array.isArray(x) ? x : [ x, y, z ];
+            debug("translate", t);
+            self.map(function(part) {
+                return part.translate(t);
+            });
+            return self;
+        };
+        group.prototype.pick = function(parts, map) {
+            var self = this;
+            var p = parts && parts.length > 0 && parts.split(",") || self.names;
+            if (!map) map = identity;
+            var g = Group();
+            p.forEach(function(name) {
+                g.add(map(CSG.fromPolygons(self.parts[name].toPolygons()), name), name);
+            });
+            return g;
+        };
+        group.prototype.array = function(parts, map) {
+            var self = this;
+            var p = parts && parts.length > 0 && parts.split(",") || self.names;
+            if (!map) map = identity;
+            var a = [];
+            p.forEach(function(name) {
+                a.push(map(CSG.fromPolygons(self.parts[name].toPolygons()), name));
+            });
+            return a;
+        };
+        group.prototype.toArray = function(pieces) {
+            var self = this;
+            pieces = pieces ? pieces.split(",") : self.names;
+            return pieces.map(function(piece) {
+                if (!self.parts[piece]) console.error("Cannot find ".concat(piece, " in ").concat(self.names));
+                return self.parts[piece];
+            });
+        };
         var Group = function Group() {
             for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
                 args[_key] = arguments[_key];
             }
+            debug.apply(void 0, [ "Group" ].concat(args));
             var self = {
                 name: "",
                 names: [],
@@ -203,9 +406,9 @@ function initJscadutils(_CSG, enableLogging) {
                     var names = args[0], objects = args[1];
                     self.names = names && names.length > 0 && names.split(",") || [];
                     if (Array.isArray(objects)) {
-                        self.parts = util.zipObject(self.names, objects);
+                        self.parts = zipObject(self.names, objects);
                     } else if (objects instanceof CSG) {
-                        self.parts = util.zipObject(self.names, [ objects ]);
+                        self.parts = zipObject(self.names, [ objects ]);
                     } else {
                         self.parts = objects || {};
                     }
@@ -218,155 +421,9 @@ function initJscadutils(_CSG, enableLogging) {
                     self.holes = objects.holes;
                 }
             }
-            self.map = function(cb) {
-                self.parts = Object.keys(self.parts).filter(function(k) {
-                    return k !== "holes";
-                }).reduce(function(result, key) {
-                    result[key] = cb(self.parts[key], key);
-                    return result;
-                }, {});
-                if (self.holes) {
-                    if (Array.isArray(self.holes)) {
-                        self.holes = self.holes.map(function(hole, idx) {
-                            return cb(hole, idx);
-                        });
-                    } else {
-                        self.holes = cb(self.holes, "holes");
-                    }
-                }
-                return self;
-            };
-            self.add = function(object, name, hidden, subparts, parts) {
-                if (object.parts) {
-                    if (name) {
-                        if (!hidden) self.names.push(name);
-                        self.parts[name] = object.combine(parts);
-                        if (subparts) {
-                            Object.keys(object.parts).forEach(function(key) {
-                                self.parts[subparts + key] = object.parts[key];
-                            });
-                        }
-                    } else {
-                        Object.assign(self.parts, object.parts);
-                        self.names = self.names.concat(object.names);
-                    }
-                } else {
-                    if (!hidden) self.names.push(name);
-                    self.parts[name] = object;
-                }
-                return self;
-            };
-            self.clone = function(map) {
-                if (!map) map = util.identity;
-                var group = util.group();
-                Object.keys(self.parts).forEach(function(key) {
-                    var part = self.parts[key];
-                    var hidden = self.names.indexOf(key) == -1;
-                    group.add(map(CSG.fromPolygons(part.toPolygons())), key, hidden);
-                });
-                if (self.holes) {
-                    group.holes = util.toArray(self.holes).map(function(part) {
-                        return map(CSG.fromPolygons(part.toPolygons()), "holes");
-                    });
-                }
-                return group;
-            };
-            self.rotate = function(solid, axis, angle) {
-                var axes = {
-                    x: [ 1, 0, 0 ],
-                    y: [ 0, 1, 0 ],
-                    z: [ 0, 0, 1 ]
-                };
-                if (typeof solid === "string") {
-                    var _names = solid;
-                    solid = self.combine(_names);
-                }
-                var rotationCenter = solid.centroid();
-                var rotationAxis = axes[axis];
-                self.map(function(part) {
-                    return part.rotate(rotationCenter, rotationAxis, angle);
-                });
-                return self;
-            };
-            self.combine = function(pieces, options, map) {
-                options = Object.assign({
-                    noholes: false
-                }, options);
-                pieces = pieces ? pieces.split(",") : self.names;
-                if (pieces.length === 0) {
-                    throw new Error("no pieces found in ".concat(self.name, " pieces: ").concat(pieces, " parts: ").concat(Object.keys(self.parts), " names: ").concat(self.names));
-                }
-                var g = union(util.mapPick(self.parts, pieces, function(value, key, object) {
-                    return map ? map(value, key, object) : util.identity(value);
-                }, self.name));
-                return g.subtractIf(self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
-            };
-            self.combineAll = function(options, map) {
-                return self.combine(Object.keys(self.parts).join(","), options, map);
-            };
-            self.toArray = function(pieces) {
-                pieces = pieces ? pieces.split(",") : self.names;
-                return pieces.map(function(piece) {
-                    if (!self.parts[piece]) console.error("Cannot find ".concat(piece, " in ").concat(self.names));
-                    return self.parts[piece];
-                });
-            };
-            self.snap = function snap(part, to, axis, orientation, delta) {
-                var t = util.calcSnap(self.combine(part), to, axis, orientation, delta);
-                self.map(function(part) {
-                    return part.translate(t);
-                });
-                return self;
-            };
-            self.align = function align(part, to, axis, delta) {
-                var t = util.calcCenterWith(self.combine(part, {
-                    noholes: true
-                }), axis, to, delta);
-                self.map(function(part) {
-                    return part.translate(t);
-                });
-                return self;
-            };
-            self.midlineTo = function midlineTo(part, axis, to) {
-                var size = self.combine(part).size();
-                var t = util.axisApply(axis, function(i, a) {
-                    return to - size[a] / 2;
-                });
-                self.map(function(part) {
-                    return part.translate(t);
-                });
-                return self;
-            };
-            self.translate = function translate() {
-                var t = Array.prototype.slice.call(arguments, 0).reduce(function(result, arg) {
-                    result = util.array.addArray(result, arg);
-                    return result;
-                }, [ 0, 0, 0 ]);
-                self.map(function(part) {
-                    return part.translate(t);
-                });
-                return self;
-            };
-            self.pick = function(parts, map) {
-                var p = parts && parts.length > 0 && parts.split(",") || self.names;
-                if (!map) map = util.identity;
-                var g = util.group();
-                p.forEach(function(name) {
-                    g.add(map(CSG.fromPolygons(self.parts[name].toPolygons()), name), name);
-                });
-                return g;
-            };
-            self.array = function(parts, map) {
-                var p = parts && parts.length > 0 && parts.split(",") || self.names;
-                if (!map) map = util.identity;
-                var a = [];
-                p.forEach(function(name) {
-                    a.push(map(CSG.fromPolygons(self.parts[name].toPolygons()), name));
-                });
-                return a;
-            };
-            return self;
+            return new group(self.names, self.parts);
         };
+        var debug$1 = Debug("jscadUtils:util");
         var CSG$1 = jsCadCSG.CSG;
         var vector_text = scadApi.vector_text, rectangular_extrude = scadApi.rectangular_extrude, vector_char = scadApi.vector_char;
         var NOZZEL_SIZE = .4;
@@ -631,7 +688,8 @@ function initJscadutils(_CSG, enableLogging) {
                 return w[side[0]][axis] - m[side[1]][axis];
             });
         }
-        function calcSnap(moveobj, withobj, axes, orientation, delta) {
+        function calcSnap(moveobj, withobj, axes, orientation) {
+            var delta = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
             var side = util.flushSide[orientation];
             if (!side) {
                 var fix = {
@@ -649,20 +707,23 @@ function initJscadutils(_CSG, enableLogging) {
             if (side[0] === -1) {
                 w[-1] = withobj.centroid();
             }
-            var t = this.axisApply(axes, function(i, axis) {
+            var t = axisApply(axes, function(i, axis) {
                 return w[side[0]][axis] - m[side[1]][axis];
             });
-            return delta ? this.axisApply(axes, function(i) {
+            return delta ? axisApply(axes, function(i) {
                 return t[i] + delta;
             }) : t;
         }
         function snap(moveobj, withobj, axis, orientation, delta) {
-            return moveobj.translate(util.calcSnap(moveobj, withobj, axis, orientation, delta));
+            debug$1("snap", moveobj, withobj, axis, orientation, delta);
+            var t = util.calcSnap(moveobj, withobj, axis, orientation, delta);
+            return moveobj.translate(t);
         }
         function flush(moveobj, withobj, axis, mside, wside) {
             return moveobj.translate(util.calcFlush(moveobj, withobj, axis, mside, wside));
         }
         var axisApply = function axisApply(axes, valfun, a) {
+            debug$1("axisApply", axes, valfun, a);
             var retval = a || [ 0, 0, 0 ];
             var lookup = {
                 x: 0,
@@ -1303,6 +1364,7 @@ function initJscadutils(_CSG, enableLogging) {
             default: init
         });
         var CSG$2 = jsCadCSG.CSG;
+        var debug$2 = Debug("jscadUtils:parts");
         var parts = {
             BBox,
             Cube,
@@ -1356,7 +1418,7 @@ function initJscadutils(_CSG, enableLogging) {
             return roundedcube;
         }
         function Cylinder(diameter, height, options) {
-            console.log("parts.Cylinder", diameter, height, options);
+            debug$2("parts.Cylinder", diameter, height, options);
             options = _objectSpread2({}, options, {
                 start: [ 0, 0, 0 ],
                 end: [ 0, 0, height ],
@@ -1373,6 +1435,7 @@ function initJscadutils(_CSG, enableLogging) {
             });
         }
         function Hexagon(diameter, height) {
+            debug$2("hexagon", diameter, height);
             var radius = diameter / 2;
             var sqrt3 = Math.sqrt(3) / 2;
             var hex = CAG.fromPoints([ [ radius, 0 ], [ radius / 2, radius * sqrt3 ], [ -radius / 2, radius * sqrt3 ], [ -radius, 0 ], [ -radius / 2, -radius * sqrt3 ], [ radius / 2, -radius * sqrt3 ] ]);
@@ -1423,7 +1486,7 @@ function initJscadutils(_CSG, enableLogging) {
                 }
             },
             Screw: function Screw(head, thread, headClearSpace, options) {
-                options = defaults(options, {
+                options = Object.assign(options, {
                     orientation: "up",
                     clearance: [ 0, 0, 0 ]
                 });
@@ -1476,103 +1539,105 @@ function initJscadutils(_CSG, enableLogging) {
             Board,
             Hardware
         });
-        var Boxes = {
-            RabbetJoin: function RabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
-                return rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap);
-            },
-            TopMiddleBottom: function topMiddleBottom(box, thickness) {
-                var bottom = box.bisect("z", thickness);
-                var top = bottom.parts.positive.bisect("z", -thickness);
-                return util.group("top,middle,bottom", [ top.parts.positive, top.parts.negative.color("green"), bottom.parts.negative ]);
-            },
-            Rabett: function Rabett(box, thickness, gap, height, face) {
-                gap = gap || .25;
-                var inside = -thickness - gap;
-                var outside = -thickness + gap;
-                var group = util.group();
-                var top = box.bisect("z", height);
-                var bottom = top.parts.negative.bisect("z", height - face);
-                group.add(union([ top.parts.positive, bottom.parts.positive.subtract(bottom.parts.positive.enlarge(outside, outside, 0)).color("green") ]), "top");
-                group.add(union([ bottom.parts.negative, bottom.parts.positive.intersect(bottom.parts.positive.enlarge(inside, inside, 0)).color("yellow") ]), "bottom");
-                return group;
-            },
-            RabettTopBottom: function rabbetTMB(box, thickness, gap) {
-                var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-                options = Object.assign(options, {
-                    removableTop: true,
-                    removableBottom: true,
-                    topWidth: -thickness,
-                    bottomWidth: thickness
-                });
-                gap = gap || .25;
-                var group = util.group("", {
-                    box
-                });
-                var inside = -thickness - gap;
-                var outside = -thickness + gap;
-                if (options.removableTop) {
-                    var top = box.bisect("z", options.topWidth);
-                    group.add(top.parts.positive.enlarge([ inside, inside, 0 ]), "top");
-                    if (!options.removableBottom) group.add(box.subtract(top.parts.positive.enlarge([ outside, outside, 0 ])), "bottom");
-                }
-                if (options.removableBottom) {
-                    var bottom = box.bisect("z", options.bottomWidth);
-                    group.add(bottom.parts.negative.enlarge([ outside, outside, 0 ]), "bottomCutout", true);
-                    group.add(bottom.parts.negative.enlarge([ inside, inside, 0 ]), "bottom");
-                    if (!options.removableTop) group.add(box.subtract(group.parts.bottomCutout), "top");
-                }
-                if (options.removableBottom && options.removableTop) {
-                    group.add(box.subtract(union([ bottom.parts.negative.enlarge([ outside, outside, 0 ]), top.parts.positive.enlarge([ outside, outside, 0 ]) ])), "middle");
-                }
-                return group;
-            },
-            CutOut: function cutOut(o, h, box, plug, gap) {
-                gap = gap || .25;
-                var s = o.size();
-                var cutout = o.intersect(box);
-                var cs = o.size();
-                var clear = Parts.Cube([ s.x, s.y, h ]).align(o, "xy").color("yellow");
-                var top = clear.snap(o, "z", "center+").union(o);
-                var back = Parts.Cube([ cs.x + 6, 2, cs.z + 2.5 ]).align(cutout, "x").snap(cutout, "z", "center+").snap(cutout, "y", "outside-");
-                var clip = Parts.Cube([ cs.x + 2 - gap, 1 - gap, cs.z + 2.5 ]).align(cutout, "x").snap(cutout, "z", "center+").snap(cutout, "y", "outside-");
-                return util.group("insert", {
-                    top,
-                    bottom: clear.snap(o, "z", "center-").union(o),
-                    cutout: union([ o, top ]),
-                    back: back.subtract(plug).subtract(clip.enlarge(gap, gap, gap)).subtract(clear.translate([ 0, 5, 0 ])),
-                    clip: clip.subtract(plug).color("red"),
-                    insert: union([ o, top ]).intersect(box).subtract(o).enlarge([ -gap, 0, 0 ]).union(clip.subtract(plug).enlarge(-gap, -gap, 0)).color("blue")
-                });
-            },
-            Rectangle: function Rectangle(size, thickness, cb) {
-                thickness = thickness || 2;
-                var s = util.array.div(util.xyz2array(size), 2);
-                var r = util.array.add(s, thickness);
-                var box = CSG.cube({
-                    center: r,
-                    radius: r
-                }).subtract(CSG.cube({
-                    center: r,
-                    radius: s
-                }));
-                if (cb) box = cb(box);
-                return box;
-            },
-            Hollow: function Hollow(object, thickness, interiorcb, exteriorcb) {
-                thickness = thickness || 2;
-                var size = -thickness * 2;
-                interiorcb = interiorcb || util.identity;
-                var box = object.subtract(interiorcb(object.enlarge([ size, size, size ])));
-                if (exteriorcb) box = exteriorcb(box);
-                return box;
-            },
-            BBox: function BBox(o) {
-                var s = util.array.div(util.xyz2array(o.size()), 2);
-                return CSG.cube({
-                    center: s,
-                    radius: s
-                }).align(o, "xyz");
+        var debug$3 = Debug("jscadUtils:boxes");
+        var RabbetJoin = function RabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
+            return rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap);
+        };
+        function topMiddleBottom(box, thickness) {
+            debug$3("TopMiddleBottom", box, thickness);
+            var bottom = box.bisect("z", thickness);
+            var top = bottom.parts.positive.bisect("z", -thickness);
+            return util.group("top,middle,bottom", [ top.parts.positive, top.parts.negative.color("green"), bottom.parts.negative ]);
+        }
+        function Rabett(box, thickness, gap, height, face) {
+            debug$3("Rabett", box, thickness, gap, height, face);
+            gap = gap || .25;
+            var inside = -thickness - gap;
+            var outside = -thickness + gap;
+            var group = util.group();
+            var top = box.bisect("z", height);
+            var bottom = top.parts.negative.bisect("z", height - face);
+            group.add(union([ top.parts.positive, bottom.parts.positive.subtract(bottom.parts.positive.enlarge(outside, outside, 0)).color("green") ]), "top");
+            group.add(union([ bottom.parts.negative, bottom.parts.positive.intersect(bottom.parts.positive.enlarge(inside, inside, 0)).color("yellow") ]), "bottom");
+            return group;
+        }
+        var RabettTopBottom = function rabbetTMB(box, thickness, gap) {
+            var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+            options = Object.assign(options, {
+                removableTop: true,
+                removableBottom: true,
+                topWidth: -thickness,
+                bottomWidth: thickness
+            });
+            debug$3("RabettTopBottom", box, thickness, gap, options);
+            gap = gap || .25;
+            var group = util.group("", {
+                box
+            });
+            var inside = -thickness - gap;
+            var outside = -thickness + gap;
+            if (options.removableTop) {
+                var top = box.bisect("z", options.topWidth);
+                group.add(top.parts.positive.enlarge([ inside, inside, 0 ]), "top");
+                if (!options.removableBottom) group.add(box.subtract(top.parts.positive.enlarge([ outside, outside, 0 ])), "bottom");
             }
+            if (options.removableBottom) {
+                var bottom = box.bisect("z", options.bottomWidth);
+                group.add(bottom.parts.negative.enlarge([ outside, outside, 0 ]), "bottomCutout", true);
+                group.add(bottom.parts.negative.enlarge([ inside, inside, 0 ]), "bottom");
+                if (!options.removableTop) group.add(box.subtract(group.parts.bottomCutout), "top");
+            }
+            if (options.removableBottom && options.removableTop) {
+                group.add(box.subtract(union([ bottom.parts.negative.enlarge([ outside, outside, 0 ]), top.parts.positive.enlarge([ outside, outside, 0 ]) ])), "middle");
+            }
+            return group;
+        };
+        var CutOut = function cutOut(o, h, box, plug, gap) {
+            gap = gap || .25;
+            var s = o.size();
+            var cutout = o.intersect(box);
+            var cs = o.size();
+            var clear = Parts.Cube([ s.x, s.y, h ]).align(o, "xy").color("yellow");
+            var top = clear.snap(o, "z", "center+").union(o);
+            var back = Parts.Cube([ cs.x + 6, 2, cs.z + 2.5 ]).align(cutout, "x").snap(cutout, "z", "center+").snap(cutout, "y", "outside-");
+            var clip = Parts.Cube([ cs.x + 2 - gap, 1 - gap, cs.z + 2.5 ]).align(cutout, "x").snap(cutout, "z", "center+").snap(cutout, "y", "outside-");
+            return util.group("insert", {
+                top,
+                bottom: clear.snap(o, "z", "center-").union(o),
+                cutout: union([ o, top ]),
+                back: back.subtract(plug).subtract(clip.enlarge(gap, gap, gap)).subtract(clear.translate([ 0, 5, 0 ])),
+                clip: clip.subtract(plug).color("red"),
+                insert: union([ o, top ]).intersect(box).subtract(o).enlarge([ -gap, 0, 0 ]).union(clip.subtract(plug).enlarge(-gap, -gap, 0)).color("blue")
+            });
+        };
+        var Rectangle = function Rectangle(size, thickness, cb) {
+            thickness = thickness || 2;
+            var s = util.array.div(util.xyz2array(size), 2);
+            var r = util.array.add(s, thickness);
+            var box = CSG.cube({
+                center: r,
+                radius: r
+            }).subtract(CSG.cube({
+                center: r,
+                radius: s
+            }));
+            if (cb) box = cb(box);
+            return box;
+        };
+        var Hollow = function Hollow(object, thickness, interiorcb, exteriorcb) {
+            thickness = thickness || 2;
+            var size = -thickness * 2;
+            interiorcb = interiorcb || util.identity;
+            var box = object.subtract(interiorcb(object.enlarge([ size, size, size ])));
+            if (exteriorcb) box = exteriorcb(box);
+            return box;
+        };
+        var BBox$1 = function BBox(o) {
+            var s = util.array.div(util.xyz2array(o.size()), 2);
+            return CSG.cube({
+                center: s,
+                radius: s
+            }).align(o, "xyz");
         };
         function getRadius(o) {
             return util.array.div(util.xyz2array(o.size()), 2);
@@ -1599,15 +1664,27 @@ function initJscadutils(_CSG, enableLogging) {
             group.add(box.subtract(topCutter.enlarge([ gap, gap, 0 ])).color("red"), "bottom");
             return group;
         }
+        var Boxes = Object.freeze({
+            RabbetJoin,
+            topMiddleBottom,
+            Rabett,
+            RabettTopBottom,
+            CutOut,
+            Rectangle,
+            Hollow,
+            BBox: BBox$1
+        });
         var compatV1 = _objectSpread2({}, util$1, {
             group: Group,
             init: init$1,
             triangle,
             array,
             parts: parts$1,
-            Boxes
+            Boxes,
+            Debug
         });
         exports.Boxes = Boxes;
+        exports.Debug = Debug;
         exports.Group = Group;
         exports.array = array;
         exports.compatV1 = compatV1;
@@ -1617,15 +1694,25 @@ function initJscadutils(_CSG, enableLogging) {
         exports.util = util$1;
         return exports;
     }({}, jsCadCSG, scadApi);
+    const debug = jscadUtils.Debug("jscadUtils:initJscadutils");
     util = jscadUtils.compatV1;
     util.init.default(CSG);
-    console.log("initJscadutils:jscadUtils", jscadUtils);
+    debug("initJscadutils:jscadUtils", jscadUtils);
     Parts = jscadUtils.parts;
     Boxes = jscadUtils.Boxes;
+    Group = jscadUtils.Group;
+    Debug = jscadUtils.Debug;
     return jscadUtils;
 }
 
+var jscadUtilsPluginInit = [];
+
 var util = {
-    init: initJscadutils
+    init: (...a) => {
+        initJscadutils(...a);
+        jscadUtilsPluginInit.forEach(p => {
+            p(...a);
+        });
+    }
 };
 // endinject

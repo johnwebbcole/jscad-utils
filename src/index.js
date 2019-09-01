@@ -8,9 +8,10 @@ import * as util from './util';
 import { Group } from './group';
 import * as init from './add-prototype';
 import * as parts from './parts';
-import Boxes from './boxes';
+import * as Boxes from './boxes';
+import { Debug } from './debug';
 
-export { util, triangle, array, Group, init, parts, Boxes };
+export { util, triangle, array, Group, init, parts, Boxes, Debug };
 
 export const compatV1 = {
   ...util,
@@ -19,5 +20,6 @@ export const compatV1 = {
   triangle,
   array,
   parts,
-  Boxes
+  Boxes,
+  Debug
 };

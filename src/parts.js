@@ -5,6 +5,9 @@ import { fromxyz, div } from './array';
 // const { cube, sphere, cylinder } = scadApi.primitives3d;
 import * as util from './util';
 import Group from './group';
+import { Debug } from './debug';
+
+const debug = Debug('jscadUtils:parts');
 
 export default { BBox, Cube, RoundedCube, Cylinder, Cone };
 
@@ -14,7 +17,7 @@ export function BBox(...objects) {
       center: object.centroid(),
       radius: object.size().dividedBy(2)
     });
-  return objects.reduce(function (bbox, part) {
+  return objects.reduce(function(bbox, part) {
     var object = bbox ? union([bbox, box(part)]) : part;
     return box(object);
   });
@@ -40,7 +43,7 @@ export function RoundedCube(...args) {
     var corner_radius = args[3]; // eslint-disable-line no-redeclare
   }
 
-  // console.log('RoundedCube.args', size, r, thickness, corner_radius);
+  // debug('RoundedCube.args', size, r, thickness, corner_radius);
   var roundedcube = CAG.roundedRectangle({
     center: [r[0], r[1], 0],
     radius: r,
@@ -60,7 +63,7 @@ export function RoundedCube(...args) {
  * @return {CSG} A CSG Cylinder
  */
 export function Cylinder(diameter, height, options) {
-  console.log('parts.Cylinder', diameter, height, options);
+  debug('parts.Cylinder', diameter, height, options);
   options = {
     ...options,
     start: [0, 0, 0],
@@ -85,6 +88,7 @@ export function Cone(diameter1, diameter2, height) {
  * @param {number} height   height of the hexagon
  */
 export function Hexagon(diameter, height) {
+  debug('hexagon', diameter, height);
   var radius = diameter / 2;
   var sqrt3 = Math.sqrt(3) / 2;
   var hex = CAG.fromPoints([
@@ -178,8 +182,8 @@ export const Hardware = {
     }
   },
 
-  Screw: function (head, thread, headClearSpace, options) {
-    options = util.defaults(options, {
+  Screw: function(head, thread, headClearSpace, options) {
+    options = Object.assign(options, {
       orientation: 'up',
       clearance: [0, 0, 0]
     });
@@ -205,15 +209,15 @@ export const Hardware = {
   },
 
   /**
-     * Creates a `Group` object with a Pan Head Screw.
-     * @param {number} headDiameter Diameter of the head of the screw
-     * @param {number} headLength   Length of the head
-     * @param {number} diameter     Diameter of the threaded shaft
-     * @param {number} length       Length of the threaded shaft
-     * @param {number} clearLength  Length of the clearance section of the head.
-     * @param {object} options      Screw options include orientation and clerance scale.
-     */
-  PanHeadScrew: function (
+   * Creates a `Group` object with a Pan Head Screw.
+   * @param {number} headDiameter Diameter of the head of the screw
+   * @param {number} headLength   Length of the head
+   * @param {number} diameter     Diameter of the threaded shaft
+   * @param {number} length       Length of the threaded shaft
+   * @param {number} clearLength  Length of the clearance section of the head.
+   * @param {object} options      Screw options include orientation and clerance scale.
+   */
+  PanHeadScrew: function(
     headDiameter,
     headLength,
     diameter,
@@ -232,15 +236,15 @@ export const Hardware = {
   },
 
   /**
-     * Creates a `Group` object with a Hex Head Screw.
-     * @param {number} headDiameter Diameter of the head of the screw
-     * @param {number} headLength   Length of the head
-     * @param {number} diameter     Diameter of the threaded shaft
-     * @param {number} length       Length of the threaded shaft
-     * @param {number} clearLength  Length of the clearance section of the head.
-     * @param {object} options      Screw options include orientation and clerance scale.
-     */
-  HexHeadScrew: function (
+   * Creates a `Group` object with a Hex Head Screw.
+   * @param {number} headDiameter Diameter of the head of the screw
+   * @param {number} headLength   Length of the head
+   * @param {number} diameter     Diameter of the threaded shaft
+   * @param {number} length       Length of the threaded shaft
+   * @param {number} clearLength  Length of the clearance section of the head.
+   * @param {object} options      Screw options include orientation and clerance scale.
+   */
+  HexHeadScrew: function(
     headDiameter,
     headLength,
     diameter,
@@ -259,15 +263,15 @@ export const Hardware = {
   },
 
   /**
-     * Create a Flat Head Screw
-     * @param {number} headDiameter head diameter
-     * @param {number} headLength   head length
-     * @param {number} diameter     thread diameter
-     * @param {number} length       thread length
-     * @param {number} clearLength  clearance length
-     * @param {object} options      options
-     */
-  FlatHeadScrew: function (
+   * Create a Flat Head Screw
+   * @param {number} headDiameter head diameter
+   * @param {number} headLength   head length
+   * @param {number} diameter     thread diameter
+   * @param {number} length       thread length
+   * @param {number} clearLength  clearance length
+   * @param {object} options      options
+   */
+  FlatHeadScrew: function(
     headDiameter,
     headLength,
     diameter,

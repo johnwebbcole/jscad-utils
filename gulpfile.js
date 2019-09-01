@@ -16,13 +16,6 @@ var rollupBabel = require('rollup-plugin-babel');
 var eslint = require('gulp-eslint');
 var jsdocToMarkdown = require('gulp-jsdoc-to-markdown');
 
-// gulp.task('clean', function(done) {
-//     del(['README.md', 'dist/jscad-utils.js']).then(paths => {
-//         console.log('Deleted files and folders:\n', paths.join('\n')); // eslint-disable-line no-console, no-undef
-//         done();
-//     });
-// });
-
 gulp.task('lint', function() {
   return gulp
     .src(['*.jscad', 'gulpfile.js'])
@@ -109,9 +102,9 @@ gulp.task('examples', function() {
     .pipe(gulp.dest('dist/examples'));
 });
 
-gulp.task('compatv1', function() {
+gulp.task('v1compat', function() {
   return gulp
-    .src('v1/compat.js')
+    .src('src/compat.js')
     .pipe(plumber())
     .pipe(
       inject(gulp.src('dist/index.js'), {
@@ -126,17 +119,22 @@ gulp.task('compatv1', function() {
     .pipe(gulp.dest('dist'));
 });
 
-gulp.task('all', gulp.series(['build', 'compatv1', 'examples']));
+gulp.task('all', gulp.series(['build', 'v1compat', 'examples']));
 
-// gulp.task('all', ['docs', 'lint', 'build', 'examples']);
-
-// gulp.task('default', ['all'], function() {
-//     gulp.watch(
-//         ['*.jscad', 'examples/*.jscad', 'jsdoc2md/README.hbs', 'node_modules/'],
-//         {
-//             verbose: true,
-//             followSymlinks: true
-//         },
-//         ['all']
-//     );
-// });
+gulp.task(
+  'default',
+  gulp.series(['build', 'v1compat', 'examples'], function() {
+    gulp.watch(
+      ['src/**/*.js', 'examples/*.jscad'],
+      {
+        verbose: true,
+        followSymlinks: true,
+        delay: 500,
+        queue: false,
+        ignoreInitial: false,
+        ignored: ['**/*.*~', 'dist/*', '.vuepress/*']
+      },
+      gulp.series(['build', 'v1compat', 'examples'])
+    );
+  })
+);

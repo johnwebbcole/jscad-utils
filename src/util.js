@@ -1,3 +1,6 @@
+import { Debug } from './debug';
+const debug = Debug('jscadUtils:util');
+
 // import array from 'src/array';
 // import triangle from 'src/triangle';
 import jsCadCSG from '@jscad/csg';
@@ -8,6 +11,7 @@ import Group from './group';
 import * as array from './array';
 
 export var NOZZEL_SIZE = 0.4;
+
 export const nearest = {
   /**
    * Return the largest number that is a multiple of the
@@ -39,6 +43,7 @@ export const nearest = {
  * default functiont hat does nothing.
  * @param  {object} solid an object that will be returned
  * @return {object}       the first parameter passed into the function.
+ * @function identity
  */
 export const identity = function(solid) {
   return solid;
@@ -53,6 +58,7 @@ export const identity = function(solid) {
  * @param  {object} object the context to run the function with.
  * @param  {function|object} f if a funciton it is executed, othewise the object is returned.
  * @return {object}        the result of the function or the object.
+ * @function result
  */
 export const result = function(object, f) {
   if (typeof f === 'function') {
@@ -67,6 +73,8 @@ export const result = function(object, f) {
  * @param  {object} target   The target object to return.
  * @param  {object} defaults Defalut values to add to the object if they don't already exist.
  * @return {object}          Target object with default values assigned.
+ * @function defaults
+ * @depricated
  */
 export const defaults = function(target, defaults) {
   depreciated('defaults', true, 'use Object.assign instead');
@@ -85,6 +93,8 @@ export const isNegative = function(n) {
  * Print a message and CSG object bounds and size to the conosle.
  * @param  {String} msg Message to print
  * @param  {CSG} o   A CSG object to print the bounds and size of.
+ * @function
+ * @depricated use Debug instead
  */
 export const print = function(msg, o) {
   echo(
@@ -111,6 +121,7 @@ export const depreciated = function(method, error, message) {
  * Convert an imperial `inch` to metric `mm`.
  * @param  {Number} x Value in inches
  * @return {Number}   Result in mm
+ * @function inch
  */
 export function inch(x) {
   return x * 25.4;
@@ -120,6 +131,7 @@ export function inch(x) {
  * Convert metric `cm` to imperial `inch`.
  * @param  {Number} x Value in cm
  * @return {Number}   Result in inches
+ * @function cm
  */
 export function cm(x) {
   return x / 25.4;
@@ -145,7 +157,7 @@ export function text(text) {
   var char = l.segments.reduce(function(result, segment) {
     var path = new CSG.Path2D(segment);
     var cag = path.expandToCAG(2);
-    // console.log('reduce', result, segment, path, cag);
+    // debug('reduce', result, segment, path, cag);
     return result ? result.union(cag) : cag;
   }, undefined);
   return char;
@@ -188,6 +200,7 @@ export const ifArray = function(a, cb) {
  * @param  {number} segments The number of segments to create.
  * @param  {string} axis     Axis to create the sgements on.
  * @return {Array}          An array of segment positions.
+ * @function segment
  */
 export const segment = function(object, segments, axis) {
   var size = object.size()[axis];
@@ -206,23 +219,12 @@ export const zipObject = function(names, values) {
   }, {});
 };
 
-// map: function (o, callback) {
-//     _.forIn(o, function (value, key) {
-//         // echo('util.map', key);
-//         if (value instanceof CSG) {
-//             // echo('key', value instanceof CSG);
-//             return value = callback(value, key);
-//         }
-//         return value;
-//     });
-//     return o;
-// },
-
 /**
  * Object map function, returns an array of the object mapped into an array.
  * @param  {object} o Object to map
  * @param  {function} f function to apply on each key
  * @return {array}   an array of the mapped object.
+ * @function map
  */
 export const map = function(o, f) {
   return Object.keys(o).map(function(key) {
@@ -297,6 +299,7 @@ export const rotationAxes = {
  * Returns a `Vector3D` with the size of the object.
  * @param  {CSG} o A `CSG` like object or an array of `CSG.Vector3D` objects (the result of getBounds()).
  * @return {CSG.Vector3D}   Vector3d with the size of the object
+ * @function size
  */
 export const size = function size(o) {
   var bbox = o.getBounds ? o.getBounds() : o;
@@ -312,6 +315,7 @@ export const size = function size(o) {
  * @param  {number} size  Object size
  * @param  {number} value Amount to add (negative values subtract) from the size of the object.
  * @return {number}       Scale factor
+ * @function scale
  */
 export const scale = function scale(size, value) {
   if (value == 0) return 1;
@@ -343,6 +347,7 @@ export const centerX = function centerX(object, size) {
  * @param  {number} y      [description]
  * @param  {number} z      [description]
  * @return {CSG}        [description]
+ * @function enlarge
  */
 export const enlarge = function enlarge(object, x, y, z) {
   var a;
@@ -379,6 +384,7 @@ export const enlarge = function enlarge(object, x, y, z) {
  * @param  {number} z                 [description]
  * @param  {boolean} keep_aspect_ratio [description]
  * @return {CSG}                   [description]
+ * @function fit
  */
 export const fit = function fit(object, x, y, z, keep_aspect_ratio) {
   var a;
@@ -471,7 +477,7 @@ export function calcFlush(moveobj, withobj, axes, mside, wside) {
   });
 }
 
-export function calcSnap(moveobj, withobj, axes, orientation, delta) {
+export function calcSnap(moveobj, withobj, axes, orientation, delta = 0) {
   var side = util.flushSide[orientation];
 
   if (!side) {
@@ -499,21 +505,21 @@ export function calcSnap(moveobj, withobj, axes, orientation, delta) {
     w[-1] = withobj.centroid();
   }
 
-  var t = this.axisApply(axes, function(i, axis) {
+  var t = axisApply(axes, function(i, axis) {
     return w[side[0]][axis] - m[side[1]][axis];
   });
 
   return delta
-    ? this.axisApply(axes, function(i) {
+    ? axisApply(axes, function(i) {
       return t[i] + delta;
     })
     : t;
 }
 
 export function snap(moveobj, withobj, axis, orientation, delta) {
-  return moveobj.translate(
-    util.calcSnap(moveobj, withobj, axis, orientation, delta)
-  );
+  debug('snap', moveobj, withobj, axis, orientation, delta);
+  var t = util.calcSnap(moveobj, withobj, axis, orientation, delta);
+  return moveobj.translate(t);
 }
 
 /**
@@ -532,6 +538,7 @@ export function flush(moveobj, withobj, axis, mside, wside) {
 }
 
 export const axisApply = function(axes, valfun, a) {
+  debug('axisApply', axes, valfun, a);
   var retval = a || [0, 0, 0];
   var lookup = {
     x: 0,
@@ -574,7 +581,7 @@ export function calcmidlineTo(o, axis, to) {
 
   // var centroid = bounds[0].plus(size.dividedBy(2));
 
-  // console.log('bounds', JSON.stringify(bounds), 'size', size, 'centroid', centroid);
+  // debug('bounds', JSON.stringify(bounds), 'size', size, 'centroid', centroid);
   return util.axisApply(axis, function(i, a) {
     return to - size[a] / 2;
   });
@@ -747,7 +754,7 @@ export function stretch(object, axis, distance, offset) {
   var bounds = object.getBounds();
   var size = util.size(object);
   var cutDelta = util.getDelta(size, bounds, axis, offset, true);
-  // console.log('stretch.cutDelta', cutDelta, normal[axis]);
+  // debug('stretch.cutDelta', cutDelta, normal[axis]);
   return object.stretchAtPlane(normal[axis], cutDelta, distance);
 }
 
@@ -809,7 +816,7 @@ export function poly2solid(top, bottom, height) {
 }
 
 export function slices2poly(slices, options, axis) {
-  // console.log('util.slices2poly', options);
+  // debug('util.slices2poly', options);
   // var resolution = slices.length;
   // var offsetVector = new CSG.Vector3D(options.offset);
   // var twistangle = CSG.parseOptionAsFloat(options, 'twistangle', 0);
@@ -865,7 +872,7 @@ export function slices2poly(slices, options, axis) {
 
   // walls
   var connectorAxis = last.offset.minus(first.offset).abs();
-  // console.log('connectorAxis', connectorAxis);
+  // debug('connectorAxis', connectorAxis);
   slices.forEach(function(slice, idx) {
     if (idx < slices.length - 1) {
       var nextidx = idx + 1;
@@ -883,7 +890,7 @@ export function slices2poly(slices, options, axis) {
         rotate(normalVector, twistangle, nextidx / slices.length)
       );
 
-      // console.log('slices2poly.slices', c1.point, c2.point);
+      // debug('slices2poly.slices', c1.point, c2.point);
       polygons = polygons.concat(
         bottom.poly._toWallPolygons({
           cag: top.poly,
