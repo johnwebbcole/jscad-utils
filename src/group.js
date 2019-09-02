@@ -9,8 +9,6 @@ import {
   axisApply,
   zipObject
 } from './util';
-export default Group;
-export { Group };
 
 function group(names = [], parts = {}) {
   this.name = '';
@@ -390,3 +388,6 @@ var Group = function Group(...args) {
 
   return new group(self.names, self.parts);
 };
+
+export default Group;
+export { Group };

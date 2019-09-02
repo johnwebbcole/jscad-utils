@@ -10,7 +10,7 @@
     "jscad.json"
   ],
   "scripts": {
-    "test": "ava",
+    "test": "nyc ava",
     "build": "gulp all",
     "start": "gulp",
     "docs": "vuepress-jsdoc --source ./src --dist ./docs && vuepress build ./docs"
@@ -56,6 +56,7 @@
     "gulp-terser": "^1.2.0",
     "gulp-util": "^3.0.7",
     "gulp-watch": "^5.0.1",
+    "nyc": "^14.1.1",
     "rollup": "^1.19.4",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-commonjs": "^10.0.2",
@@ -70,7 +71,9 @@
       "src/**/*.js"
     ],
     "require": [
-      "@babel/register"
+      "@babel/register",
+      "babel-polyfill",
+      "./test/helpers/compat-env.js"
     ]
   },
   "babel": {
@@ -79,9 +82,13 @@
     ]
   },
   "optionalDependencies": {
-    "vuepress": "^1.0.3",
-    "vuepress-jsdoc": "^1.8.1",
+    "@jwc/jscad2-img-utils": "0.0.2",
+    "@jwc/jscad2-regl-renderer": "0.0.1",
     "@vuepress/plugin-active-header-links": "^1.0.0-rc.1",
-    "@vuepress/plugin-google-analytics": "^1.0.0-rc.1"
+    "@vuepress/plugin-google-analytics": "^1.0.0-rc.1",
+    "gl": "^4.3.3",
+    "looks-same": "^7.2.1",
+    "vuepress": "^1.0.3",
+    "vuepress-jsdoc": "^1.8.1"
   }
 }

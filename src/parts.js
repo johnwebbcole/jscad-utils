@@ -1,5 +1,5 @@
 import jsCadCSG from '@jscad/csg';
-const { CSG } = jsCadCSG;
+const { CSG, CAG } = jsCadCSG;
 import { fromxyz, div } from './array';
 // import scadApi from '@jscad/scad-api';
 // const { cube, sphere, cylinder } = scadApi.primitives3d;
@@ -30,20 +30,28 @@ export function Cube(width) {
     radius: r
   });
 }
-
-export function RoundedCube(...args) {
-  if (args[0].getBounds) {
-    var size = util.size(args[0].getBounds());
+/**
+ * Creates a cube with the `x` and `y` corners rounded.  The `z` faces are flat.
+ * Intended to create circut boards and similar objects.
+ *
+ * @function RoundedCube
+ * @param  {Number|CSG} x             The `x` dimension size or a CSG object to get dimensions from.
+ * @param  {Number} y             The `y` dimension size
+ * @param  {Number} thickness     Thickness in the `z` dimension of the cube.
+ * @param  {Number} corner_radius Radius of the corners.
+ * @return {CSG} A csg rounded cube.
+ */
+export function RoundedCube(x, y, thickness, corner_radius) {
+  if (x.getBounds) {
+    var size = util.size(x.getBounds());
     var r = [size.x / 2, size.y / 2];
-    var thickness = size.z;
-    var corner_radius = args[1];
+    thickness = size.z;
+    corner_radius = y;
   } else {
-    var r = [args[0] / 2, args[1] / 2]; // eslint-disable-line no-redeclare
-    var thickness = args[2]; // eslint-disable-line no-redeclare
-    var corner_radius = args[3]; // eslint-disable-line no-redeclare
+    var r = [x / 2, y / 2]; // eslint-disable-line no-redeclare
   }
 
-  // debug('RoundedCube.args', size, r, thickness, corner_radius);
+  debug('RoundedCube', size, r, thickness, corner_radius);
   var roundedcube = CAG.roundedRectangle({
     center: [r[0], r[1], 0],
     radius: r,
@@ -73,6 +81,14 @@ export function Cylinder(diameter, height, options) {
   return CSG.cylinder(options);
 }
 
+/**
+ * Creats a cone.
+ * @function Cone
+ * @param  {Number} diameter1 Radius of the bottom of the cone.
+ * @param  {Number} diameter2 Radius of the top of the cone.
+ * @param  {Number} height    Height of the cone.
+ * @return {CSG} A CSG cone object.
+ */
 export function Cone(diameter1, diameter2, height) {
   return CSG.cylinder({
     start: [0, 0, 0],
@@ -83,7 +99,7 @@ export function Cone(diameter1, diameter2, height) {
 }
 
 /**
- * Crate a hexagon.
+ * Creates a hexagon.
  * @param {number} diameter Outside diameter of the hexagon
  * @param {number} height   height of the hexagon
  */
@@ -105,6 +121,13 @@ export function Hexagon(diameter, height) {
   });
 }
 
+/**
+ * Creats a 3 sided prisim
+ * @function Triangle
+ * @param  {Number} base   The base of the triangle.
+ * @param  {Number} height The height of the prisim.
+ * @return {CSG} A prisim object.
+ */
 export function Triangle(base, height) {
   var radius = base / 2;
   var tri = CAG.fromPoints([

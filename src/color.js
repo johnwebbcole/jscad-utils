@@ -1,5 +1,3 @@
-export default Colors;
-export { Colors };
 /**
  * Color utilities for jscad.  Makes setting colors easier using css color names.  Using `.init()` adds a `.color()` function to the CSG object.
  * > You must use `Colors.init(CSG)` in the `main()` function.  The `CSG` class is not available before this.
@@ -245,3 +243,6 @@ var Colors = {
     // }
   }
 };
+
+export default Colors;
+export { Colors };

@@ -478,7 +478,7 @@ export function calcFlush(moveobj, withobj, axes, mside, wside) {
 }
 
 export function calcSnap(moveobj, withobj, axes, orientation, delta = 0) {
-  var side = util.flushSide[orientation];
+  var side = flushSide[orientation];
 
   if (!side) {
     var fix = {
@@ -518,7 +518,7 @@ export function calcSnap(moveobj, withobj, axes, orientation, delta = 0) {
 
 export function snap(moveobj, withobj, axis, orientation, delta) {
   debug('snap', moveobj, withobj, axis, orientation, delta);
-  var t = util.calcSnap(moveobj, withobj, axis, orientation, delta);
+  var t = calcSnap(moveobj, withobj, axis, orientation, delta);
   return moveobj.translate(t);
 }
 
@@ -568,12 +568,12 @@ export const axis2array = function(axes, valfun) {
   return a;
 };
 
-export const centroid = function(o, size) {
+export function centroid(o, objectSize) {
   var bounds = o.getBounds();
-  size = size || util.size(bounds);
+  objectSize = objectSize || size(bounds);
 
-  return bounds[0].plus(size.dividedBy(2));
-};
+  return bounds[0].plus(objectSize.dividedBy(2));
+}
 
 export function calcmidlineTo(o, axis, to) {
   var bounds = o.getBounds();
@@ -603,18 +603,18 @@ export function translator(o, axis, withObj) {
 }
 
 export function calcCenterWith(o, axes, withObj, delta) {
-  var centroid = util.centroid(o);
-  var withCentroid = util.centroid(withObj);
+  var objectCentroid = centroid(o);
+  var withCentroid = centroid(withObj);
 
-  var t = util.axisApply(axes, function(i, axis) {
-    return withCentroid[axis] - centroid[axis];
+  var t = axisApply(axes, function(i, axis) {
+    return withCentroid[axis] - objectCentroid[axis];
   });
 
-  return delta ? util.array.add(t, delta) : t;
+  return delta ? array.add(t, delta) : t;
 }
 
 export function centerWith(o, axis, withObj) {
-  return o.translate(util.calcCenterWith(o, axis, withObj));
+  return o.translate(calcCenterWith(o, axis, withObj));
 }
 
 /**

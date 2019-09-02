@@ -14,7 +14,7 @@ function initJscadutils(_CSG, options = {}) {
     }
   };
 
-  const jscadUtilsDebug = (options.debug.split(',') || []).reduce(
+  var jscadUtilsDebug = (options.debug.split(',') || []).reduce(
     (checks, check) => {
       if (check.startsWith('-')) {
         checks.disabled.push(

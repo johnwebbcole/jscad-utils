@@ -35,3 +35,6 @@ node_modules
 public/
 
 docs/code
+
+.nyc_output
+coverage

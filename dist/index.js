@@ -1132,7 +1132,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   }
   function calcSnap(moveobj, withobj, axes, orientation) {
     var delta = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
-    var side = util.flushSide[orientation];
+    var side = flushSide[orientation];
 
     if (!side) {
       var fix = {
@@ -1162,7 +1162,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   }
   function snap(moveobj, withobj, axis, orientation, delta) {
     debug$1('snap', moveobj, withobj, axis, orientation, delta);
-    var t = util.calcSnap(moveobj, withobj, axis, orientation, delta);
+    var t = calcSnap(moveobj, withobj, axis, orientation, delta);
     return moveobj.translate(t);
   }
   /**
@@ -1205,11 +1205,11 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     });
     return a;
   };
-  var centroid = function centroid(o, size) {
+  function centroid(o, objectSize) {
     var bounds = o.getBounds();
-    size = size || util.size(bounds);
-    return bounds[0].plus(size.dividedBy(2));
-  };
+    objectSize = objectSize || size(bounds);
+    return bounds[0].plus(objectSize.dividedBy(2));
+  }
   function calcmidlineTo(o, axis, to) {
     var bounds = o.getBounds();
     var size = util.size(bounds); // var centroid = bounds[0].plus(size.dividedBy(2));
@@ -1232,15 +1232,15 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     return t;
   }
   function calcCenterWith(o, axes, withObj, delta) {
-    var centroid = util.centroid(o);
-    var withCentroid = util.centroid(withObj);
-    var t = util.axisApply(axes, function (i, axis) {
-      return withCentroid[axis] - centroid[axis];
+    var objectCentroid = centroid(o);
+    var withCentroid = centroid(withObj);
+    var t = axisApply(axes, function (i, axis) {
+      return withCentroid[axis] - objectCentroid[axis];
     });
-    return delta ? util.array.add(t, delta) : t;
+    return delta ? add(t, delta) : t;
   }
   function centerWith(o, axis, withObj) {
-    return o.translate(util.calcCenterWith(o, axis, withObj));
+    return o.translate(calcCenterWith(o, axis, withObj));
   }
   /**
    * Given an size, bounds and an axis, a Point
@@ -1669,7 +1669,6 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * @type {Object}
    * @module jscad-utils-color
    */
-
   var Colors = {
     nameArray: {
       aliceblue: '#f0f8ff',
@@ -1903,103 +1902,103 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   function init(proto) {
     Colors.init(proto);
 
-    proto.prototype.flush = function flush(to, axis, mside, wside) {
-      return util.flush(this, to, axis, mside, wside);
+    proto.prototype.flush = function flush$1(to, axis, mside, wside) {
+      return flush(this, to, axis, mside, wside);
     };
 
-    proto.prototype.snap = function snap(to, axis, orientation, delta) {
-      return util.snap(this, to, axis, orientation, delta);
+    proto.prototype.snap = function snap$1(to, axis, orientation, delta) {
+      return snap(this, to, axis, orientation, delta);
     };
 
-    proto.prototype.calcSnap = function calcSnap(to, axis, orientation, delta) {
-      return util.calcSnap(this, to, axis, orientation, delta);
+    proto.prototype.calcSnap = function calcSnap$1(to, axis, orientation, delta) {
+      return calcSnap(this, to, axis, orientation, delta);
     };
 
-    proto.prototype.midlineTo = function midlineTo(axis, to) {
-      return util.midlineTo(this, axis, to);
+    proto.prototype.midlineTo = function midlineTo$1(axis, to) {
+      return midlineTo(this, axis, to);
     };
 
     proto.prototype.calcmidlineTo = function midlineTo(axis, to) {
-      return util.calcmidlineTo(this, axis, to);
+      return calcmidlineTo(this, axis, to);
     };
 
-    proto.prototype.centerWith = function centerWith(axis, to) {
-      util.depreciated('centerWith', true, 'Use align instead.');
-      return util.centerWith(this, axis, to);
+    proto.prototype.centerWith = function centerWith$1(axis, to) {
+      depreciated('centerWith', true, 'Use align instead.');
+      return centerWith(this, axis, to);
     };
 
     if (proto.center) echo('proto already has .center');
 
     proto.prototype.center = function center(axis) {
       // console.log('center', axis, this.getBounds());
-      return util.centerWith(this, axis || 'xyz', util.unitCube(), 0);
+      return centerWith(this, axis || 'xyz', unitCube());
     };
 
     proto.prototype.calcCenter = function centerWith(axis) {
-      return util.calcCenterWith(this, axis || 'xyz', util.unitCube(), 0);
+      return calcCenterWith(this, axis || 'xyz', unitCube(), 0);
     };
 
     proto.prototype.align = function align(to, axis) {
       // console.log('align', to.getBounds(), axis);
-      return util.centerWith(this, axis, to);
+      return centerWith(this, axis, to);
     };
 
     proto.prototype.calcAlign = function calcAlign(to, axis, delta) {
-      return util.calcCenterWith(this, axis, to, delta);
+      return calcCenterWith(this, axis, to, delta);
     };
 
-    proto.prototype.enlarge = function enlarge(x, y, z) {
-      return util.enlarge(this, x, y, z);
+    proto.prototype.enlarge = function enlarge$1(x, y, z) {
+      return enlarge(this, x, y, z);
     };
 
-    proto.prototype.fit = function fit(x, y, z, a) {
-      return util.fit(this, x, y, z, a);
+    proto.prototype.fit = function fit$1(x, y, z, a) {
+      return fit(this, x, y, z, a);
     };
 
     if (proto.size) echo('proto already has .size');
 
     proto.prototype.size = function () {
-      return util.size(this.getBounds());
+      return size(this.getBounds());
     };
 
     proto.prototype.centroid = function () {
-      return util.centroid(this);
+      return centroid(this);
     };
 
-    proto.prototype.Zero = function zero() {
-      return util.zero(this);
+    proto.prototype.Zero = function zero$1() {
+      return zero(this);
     };
 
     proto.prototype.Center = function Center(axes) {
-      return this.align(util.unitCube(), axes || 'xy');
+      return this.align(unitCube(), axes || 'xy');
     };
 
     proto.Vector2D.prototype.map = function Vector2D_map(cb) {
       return new proto.Vector2D(cb(this.x), cb(this.y));
     };
 
-    proto.prototype.fillet = function fillet(radius, orientation, options) {
-      return util.fillet(this, radius, orientation, options);
+    proto.prototype.fillet = function fillet$1(radius, orientation, options) {
+      return fillet(this, radius, orientation, options);
     };
 
-    proto.prototype.chamfer = function chamfer(radius, orientation, options) {
-      return util.chamfer(this, radius, orientation, options);
+    proto.prototype.chamfer = function chamfer$1(radius, orientation, options) {
+      return chamfer(this, radius, orientation, options);
     };
 
-    proto.prototype.bisect = function bisect(axis, offset, angle, rotateaxis, rotateoffset, options) {
-      return util.bisect(this, axis, offset, angle, rotateaxis, rotateoffset, options);
+    proto.prototype.bisect = function bisect$1(axis, offset, angle, rotateaxis, rotateoffset, options) {
+      return bisect(this, axis, offset, angle, rotateaxis, rotateoffset, options);
     };
 
-    proto.prototype.stretch = function stretch(axis, distance, offset) {
-      return util.stretch(this, axis, distance, offset);
+    proto.prototype.stretch = function stretch$1(axis, distance, offset) {
+      return stretch(this, axis, distance, offset);
     };
 
     proto.prototype.unionIf = function unionIf(object, condition) {
-      return condition ? this.union(util.result(this, object)) : this;
+      return condition ? this.union(result(this, object)) : this;
     };
 
     proto.prototype.subtractIf = function subtractIf(object, condition) {
-      return condition ? this.subtract(util.result(this, object)) : this;
+      return condition ? this.subtract(result(this, object)) : this;
     };
 
     proto.prototype._translate = proto.prototype.translate;
@@ -2017,7 +2016,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       } else {
         var t = Array.prototype.slice.call(arguments, 0).reduce(function (result, arg) {
           // console.log('arg', arg);
-          result = util.array.addArray(result, arg);
+          result = undefined(result, arg);
           return result;
         }, [0, 0, 0]); // console.log('translate', t);
 
@@ -2030,7 +2029,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     'default': init
   });
 
-  var CSG$2 = jsCadCSG.CSG;
+  var CSG$2 = jsCadCSG.CSG,
+      CAG = jsCadCSG.CAG;
   var debug$2 = Debug('jscadUtils:parts');
   var parts = {
     BBox: BBox,
@@ -2063,25 +2063,29 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       radius: r
     });
   }
-  function RoundedCube() {
-    for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-      args[_key2] = arguments[_key2];
+  /**
+   * Creates a cube with the `x` and `y` corners rounded.  The `z` faces are flat.
+   * Intended to create circut boards and similar objects.
+   *
+   * @function RoundedCube
+   * @param  {Number|CSG} x             The `x` dimension size or a CSG object to get dimensions from.
+   * @param  {Number} y             The `y` dimension size
+   * @param  {Number} thickness     Thickness in the `z` dimension of the cube.
+   * @param  {Number} corner_radius Radius of the corners.
+   * @return {CSG} A csg rounded cube.
+   */
+
+  function RoundedCube(x, y, thickness, corner_radius) {
+    if (x.getBounds) {
+      var size$1 = size(x.getBounds());
+      var r = [size$1.x / 2, size$1.y / 2];
+      thickness = size$1.z;
+      corner_radius = y;
+    } else {
+      var r = [x / 2, y / 2]; // eslint-disable-line no-redeclare
     }
 
-    if (args[0].getBounds) {
-      var size$1 = size(args[0].getBounds());
-      var r = [size$1.x / 2, size$1.y / 2];
-      var thickness = size$1.z;
-      var corner_radius = args[1];
-    } else {
-      var r = [args[0] / 2, args[1] / 2]; // eslint-disable-line no-redeclare
-
-      var thickness = args[2]; // eslint-disable-line no-redeclare
-
-      var corner_radius = args[3]; // eslint-disable-line no-redeclare
-    } // debug('RoundedCube.args', size, r, thickness, corner_radius);
-
-
+    debug$2('RoundedCube', size$1, r, thickness, corner_radius);
     var roundedcube = CAG.roundedRectangle({
       center: [r[0], r[1], 0],
       radius: r,
@@ -2108,6 +2112,15 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     });
     return CSG$2.cylinder(options);
   }
+  /**
+   * Creats a cone.
+   * @function Cone
+   * @param  {Number} diameter1 Radius of the bottom of the cone.
+   * @param  {Number} diameter2 Radius of the top of the cone.
+   * @param  {Number} height    Height of the cone.
+   * @return {CSG} A CSG cone object.
+   */
+
   function Cone(diameter1, diameter2, height) {
     return CSG$2.cylinder({
       start: [0, 0, 0],
@@ -2117,7 +2130,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     });
   }
   /**
-   * Crate a hexagon.
+   * Creates a hexagon.
    * @param {number} diameter Outside diameter of the hexagon
    * @param {number} height   height of the hexagon
    */
@@ -2131,6 +2144,14 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       offset: [0, 0, height]
     });
   }
+  /**
+   * Creats a 3 sided prisim
+   * @function Triangle
+   * @param  {Number} base   The base of the triangle.
+   * @param  {Number} height The height of the prisim.
+   * @return {CSG} A prisim object.
+   */
+
   function Triangle(base, height) {
     var radius = base / 2;
     var tri = CAG.fromPoints([[-radius, 0], [radius, 0], [0, Math.sin(30) * radius]]);

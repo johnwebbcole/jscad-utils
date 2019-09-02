@@ -3,13 +3,13 @@ import test from 'ava';
 import * as array from '../src/array';
 
 test('import array', t => {
-    // console.log(
-    //     Object.keys(array)
-    //         .map(k => `test.todo('${k}');`)
-    //         .join('\n')
-    // );
+  // console.log(
+  //     Object.keys(array)
+  //         .map(k => `test.todo('${k}');`)
+  //         .join('\n')
+  // );
 
-    t.snapshot(Object.keys(array));
+  t.snapshot(Object.keys(array));
 });
 
 test.todo('div');

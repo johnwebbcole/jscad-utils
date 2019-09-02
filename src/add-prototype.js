@@ -1,4 +1,5 @@
 import Colors from './color';
+import * as util from './util';
 /**
  * Initialize `jscad-utils` and add utilities to the `proto` object.
  * @param  {proto} proto The global `proto` object
