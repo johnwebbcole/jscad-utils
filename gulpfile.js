@@ -3,10 +3,7 @@
 var fs = require('fs');
 var gulp = require('gulp');
 var concat = require('gulp-concat');
-var del = require('del');
-// var runSequence = require('run-sequence');
 var rollup = require('rollup');
-var merge2 = require('merge2');
 var debug = require('gulp-debug');
 var inject = require('gulp-inject');
 var plumber = require('gulp-plumber');
@@ -14,7 +11,6 @@ var terser = require('gulp-terser');
 var rollupResolve = require('rollup-plugin-node-resolve');
 var rollupBabel = require('rollup-plugin-babel');
 var eslint = require('gulp-eslint');
-var jsdocToMarkdown = require('gulp-jsdoc-to-markdown');
 
 gulp.task('lint', function() {
   return gulp
@@ -23,22 +19,6 @@ gulp.task('lint', function() {
     .pipe(eslint())
     .pipe(eslint.format());
   // .pipe(eslint.failAfterError());
-});
-
-gulp.task('docs', function() {
-  return gulp
-    .src('src/**/*.js')
-    .pipe(plumber())
-    .pipe(concat('README.md'))
-    .pipe(
-      jsdocToMarkdown({
-        template: fs.readFileSync('./jsdoc2md/README.hbs', 'utf8')
-      })
-    )
-    .on('error', function(err) {
-      console.log('jsdoc2md failed:', err.message);
-    })
-    .pipe(gulp.dest('.'));
 });
 
 gulp.task('build', async function() {
