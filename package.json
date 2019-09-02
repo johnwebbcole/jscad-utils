@@ -60,7 +60,15 @@
     "rollup": "^1.19.4",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-commonjs": "^10.0.2",
-    "rollup-plugin-node-resolve": "^5.2.0"
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "@jwc/jscad2-img-utils": "0.0.2",
+    "@jwc/jscad2-regl-renderer": "0.0.1",
+    "@vuepress/plugin-active-header-links": "^1.0.0-rc.1",
+    "@vuepress/plugin-google-analytics": "^1.0.0-rc.1",
+    "gl": "^4.3.3",
+    "looks-same": "^7.2.1",
+    "vuepress": "^1.0.3",
+    "vuepress-jsdoc": "^1.8.1"
   },
   "ava": {
     "files": [
@@ -81,7 +89,7 @@
       "@babel/preset-env"
     ]
   },
-  "peerDependencies": {
+  "optionalDependencies": {
     "@jwc/jscad2-img-utils": "0.0.2",
     "@jwc/jscad2-regl-renderer": "0.0.1",
     "@vuepress/plugin-active-header-links": "^1.0.0-rc.1",

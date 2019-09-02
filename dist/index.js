@@ -2590,4 +2590,3 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   return exports;
 
 }({}, jsCadCSG, scadApi));
-//# sourceMappingURL=index.js.map
