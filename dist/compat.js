@@ -2,7 +2,7 @@
 var Parts, Boxes, Group, Debug;
 function initJscadutils(_CSG, options = {}) {
   options = Object.assign({ debug: '' }, options);
-  var jsCadCSG = { CSG };
+  var jsCadCSG = { CSG, CAG };
   var scadApi = {
     vector_text,
     rectangular_extrude,

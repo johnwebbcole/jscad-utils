@@ -23,7 +23,8 @@ function initJscadutils(_CSG, options = {}) {
         debug: ""
     }, options);
     var jsCadCSG = {
-        CSG
+        CSG,
+        CAG
     };
     var scadApi = {
         vector_text,
