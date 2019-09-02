@@ -1702,7 +1702,7 @@ function initJscadutils(_CSG, options = {}) {
 
 var jscadUtilsPluginInit = [];
 
-var util = {
+util = {
     init: (...a) => {
         initJscadutils(...a);
         jscadUtilsPluginInit.forEach(p => {

@@ -2622,6 +2622,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   return exports;
 
 }({}, jsCadCSG, scadApi));
+//# sourceMappingURL=index.js.map
 
   // endinject
 
@@ -2641,7 +2642,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 }
 
 var jscadUtilsPluginInit = [];
-var util = {
+util = {
   init: (...a) => {
     initJscadutils(...a);
 

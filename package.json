@@ -10,7 +10,7 @@
     "jscad.json"
   ],
   "scripts": {
-    "test": "nyc ava",
+    "test": "nyc --reporter=html ava",
     "build": "gulp all",
     "start": "gulp",
     "docs": "vuepress-jsdoc --source ./src --dist ./docs && vuepress build ./docs"
