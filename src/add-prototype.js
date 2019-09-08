@@ -1,4 +1,4 @@
-import Colors from './color';
+import { color } from './color';
 import * as util from './util';
 /**
  * Initialize `jscad-utils` and add utilities to the `proto` object.
@@ -6,7 +6,11 @@ import * as util from './util';
  * @augments proto
  */
 export default function init(proto) {
-  Colors.init(proto);
+  // Colors.init(proto);
+  proto.prototype.color = function(r, g, b, a) {
+    if (!r) return this; // shortcut empty color values to do nothing.
+    return color(this, r, g, b, a);
+  };
 
   proto.prototype.flush = function flush(to, axis, mside, wside) {
     return util.flush(this, to, axis, mside, wside);

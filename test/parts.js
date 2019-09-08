@@ -74,7 +74,6 @@ function run_tests(Parts) {
   });
 
   test('Anchor', async t => {
-    console.warn('utilInit', utilInit);
     utilInit(CSG);
     var anchor = Parts.Anchor(5, 2.5);
     var board = Parts.RoundedCube(10, 10, 2.5, 2).Center();

@@ -1,3 +1,4 @@
+import jsCadCSG from '@jscad/csg';
 import { Debug } from './debug';
 const debug = Debug('jscadUtils:group');
 import {
