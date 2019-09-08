@@ -1,6 +1,11 @@
 import test from 'ava';
 // import { nearlyEqual } from './helpers/nearlyEqual';
 import * as util from '../src/util';
+import utilInit from '../src/add-prototype';
+
+import csgImageSnapshot from './helpers/csgImageSnapshot';
+import jsCadCSG from '@jscad/csg';
+const { CSG } = jsCadCSG;
 
 test('import util', t => {
   // console.log(
@@ -68,7 +73,32 @@ test.todo('center');
 test.todo('centerY');
 test.todo('centerX');
 test.todo('enlarge');
-test.todo('fit');
+test.skip('fit', async t => {
+  utilInit(CSG);
+  const { snap, centerWith, color, label } = util;
+  const align = centerWith;
+
+  var cube = CSG.cube({
+    radius: 10
+  });
+  console.trace('fit', cube.color('red'));
+  // create a label, place it on top of the cube
+  // // and center it on the top face
+  // var label = util
+  //   .label('hello')
+  //   .snap(cube, 'z', 'outside-')
+  //   .align(cube, 'xy');
+  var l = align(snap(label('hello'), cube, 'z', 'outside-'), cube, 'xy');
+  var s = cube.size();
+  // fit the label to the cube (minus 2mm) while
+  // keeping the aspect ratio of the text
+  // and return the union
+  const value = await csgImageSnapshot(
+    t,
+    cube.union(l.fit([s.x - 2, s.y - 2, 0], true).color('blue'))
+  );
+  t.true(value);
+});
 test.todo('flushSide');
 test.todo('axisApply');
 test.todo('axis2array');

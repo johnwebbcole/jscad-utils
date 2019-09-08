@@ -6,9 +6,14 @@ const debug = Debug('jscadUtils:util');
 import jsCadCSG from '@jscad/csg';
 const { CSG } = jsCadCSG;
 import scadApi from '@jscad/scad-api';
-const { vector_text, rectangular_extrude, vector_char } = scadApi;
+const { rectangular_extrude } = scadApi.extrusions;
+const { vector_text, vector_char } = scadApi.text;
+const { union } = scadApi.booleanOps;
 import Group from './group';
 import * as array from './array';
+// import utilInit from '../src/add-prototype';
+// utilInit(CSG);
+// console.trace('CSG', CSG.prototype);
 
 export var NOZZEL_SIZE = 0.4;
 
@@ -97,7 +102,7 @@ export const isNegative = function(n) {
  * @depricated use Debug instead
  */
 export const print = function(msg, o) {
-  echo(
+  debug(
     msg,
     JSON.stringify(o.getBounds()),
     JSON.stringify(this.size(o.getBounds()))
@@ -149,7 +154,10 @@ export function label(text, x, y, width, height) {
       })
     ); // extrude it to 3D
   });
-  return this.center(union(o));
+  // console.trace('label', Object.getPrototypeOf(union(o)));
+  var foo = union(o);
+  // console.trace('typeof', typeof foo);
+  return center(union(o));
 }
 
 export function text(text) {
@@ -323,20 +331,20 @@ export const scale = function scale(size, value) {
   return 1 + 100 / (size / value) / 100;
 };
 
-export const center = function center(object, size) {
-  size = size || this.size(object.getBounds());
-  return this.centerY(this.centerX(object, size), size);
-};
+export function center(object, objectSize) {
+  objectSize = objectSize || size(object.getBounds());
+  return centerY(centerX(object, objectSize), objectSize);
+}
 
-export const centerY = function centerY(object, size) {
-  size = size || this.size(object.getBounds());
-  return object.translate([0, -size.y / 2, 0]);
-};
+export function centerY(object, objectSize) {
+  objectSize = objectSize || size(object.getBounds());
+  return object.translate([0, -objectSize.y / 2, 0]);
+}
 
-export const centerX = function centerX(object, size) {
-  size = size || this.size(object.getBounds());
-  return object.translate([-size.x / 2, 0, 0]);
-};
+export function centerX(object, objectSize) {
+  objectSize = objectSize || size(object.getBounds());
+  return object.translate([-objectSize.x / 2, 0, 0]);
+}
 
 /**
  * Enlarge an object by scale units, while keeping the same
@@ -386,7 +394,7 @@ export const enlarge = function enlarge(object, x, y, z) {
  * @return {CSG}                   [description]
  * @function fit
  */
-export const fit = function fit(object, x, y, z, keep_aspect_ratio) {
+export function fit(object, x, y, z, keep_aspect_ratio) {
   var a;
   if (Array.isArray(x)) {
     a = x;
@@ -399,14 +407,18 @@ export const fit = function fit(object, x, y, z, keep_aspect_ratio) {
   }
 
   // var c = util.centroid(object);
-  var size = this.size(object.getBounds());
+  var objectSize = size(object.getBounds());
 
   function scale(size, value) {
     if (value == 0) return 1;
     return value / size;
   }
 
-  var s = [scale(size.x, x), scale(size.y, y), scale(size.z, z)];
+  var s = [
+    scale(objectSize.x, x),
+    scale(objectSize.y, y),
+    scale(objectSize.z, z)
+  ];
   var min = util.array.min(s);
   return util.centerWith(
     object.scale(
@@ -418,7 +430,7 @@ export const fit = function fit(object, x, y, z, keep_aspect_ratio) {
     'xyz',
     object
   );
-};
+}
 
 export function shift(object, x, y, z) {
   var hsize = this.div(this.size(object.getBounds()), 2);

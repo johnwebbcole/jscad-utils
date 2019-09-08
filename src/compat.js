@@ -11,6 +11,16 @@ function initJscadutils(_CSG, options = {}) {
       cube,
       sphere,
       cylinder
+    },
+    extrusions: {
+      rectangular_extrude
+    },
+    text: {
+      vector_text,
+      vector_char
+    },
+    booleanOps: {
+      union
     }
   };
 

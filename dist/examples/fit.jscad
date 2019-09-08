@@ -1,21 +1,22 @@
 function main() {
-    util.init(CSG);
+  util.init(CSG);
 
-    var cube = CSG.cube({
-        radius: 10
-    }).color('orange');
+  var cube = CSG.cube({
+    radius: 10
+  }).color('orange');
 
-    // create a label, place it on top of the cube
-    // and center it on the top face
-    var label = util.label('hello')
-        .snap(cube, 'z', 'outside-')
-        .align(cube, 'xy');
+  // create a label, place it on top of the cube
+  // and center it on the top face
+  var label = util
+    .label('hello')
+    .snap(cube, 'z', 'outside-')
+    .align(cube, 'xy');
 
-    var s = cube.size();
-    // fit the label to the cube (minus 2mm) while
-    // keeping the aspect ratio of the text
-    // and return the union
-    return cube.union(label.fit([s.x - 2, s.y - 2, 0], true).color('blue'));
+  var s = cube.size();
+  // fit the label to the cube (minus 2mm) while
+  // keeping the aspect ratio of the text
+  // and return the union
+  return cube.union(label.fit([s.x - 2, s.y - 2, 0], true).color('blue'));
 }
 
 // include:js
@@ -38,6 +39,16 @@ function initJscadutils(_CSG, options = {}) {
             cube,
             sphere,
             cylinder
+        },
+        extrusions: {
+            rectangular_extrude
+        },
+        text: {
+            vector_text,
+            vector_char
+        },
+        booleanOps: {
+            union
         }
     };
     var jscadUtilsDebug = (options.debug.split(",") || []).reduce((checks, check) => {
@@ -431,7 +442,9 @@ function initJscadutils(_CSG, options = {}) {
         };
         var debug$1 = Debug("jscadUtils:util");
         var CSG$1 = jsCadCSG.CSG;
-        var vector_text = scadApi.vector_text, rectangular_extrude = scadApi.rectangular_extrude, vector_char = scadApi.vector_char;
+        var rectangular_extrude = scadApi.extrusions.rectangular_extrude;
+        var _scadApi$text = scadApi.text, vector_text = _scadApi$text.vector_text, vector_char = _scadApi$text.vector_char;
+        var union$1 = scadApi.booleanOps.union;
         var NOZZEL_SIZE = .4;
         var nearest = {
             under: function under(desired) {
@@ -466,7 +479,7 @@ function initJscadutils(_CSG, options = {}) {
             return ((n = +n) || 1 / n) < 0;
         };
         var print = function print(msg, o) {
-            echo(msg, JSON.stringify(o.getBounds()), JSON.stringify(this.size(o.getBounds())));
+            debug$1(msg, JSON.stringify(o.getBounds()), JSON.stringify(this.size(o.getBounds())));
         };
         var error = function error(msg) {
             if (console && console.error) console.error(msg);
@@ -492,7 +505,8 @@ function initJscadutils(_CSG, options = {}) {
                     h: height || 2
                 }));
             });
-            return this.center(union(o));
+            var foo = union$1(o);
+            return center(union$1(o));
         }
         function text(text) {
             var l = vector_char(0, 0, text);
@@ -600,18 +614,18 @@ function initJscadutils(_CSG, options = {}) {
             if (value == 0) return 1;
             return 1 + 100 / (size / value) / 100;
         };
-        var center = function center(object, size) {
-            size = size || this.size(object.getBounds());
-            return this.centerY(this.centerX(object, size), size);
-        };
-        var centerY = function centerY(object, size) {
-            size = size || this.size(object.getBounds());
-            return object.translate([ 0, -size.y / 2, 0 ]);
-        };
-        var centerX = function centerX(object, size) {
-            size = size || this.size(object.getBounds());
-            return object.translate([ -size.x / 2, 0, 0 ]);
-        };
+        function center(object, objectSize) {
+            objectSize = objectSize || size(object.getBounds());
+            return centerY(centerX(object, objectSize), objectSize);
+        }
+        function centerY(object, objectSize) {
+            objectSize = objectSize || size(object.getBounds());
+            return object.translate([ 0, -objectSize.y / 2, 0 ]);
+        }
+        function centerX(object, objectSize) {
+            objectSize = objectSize || size(object.getBounds());
+            return object.translate([ -objectSize.x / 2, 0, 0 ]);
+        }
         var enlarge = function enlarge(object, x, y, z) {
             var a;
             if (Array.isArray(x)) {
@@ -630,7 +644,7 @@ function initJscadutils(_CSG, options = {}) {
             var delta = new_centroid.minus(centroid).times(-1);
             return new_object.translate(delta);
         };
-        var fit = function fit(object, x, y, z, keep_aspect_ratio) {
+        function fit(object, x, y, z, keep_aspect_ratio) {
             var a;
             if (Array.isArray(x)) {
                 a = x;
@@ -641,18 +655,18 @@ function initJscadutils(_CSG, options = {}) {
             } else {
                 a = [ x, y, z ];
             }
-            var size = this.size(object.getBounds());
+            var objectSize = size(object.getBounds());
             function scale(size, value) {
                 if (value == 0) return 1;
                 return value / size;
             }
-            var s = [ scale(size.x, x), scale(size.y, y), scale(size.z, z) ];
+            var s = [ scale(objectSize.x, x), scale(objectSize.y, y), scale(objectSize.z, z) ];
             var min = util.array.min(s);
             return util.centerWith(object.scale(s.map(function(d, i) {
                 if (a[i] === 0) return 1;
                 return keep_aspect_ratio ? min : d;
             })), "xyz", object);
-        };
+        }
         function shift(object, x, y, z) {
             var hsize = this.div(this.size(object.getBounds()), 2);
             return object.translate(this.xyz2array(this.mulxyz(hsize, x, y, z)));
@@ -980,7 +994,7 @@ function initJscadutils(_CSG, options = {}) {
                 si
             }), si.axis).color(options.color);
             var remainder = object.cutByPlane(plane);
-            return union([ options.unionOriginal ? object : remainder, delta.translate(si.moveDelta) ]);
+            return union$1([ options.unionOriginal ? object : remainder, delta.translate(si.moveDelta) ]);
         }
         function chamfer(object, radius, orientation, options) {
             return util.reShape(object, radius, orientation, options, function(first, last, slice) {
@@ -1271,6 +1285,7 @@ function initJscadutils(_CSG, options = {}) {
             return o.setColor(c);
         }
         function init(proto) {
+            if (proto.prototype._jscadutilsinit) return;
             proto.prototype.color = function(r, g, b, a) {
                 if (!r) return this;
                 return color(this, r, g, b, a);
@@ -1359,6 +1374,7 @@ function initJscadutils(_CSG, options = {}) {
                     return this._translate(t);
                 }
             };
+            proto.prototype._jscadutilsinit = true;
         }
         var init$1 = Object.freeze({
             default: init

@@ -1,14 +1,13 @@
 function main() {
-    util.init(CSG);
+  util.init(CSG);
 
-    var cube = CSG.cube({
-        radius: 10
-    }).setColor(1, 0, 0);
+  var cube = CSG.cube({
+    radius: 10
+  }).setColor(1, 0, 0);
 
+  console.log('cube size', JSON.stringify(cube.size()));
 
-    echo(JSON.stringify(cube.size()));
-
-    return cube;
+  return cube;
 }
 
 // include:js

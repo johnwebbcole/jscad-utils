@@ -6,6 +6,11 @@ import * as util from './util';
  * @augments proto
  */
 export default function init(proto) {
+  /**
+   * Short circut out if the prototypes have alrady been added.
+   */
+  if (proto.prototype._jscadutilsinit) return;
+
   // Colors.init(proto);
   proto.prototype.color = function(r, g, b, a) {
     if (!r) return this; // shortcut empty color values to do nothing.
@@ -151,4 +156,8 @@ export default function init(proto) {
       return this._translate(t);
     }
   };
+
+  proto.prototype._jscadutilsinit = true;
+
+  // console.trace('init', proto.prototype);
 }

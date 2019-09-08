@@ -11,6 +11,16 @@ function initJscadutils(_CSG, options = {}) {
       cube,
       sphere,
       cylinder
+    },
+    extrusions: {
+      rectangular_extrude
+    },
+    text: {
+      vector_text,
+      vector_char
+    },
+    booleanOps: {
+      union
     }
   };
 
@@ -744,9 +754,14 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
   var debug$1 = Debug('jscadUtils:util'); // import array from 'src/array';
   var CSG$1 = jsCadCSG.CSG;
-  var vector_text = scadApi.vector_text,
-      rectangular_extrude = scadApi.rectangular_extrude,
-      vector_char = scadApi.vector_char;
+  var rectangular_extrude = scadApi.extrusions.rectangular_extrude;
+  var _scadApi$text = scadApi.text,
+      vector_text = _scadApi$text.vector_text,
+      vector_char = _scadApi$text.vector_char;
+  var union$1 = scadApi.booleanOps.union;
+  // utilInit(CSG);
+  // console.trace('CSG', CSG.prototype);
+
   var NOZZEL_SIZE = 0.4;
   var nearest = {
     /**
@@ -836,7 +851,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    */
 
   var print = function print(msg, o) {
-    echo(msg, JSON.stringify(o.getBounds()), JSON.stringify(this.size(o.getBounds())));
+    debug$1(msg, JSON.stringify(o.getBounds()), JSON.stringify(this.size(o.getBounds())));
   };
   var error = function error(msg) {
     if (console && console.error) console.error(msg); // eslint-disable-line no-console
@@ -880,8 +895,11 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
         w: width || 2,
         h: height || 2
       })); // extrude it to 3D
-    });
-    return this.center(union(o));
+    }); // console.trace('label', Object.getPrototypeOf(union(o)));
+
+    var foo = union$1(o); // console.trace('typeof', typeof foo);
+
+    return center(union$1(o));
   }
   function text(text) {
     var l = vector_char(0, 0, text); // l contains a list of polylines to draw
@@ -1030,18 +1048,18 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     if (value == 0) return 1;
     return 1 + 100 / (size / value) / 100;
   };
-  var center = function center(object, size) {
-    size = size || this.size(object.getBounds());
-    return this.centerY(this.centerX(object, size), size);
-  };
-  var centerY = function centerY(object, size) {
-    size = size || this.size(object.getBounds());
-    return object.translate([0, -size.y / 2, 0]);
-  };
-  var centerX = function centerX(object, size) {
-    size = size || this.size(object.getBounds());
-    return object.translate([-size.x / 2, 0, 0]);
-  };
+  function center(object, objectSize) {
+    objectSize = objectSize || size(object.getBounds());
+    return centerY(centerX(object, objectSize), objectSize);
+  }
+  function centerY(object, objectSize) {
+    objectSize = objectSize || size(object.getBounds());
+    return object.translate([0, -objectSize.y / 2, 0]);
+  }
+  function centerX(object, objectSize) {
+    objectSize = objectSize || size(object.getBounds());
+    return object.translate([-objectSize.x / 2, 0, 0]);
+  }
   /**
    * Enlarge an object by scale units, while keeping the same
    * centroid.  For example util.enlarge(o, 1, 1, 1) enlarges
@@ -1087,7 +1105,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * @function fit
    */
 
-  var fit = function fit(object, x, y, z, keep_aspect_ratio) {
+  function fit(object, x, y, z, keep_aspect_ratio) {
     var a;
 
     if (Array.isArray(x)) {
@@ -1101,21 +1119,21 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     } // var c = util.centroid(object);
 
 
-    var size = this.size(object.getBounds());
+    var objectSize = size(object.getBounds());
 
     function scale(size, value) {
       if (value == 0) return 1;
       return value / size;
     }
 
-    var s = [scale(size.x, x), scale(size.y, y), scale(size.z, z)];
+    var s = [scale(objectSize.x, x), scale(objectSize.y, y), scale(objectSize.z, z)];
     var min = util.array.min(s);
     return util.centerWith(object.scale(s.map(function (d, i) {
       if (a[i] === 0) return 1; // don't scale when value is zero
 
       return keep_aspect_ratio ? min : d;
     })), 'xyz', object);
-  };
+  }
   function shift(object, x, y, z) {
     var hsize = this.div(this.size(object.getBounds()), 2);
     return object.translate(this.xyz2array(this.mulxyz(hsize, x, y, z)));
@@ -1563,7 +1581,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       si: si
     }), si.axis).color(options.color);
     var remainder = object.cutByPlane(plane);
-    return union([options.unionOriginal ? object : remainder, delta.translate(si.moveDelta)]);
+    return union$1([options.unionOriginal ? object : remainder, delta.translate(si.moveDelta)]);
   }
   function chamfer(object, radius, orientation, options) {
     return util.reShape(object, radius, orientation, options, function (first, last, slice) {
@@ -1925,7 +1943,11 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    */
 
   function init(proto) {
-    // Colors.init(proto);
+    /**
+     * Short circut out if the prototypes have alrady been added.
+     */
+    if (proto.prototype._jscadutilsinit) return; // Colors.init(proto);
+
     proto.prototype.color = function (r, g, b, a) {
       if (!r) return this; // shortcut empty color values to do nothing.
 
@@ -2053,6 +2075,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
         return this._translate(t);
       }
     };
+
+    proto.prototype._jscadutilsinit = true; // console.trace('init', proto.prototype);
   }
 
   var init$1 = /*#__PURE__*/Object.freeze({
