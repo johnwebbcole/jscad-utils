@@ -1,14 +1,18 @@
 import { Debug } from './debug';
 const debug = Debug('jscadUtils:util');
-
-// import array from 'src/array';
-// import triangle from 'src/triangle';
-import jsCadCSG from '@jscad/csg';
-const { CSG } = jsCadCSG;
-import scadApi from '@jscad/scad-api';
-const { rectangular_extrude } = scadApi.extrusions;
-const { vector_text, vector_char } = scadApi.text;
-const { union } = scadApi.booleanOps;
+import {
+  CSG,
+  union,
+  rectangular_extrude,
+  vector_text,
+  vector_char
+} from './jscad';
+// import jsCadCSG from '@jscad/csg';
+// const { CSG } = jsCadCSG;
+// import scadApi from '@jscad/scad-api';
+// const { rectangular_extrude } = scadApi.extrusions;
+// const { vector_text, vector_char } = scadApi.text;
+// const { union } = scadApi.booleanOps;
 import Group from './group';
 import * as array from './array';
 // import utilInit from '../src/add-prototype';
@@ -50,9 +54,9 @@ export const nearest = {
  * @return {object}       the first parameter passed into the function.
  * @function identity
  */
-export const identity = function(solid) {
+export function identity(solid) {
   return solid;
-};
+}
 
 /**
  * If `f` is a funciton, it is executed with `object` as the
@@ -65,13 +69,13 @@ export const identity = function(solid) {
  * @return {object}        the result of the function or the object.
  * @function result
  */
-export const result = function(object, f) {
+export function result(object, f) {
   if (typeof f === 'function') {
     return f.call(object);
   } else {
     return f;
   }
-};
+}
 
 /**
  * Returns target object with default values assigned. If values already exist, they are not set.
@@ -81,18 +85,18 @@ export const result = function(object, f) {
  * @function defaults
  * @depricated
  */
-export const defaults = function(target, defaults) {
+export function defaults(target, defaults) {
   depreciated('defaults', true, 'use Object.assign instead');
   return Object.assign(defaults, target);
-};
+}
 
-export const isEmpty = function(variable) {
+export function isEmpty(variable) {
   return typeof variable === 'undefined' || variable === null;
-};
+}
 
-export const isNegative = function(n) {
+export function isNegative(n) {
   return ((n = +n) || 1 / n) < 0;
-};
+}
 
 /**
  * Print a message and CSG object bounds and size to the conosle.
@@ -101,26 +105,26 @@ export const isNegative = function(n) {
  * @function
  * @depricated use Debug instead
  */
-export const print = function(msg, o) {
+export function print(msg, o) {
   debug(
     msg,
     JSON.stringify(o.getBounds()),
     JSON.stringify(this.size(o.getBounds()))
   );
-};
+}
 
-export const error = function(msg) {
+export function error(msg) {
   if (console && console.error) console.error(msg); // eslint-disable-line no-console
   throw new Error(msg);
-};
+}
 
-export const depreciated = function(method, error, message) {
+export function depreciated(method, error, message) {
   var msg = method + ' is depreciated.' + (' ' + message || '');
   // eslint-disable-next-line no-console
   if (!error && console && console.error)
     console[error ? 'error' : 'warn'](msg); // eslint-disable-line no-console
   if (error) throw new Error(msg);
-};
+}
 
 /**
  * Convert an imperial `inch` to metric `mm`.
@@ -155,7 +159,7 @@ export function label(text, x, y, width, height) {
     ); // extrude it to 3D
   });
   // console.trace('label', Object.getPrototypeOf(union(o)));
-  var foo = union(o);
+  // var foo = union(o);
   // console.trace('typeof', typeof foo);
   return center(union(o));
 }
@@ -171,15 +175,15 @@ export function text(text) {
   return char;
 }
 
-export const unitCube = function(length, radius) {
+export function unitCube(length, radius) {
   radius = radius || 0.5;
   return CSG.cube({
     center: [0, 0, 0],
     radius: [radius, radius, length || 0.5]
   });
-};
+}
 
-export const unitAxis = function(length, radius, centroid) {
+export function unitAxis(length, radius, centroid) {
   // echo(length, JSON.stringify(centroid));
   centroid = centroid || [0, 0, 0];
   return unitCube(length, radius)
@@ -192,15 +196,15 @@ export const unitAxis = function(length, radius, centroid) {
         .setColor(0, 0, 1)
     ])
     .translate(centroid);
-};
+}
 
-export const toArray = function(a) {
+export function toArray(a) {
   return Array.isArray(a) ? a : [a];
-};
+}
 
-export const ifArray = function(a, cb) {
+export function ifArray(a, cb) {
   return Array.isArray(a) ? a.map(cb) : cb(a);
-};
+}
 
 /**
  * Returns an array of positions along an object on a given axis.
@@ -210,7 +214,7 @@ export const ifArray = function(a, cb) {
  * @return {Array}          An array of segment positions.
  * @function segment
  */
-export const segment = function(object, segments, axis) {
+export function segment(object, segments, axis) {
   var size = object.size()[axis];
   var width = size / segments;
   var result = [];
@@ -218,14 +222,14 @@ export const segment = function(object, segments, axis) {
     result.push(i);
   }
   return result;
-};
+}
 
-export const zipObject = function(names, values) {
+export function zipObject(names, values) {
   return names.reduce(function(result, value, idx) {
     result[value] = values[idx];
     return result;
   }, {});
-};
+}
 
 /**
  * Object map function, returns an array of the object mapped into an array.
@@ -234,26 +238,26 @@ export const zipObject = function(names, values) {
  * @return {array}   an array of the mapped object.
  * @function map
  */
-export const map = function(o, f) {
+export function map(o, f) {
   return Object.keys(o).map(function(key) {
     return f(o[key], key, o);
   });
-};
+}
 
-export const mapValues = function(o, f) {
+export function mapValues(o, f) {
   return Object.keys(o).map(function(key) {
     return f(o[key], key);
   });
-};
+}
 
-export const pick = function(o, names) {
+export function pick(o, names) {
   return names.reduce(function(result, name) {
     result[name] = o[name];
     return result;
   }, {});
-};
+}
 
-export const mapPick = function(o, names, f, options) {
+export function mapPick(o, names, f, options) {
   return names.reduce(function(result, name) {
     if (!o[name]) {
       throw new Error(
@@ -263,39 +267,39 @@ export const mapPick = function(o, names, f, options) {
     result.push(f ? f(o[name]) : o[name]);
     return result;
   }, []);
-};
+}
 
-export const divA = function divA(a, f) {
+export function divA(a, f) {
   return array.div(a, f);
-};
+}
 
-export const divxyz = function(size, x, y, z) {
+export function divxyz(size, x, y, z) {
   return {
     x: size.x / x,
     y: size.y / y,
     z: size.z / z
   };
-};
+}
 
-export const div = function(size, d) {
+export function div(size, d) {
   return this.divxyz(size, d, d, d);
-};
+}
 
-export const mulxyz = function(size, x, y, z) {
+export function mulxyz(size, x, y, z) {
   return {
     x: size.x * x,
     y: size.y * y,
     z: size.z * z
   };
-};
+}
 
-export const mul = function(size, d) {
+export function mul(size, d) {
   return this.divxyz(size, d, d, d);
-};
+}
 
-export const xyz2array = function xyz2array(size) {
+export function xyz2array(size) {
   return [size.x, size.y, size.z];
-};
+}
 
 export const rotationAxes = {
   x: [1, 0, 0],
@@ -309,12 +313,12 @@ export const rotationAxes = {
  * @return {CSG.Vector3D}   Vector3d with the size of the object
  * @function size
  */
-export const size = function size(o) {
+export function size(o) {
   var bbox = o.getBounds ? o.getBounds() : o;
 
   var foo = bbox[1].minus(bbox[0]);
   return foo;
-};
+}
 
 /**
  * Returns a scale factor (0.0-1.0) for an object
@@ -325,11 +329,11 @@ export const size = function size(o) {
  * @return {number}       Scale factor
  * @function scale
  */
-export const scale = function scale(size, value) {
+export function scale(size, value) {
   if (value == 0) return 1;
 
   return 1 + 100 / (size / value) / 100;
-};
+}
 
 export function center(object, objectSize) {
   objectSize = objectSize || size(object.getBounds());
@@ -348,8 +352,8 @@ export function centerX(object, objectSize) {
 
 /**
  * Enlarge an object by scale units, while keeping the same
- * centroid.  For example util.enlarge(o, 1, 1, 1) enlarges
- * object o by 1mm in each access, while the centroid stays the same.
+ * centroid.  For example `enlarge(mycsg, 1, 1, 1)` enlarges
+ * object *mycsg* by 1mm in each axis, while the centroid stays the same.
  * @param  {CSG} object [description]
  * @param  {number} x      [description]
  * @param  {number} y      [description]
@@ -357,7 +361,7 @@ export function centerX(object, objectSize) {
  * @return {CSG}        [description]
  * @function enlarge
  */
-export const enlarge = function enlarge(object, x, y, z) {
+export function enlarge(object, x, y, z) {
   var a;
   if (Array.isArray(x)) {
     a = x;
@@ -365,23 +369,23 @@ export const enlarge = function enlarge(object, x, y, z) {
     a = [x, y, z];
   }
 
-  var size = util.size(object);
-  var centroid = util.centroid(object, size);
+  var objectSize = size(object);
+  var objectCentroid = centroid(object, objectSize);
 
   var idx = 0;
 
-  var t = util.map(size, function(i) {
-    return util.scale(i, a[idx++]);
+  var t = map(objectSize, function(i) {
+    return scale(i, a[idx++]);
   });
 
   var new_object = object.scale(t);
-  var new_centroid = util.centroid(new_object);
+  var new_centroid = centroid(new_object);
 
   /// Calculate the difference between the original centroid and the new
-  var delta = new_centroid.minus(centroid).times(-1);
+  var delta = new_centroid.minus(objectCentroid).times(-1);
 
   return new_object.translate(delta);
-};
+}
 
 /**
  * Fit an object inside a bounding box.  Often used
@@ -406,7 +410,6 @@ export function fit(object, x, y, z, keep_aspect_ratio) {
     a = [x, y, z];
   }
 
-  // var c = util.centroid(object);
   var objectSize = size(object.getBounds());
 
   function scale(size, value) {
@@ -419,8 +422,8 @@ export function fit(object, x, y, z, keep_aspect_ratio) {
     scale(objectSize.y, y),
     scale(objectSize.z, z)
   ];
-  var min = util.array.min(s);
-  return util.centerWith(
+  var min = array.min(s);
+  return centerWith(
     object.scale(
       s.map(function(d, i) {
         if (a[i] === 0) return 1; // don't scale when value is zero
@@ -464,7 +467,7 @@ export const flushSide = {
 };
 
 export function calcFlush(moveobj, withobj, axes, mside, wside) {
-  util.depreciated('calcFlush', false, 'Use util.calcSnap instead.');
+  depreciated('calcFlush', false, 'Use calcSnap instead.');
 
   var side;
 
@@ -472,8 +475,8 @@ export function calcFlush(moveobj, withobj, axes, mside, wside) {
     // wside = wside !== undefined ? wside : mside;
     side = [wside !== undefined ? wside : mside, mside];
   } else {
-    side = util.flushSide[mside];
-    if (!side) util.error('invalid side: ' + mside);
+    side = flushSide[mside];
+    if (!side) error('invalid side: ' + mside);
   }
 
   var m = moveobj.getBounds();
@@ -481,7 +484,7 @@ export function calcFlush(moveobj, withobj, axes, mside, wside) {
 
   // Add centroid if needed
   if (side[0] === -1) {
-    w[-1] = util.array.toxyz(withobj.centroid());
+    w[-1] = array.toxyz(withobj.centroid());
   }
 
   return this.axisApply(axes, function(i, axis) {
@@ -501,8 +504,9 @@ export function calcSnap(moveobj, withobj, axes, orientation, delta = 0) {
       '-11': 'center+',
       '-10': 'center-'
     };
-    util.error(
-      'util.calcSnap: invalid side: ' +
+
+    error(
+      'calcSnap: invalid side: ' +
         orientation +
         ' should be ' +
         fix['' + orientation + delta]
@@ -544,12 +548,10 @@ export function snap(moveobj, withobj, axis, orientation, delta) {
  * @return {CSG}         [description]
  */
 export function flush(moveobj, withobj, axis, mside, wside) {
-  return moveobj.translate(
-    util.calcFlush(moveobj, withobj, axis, mside, wside)
-  );
+  return moveobj.translate(calcFlush(moveobj, withobj, axis, mside, wside));
 }
 
-export const axisApply = function(axes, valfun, a) {
+export function axisApply(axes, valfun, a) {
   debug('axisApply', axes, valfun, a);
   var retval = a || [0, 0, 0];
   var lookup = {
@@ -562,10 +564,10 @@ export const axisApply = function(axes, valfun, a) {
   });
 
   return retval;
-};
+}
 
-export const axis2array = function(axes, valfun) {
-  util.depreciated('axis2array');
+export function axis2array(axes, valfun) {
+  depreciated('axis2array');
   var a = [0, 0, 0];
   var lookup = {
     x: 0,
@@ -578,7 +580,7 @@ export const axis2array = function(axes, valfun) {
     a[i] = valfun(i, axis);
   });
   return a;
-};
+}
 
 export function centroid(o, objectSize) {
   var bounds = o.getBounds();
@@ -589,32 +591,29 @@ export function centroid(o, objectSize) {
 
 export function calcmidlineTo(o, axis, to) {
   var bounds = o.getBounds();
-  var size = util.size(bounds);
+  var objectSize = size(bounds);
 
-  // var centroid = bounds[0].plus(size.dividedBy(2));
-
-  // debug('bounds', JSON.stringify(bounds), 'size', size, 'centroid', centroid);
-  return util.axisApply(axis, function(i, a) {
-    return to - size[a] / 2;
+  return axisApply(axis, function(i, a) {
+    return to - objectSize[a] / 2;
   });
 }
 
 export function midlineTo(o, axis, to) {
-  return o.translate(util.calcmidlineTo(o, axis, to));
+  return o.translate(calcmidlineTo(o, axis, to));
 }
 
 export function translator(o, axis, withObj) {
-  var centroid = util.centroid(o);
-  var withCentroid = util.centroid(withObj);
+  var objectCentroid = centroid(o);
+  var withCentroid = centroid(withObj);
   // echo('centerWith', centroid, withCentroid);
-  var t = util.axisApply(axis, function(i) {
-    return withCentroid[i] - centroid[i];
+  var t = axisApply(axis, function(i) {
+    return withCentroid[i] - objectCentroid[i];
   });
 
   return t;
 }
 
-export function calcCenterWith(o, axes, withObj, delta) {
+export function calcCenterWith(o, axes, withObj, delta = 0) {
   var objectCentroid = centroid(o);
   var withCentroid = centroid(withObj);
 
@@ -644,16 +643,16 @@ export function centerWith(o, axis, withObj) {
  * @return {Point}         The point along the axis.
  */
 export function getDelta(size, bounds, axis, offset, nonzero) {
-  if (!util.isEmpty(offset) && nonzero) {
+  if (!isEmpty(offset) && nonzero) {
     if (Math.abs(offset) < 1e-4) {
-      offset = 1e-4 * (util.isNegative(offset) ? -1 : 1);
+      offset = 1e-4 * (isNegative(offset) ? -1 : 1);
     }
   }
   // if the offset is negative, then it's an offset from
   // the positive side of the axis
-  var dist = util.isNegative(offset) ? (offset = size[axis] + offset) : offset;
-  return util.axisApply(axis, function(i, a) {
-    return bounds[0][a] + (util.isEmpty(dist) ? size[axis] / 2 : dist);
+  var dist = isNegative(offset) ? (offset = size[axis] + offset) : offset;
+  return axisApply(axis, function(i, a) {
+    return bounds[0][a] + (isEmpty(dist) ? size[axis] / 2 : dist);
   });
 }
 
@@ -671,6 +670,9 @@ export function getDelta(size, bounds, axis, offset, nonzero) {
  * @param  {string} axis   axis to cut along
  * @param  {number} offset offset to cut at
  * @param  {number} angle angle to rotate the cut plane to
+ * @param  {string} rotateaxis
+ * @param  {number} rotateoffset
+ * @param  {Object} options
  * @return {object}  Returns a group object with a parts object.
  */
 export function bisect(
@@ -686,9 +688,9 @@ export function bisect(
     addRotationCenter: false
   });
   angle = angle || 0;
-  var info = util.normalVector(axis);
+  var info = normalVector(axis);
   var bounds = object.getBounds();
-  var size = util.size(object);
+  var objectSize = size(object);
 
   rotateaxis =
     rotateaxis ||
@@ -698,41 +700,37 @@ export function bisect(
       z: 'x'
     }[axis];
 
-  // function getDelta(axis, offset) {
-  //     // if the offset is negative, then it's an offset from
-  //     // the positive side of the axis
-  //     var dist = util.isNegative(offset) ? offset = size[axis] + offset : offset;
-  //     return util.axisApply(axis, function (i, a) {
-  //         return bounds[0][a] + (util.isEmpty(dist) ? size[axis] / 2 : dist);
-  //     });
-  // }
-
-  var cutDelta = options.cutDelta || util.getDelta(size, bounds, axis, offset);
+  var cutDelta = options.cutDelta || getDelta(objectSize, bounds, axis, offset);
   var rotateOffsetAxis = {
     xy: 'z',
     yz: 'x',
     xz: 'y'
   }[[axis, rotateaxis].sort().join('')];
   var centroid = object.centroid();
-  var rotateDelta = util.getDelta(size, bounds, rotateOffsetAxis, rotateoffset);
+  var rotateDelta = getDelta(
+    objectSize,
+    bounds,
+    rotateOffsetAxis,
+    rotateoffset
+  );
 
   var rotationCenter =
     options.rotationCenter ||
     new CSG.Vector3D(
-      util.axisApply('xyz', function(i, a) {
+      axisApply('xyz', function(i, a) {
         if (a == axis) return cutDelta[i];
         if (a == rotateOffsetAxis) return rotateDelta[i];
         return centroid[a];
       })
     );
-  var rotationAxis = util.rotationAxes[rotateaxis];
+  var theRotationAxis = rotationAxes[rotateaxis];
 
   var cutplane = CSG.OrthoNormalBasis.GetCartesian(
     info.orthoNormalCartesian[0],
     info.orthoNormalCartesian[1]
   )
     .translate(cutDelta)
-    .rotate(rotationCenter, rotationAxis, angle);
+    .rotate(rotationCenter, theRotationAxis, angle);
 
   var g = Group('negative,positive', [
     object.cutByPlane(cutplane.plane).color('red'),
@@ -741,7 +739,7 @@ export function bisect(
 
   if (options.addRotationCenter)
     g.add(
-      util.unitAxis(size.length() + 10, 0.5, rotationCenter),
+      unitAxis(objectSize.length() + 10, 0.5, rotationCenter),
       'rotationCenter'
     );
 
@@ -764,8 +762,8 @@ export function stretch(object, axis, distance, offset) {
     z: [0, 0, 1]
   };
   var bounds = object.getBounds();
-  var size = util.size(object);
-  var cutDelta = util.getDelta(size, bounds, axis, offset, true);
+  var objectSize = size(object);
+  var cutDelta = getDelta(objectSize, bounds, axis, offset, true);
   // debug('stretch.cutDelta', cutDelta, normal[axis]);
   return object.stretchAtPlane(normal[axis], cutDelta, distance);
 }
@@ -828,16 +826,8 @@ export function poly2solid(top, bottom, height) {
 }
 
 export function slices2poly(slices, options, axis) {
-  // debug('util.slices2poly', options);
-  // var resolution = slices.length;
-  // var offsetVector = new CSG.Vector3D(options.offset);
-  // var twistangle = CSG.parseOptionAsFloat(options, 'twistangle', 0);
   var twistangle = (options && parseFloat(options.twistangle)) || 0;
-  // var twiststeps = CSG.parseOptionAsInt(
-  //     options,
-  //     'twiststeps',
-  //     CSG.defaultResolution3D
-  // );
+
   var twiststeps =
     (options && parseInt(options.twiststeps)) || CSG.defaultResolution3D;
   if (twistangle == 0 || twiststeps < 1) {
@@ -849,8 +839,8 @@ export function slices2poly(slices, options, axis) {
   var polygons = [];
 
   // bottom and top
-  var first = util.array.first(slices);
-  var last = util.array.last(slices);
+  var first = array.first(slices);
+  var last = array.last(slices);
   var up = first.offset[axis] > last.offset[axis];
 
   // _toPlanePolygons only works in the 'z' axis.  It's hard coded
@@ -931,7 +921,7 @@ export function normalVector(axis) {
       normalVector: CSG.Vector3D.Create(0, 0, 1)
     }
   };
-  if (!axisInfo[axis]) util.error('util.normalVector: invalid axis ' + axis);
+  if (!axisInfo[axis]) error('normalVector: invalid axis ' + axis);
   return axisInfo[axis];
 }
 
@@ -959,15 +949,15 @@ export function sliceParams(orientation, radius, bounds) {
   return Object.assign(
     {
       axis: axis,
-      cutDelta: util.axisApply(axis, function(i, a) {
+      cutDelta: axisApply(axis, function(i, a) {
         return bounds[info.sizeIdx][a] + Math.abs(radius) * info.sizeDir;
       }),
-      moveDelta: util.axisApply(axis, function(i, a) {
+      moveDelta: axisApply(axis, function(i, a) {
         return bounds[info.sizeIdx][a] + Math.abs(radius) * info.moveDir;
       })
     },
     info,
-    util.normalVector(axis)
+    normalVector(axis)
   );
 }
 
@@ -984,13 +974,12 @@ export function sliceParams(orientation, radius, bounds) {
 export function reShape(object, radius, orientation, options, slicer) {
   options = options || {};
   var b = object.getBounds();
-  // var s = util.size(b);
   var ar = Math.abs(radius);
-  var si = util.sliceParams(orientation, radius, b);
+  var si = sliceParams(orientation, radius, b);
 
   if (si.axis !== 'z')
     throw new Error(
-      'util.reShape error: CAG._toPlanePolytons only uses the "z" axis.  You must use the "z" axis for now.'
+      'reShape error: CAG._toPlanePolytons only uses the "z" axis.  You must use the "z" axis for now.'
     );
 
   var cutplane = CSG.OrthoNormalBasis.GetCartesian(
@@ -1000,11 +989,11 @@ export function reShape(object, radius, orientation, options, slicer) {
 
   var slice = object.sectionCut(cutplane);
 
-  var first = util.axisApply(si.axis, function() {
+  var first = axisApply(si.axis, function() {
     return si.positive ? 0 : ar;
   });
 
-  var last = util.axisApply(si.axis, function() {
+  var last = axisApply(si.axis, function() {
     return si.positive ? ar : 0;
   });
 
@@ -1012,15 +1001,13 @@ export function reShape(object, radius, orientation, options, slicer) {
 
   var slices = slicer(first, last, slice);
 
-  var delta = util
-    .slices2poly(
-      slices,
-      Object.assign(options, {
-        si: si
-      }),
-      si.axis
-    )
-    .color(options.color);
+  var delta = slices2poly(
+    slices,
+    Object.assign(options, {
+      si: si
+    }),
+    si.axis
+  ).color(options.color);
 
   var remainder = object.cutByPlane(plane);
   return union([
@@ -1030,7 +1017,7 @@ export function reShape(object, radius, orientation, options, slicer) {
 }
 
 export function chamfer(object, radius, orientation, options) {
-  return util.reShape(object, radius, orientation, options, function(
+  return reShape(object, radius, orientation, options, function(
     first,
     last,
     slice
@@ -1041,7 +1028,7 @@ export function chamfer(object, radius, orientation, options) {
         offset: new CSG.Vector3D(first)
       },
       {
-        poly: util.enlarge(slice, [-radius * 2, -radius * 2]),
+        poly: enlarge(slice, [-radius * 2, -radius * 2]),
         offset: new CSG.Vector3D(last)
       }
     ];
@@ -1050,7 +1037,7 @@ export function chamfer(object, radius, orientation, options) {
 
 export function fillet(object, radius, orientation, options) {
   options = options || {};
-  return util.reShape(object, radius, orientation, options, function(
+  return reShape(object, radius, orientation, options, function(
     first,
     last,
     slice
@@ -1060,14 +1047,14 @@ export function fillet(object, radius, orientation, options) {
 
     var res = options.resolution || CSG.defaultResolution3D;
 
-    var slices = util.array.range(0, res).map(function(i) {
+    var slices = array.range(0, res).map(function(i) {
       var p = i > 0 ? i / (res - 1) : 0;
       var v = v1.lerp(v2, p);
 
       var size = -radius * 2 - Math.cos(Math.asin(p)) * (-radius * 2);
 
       return {
-        poly: util.enlarge(slice, [size, size]),
+        poly: enlarge(slice, [size, size]),
         offset: v
       };
     });
@@ -1088,12 +1075,11 @@ export function calcRotate(part, solid, axis /* , angle */) {
 }
 
 export function rotateAround(part, solid, axis, angle) {
-  var { rotationCenter, rotationAxis } = util.calcRotate(
-    part,
-    solid,
-    axis,
-    angle
-  );
+  var { rotationCenter, rotationAxis } = calcRotate(part, solid, axis, angle);
 
   return part.rotate(rotationCenter, rotationAxis, angle);
+}
+
+export function clone(o) {
+  return CSG.fromPolygons(o.toPolygons());
 }

@@ -1,5 +1,6 @@
-import jsCadCSG from '@jscad/csg';
-const { CSG, CAG } = jsCadCSG;
+// import jsCadCSG from '@jscad/csg';
+// const { CSG, CAG } = jsCadCSG;
+import { CSG, CAG } from './jscad';
 import { fromxyz, div } from './array';
 // import scadApi from '@jscad/scad-api';
 // const { cube, sphere, cylinder } = scadApi.primitives3d;

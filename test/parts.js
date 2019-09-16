@@ -2,10 +2,10 @@ import test from 'ava';
 // import { nearlyEqual } from './helpers/nearlyEqual';
 import csgImageSnapshot from './helpers/csgImageSnapshot';
 import * as Parts from '../src/parts';
-import utilInit from '../src/add-prototype';
-import jsCadCSG from '@jscad/csg';
-const { CSG } = jsCadCSG;
-
+// import utilInit from '../src/add-prototype';
+// import jsCadCSG from '@jscad/csg';
+// const { CSG } = jsCadCSG;
+import { CSG } from '../src/jscad';
 // console.warn(Parts);
 run_tests(Parts);
 
@@ -74,7 +74,7 @@ function run_tests(Parts) {
   });
 
   test('Anchor', async t => {
-    utilInit(CSG);
+    // utilInit(CSG);
     var anchor = Parts.Anchor(5, 2.5);
     var board = Parts.RoundedCube(10, 10, 2.5, 2).Center();
     const value = await csgImageSnapshot(

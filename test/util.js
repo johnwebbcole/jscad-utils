@@ -1,11 +1,13 @@
 import test from 'ava';
 // import { nearlyEqual } from './helpers/nearlyEqual';
 import * as util from '../src/util';
-import utilInit from '../src/add-prototype';
 
 import csgImageSnapshot from './helpers/csgImageSnapshot';
-import jsCadCSG from '@jscad/csg';
-const { CSG } = jsCadCSG;
+import { CSG } from '../src/jscad';
+
+test.after.always.cb('wait for logging', t => {
+  setTimeout(t.end, 100);
+});
 
 test('import util', t => {
   // console.log(
@@ -22,8 +24,9 @@ test('identity', t => {
   t.deepEqual(util.identity(o), o);
 });
 test.todo('result');
-test.skip('defaults', t => {
-  var error = t.throws(() => Object.assign({ a: 0 }, { b: 1 }));
+
+test('defaults', t => {
+  var error = t.throws(() => util.defaults({ a: 0 }, { b: 1 }));
   t.is(error.message, 'defaults is depreciated. use Object.assign instead');
 });
 
@@ -73,23 +76,31 @@ test.todo('center');
 test.todo('centerY');
 test.todo('centerX');
 test.todo('enlarge');
-test.skip('fit', async t => {
-  utilInit(CSG);
-  const { snap, centerWith, color, label } = util;
-  const align = centerWith;
-
+test('fit', async t => {
   var cube = CSG.cube({
     radius: 10
   });
-  console.trace('fit', cube.color('red'));
+
+  /**
+   * note: Some native functions like `union`,
+   * will return a CSG object that does not have
+   * the same prototype as the jscad-utils CSG object.
+   *
+   * Running in the 1.x version, this usually isn't an
+   * issue, however in unit tests, this does happen.
+   *
+   * The fix is to `util.clone` the object and you will
+   * get a CSG with the jscad-utils prototypes on it.
+   */
+
   // create a label, place it on top of the cube
-  // // and center it on the top face
-  // var label = util
-  //   .label('hello')
-  //   .snap(cube, 'z', 'outside-')
-  //   .align(cube, 'xy');
-  var l = align(snap(label('hello'), cube, 'z', 'outside-'), cube, 'xy');
+  // and center it on the top face
+  var l = util
+    .clone(util.label('hello'))
+    .snap(cube, 'z', 'outside-')
+    .align(cube, 'xy');
   var s = cube.size();
+
   // fit the label to the cube (minus 2mm) while
   // keeping the aspect ratio of the text
   // and return the union
@@ -102,13 +113,48 @@ test.skip('fit', async t => {
 test.todo('flushSide');
 test.todo('axisApply');
 test.todo('axis2array');
-test.todo('centroid');
-test.todo('inch');
-test.todo('cm');
-test.todo('label');
-test.todo('text');
+test('centroid', t => {
+  var cube = CSG.cube({
+    radius: 10,
+    center: [5, 5, 5]
+  });
+  t.snapshot(util.centroid(cube));
+});
+test('inch', t => {
+  t.is(util.inch(1.0), 25.4);
+  t.is(util.inch(200.0), 5080);
+  t.is(util.inch(3.75), 95.25);
+});
+
+test('cm', t => {
+  t.is(util.cm(25.4), 1);
+  t.is(util.cm(5080), 200);
+  t.is(util.cm(95.25), 3.75);
+});
+
+test('label', async t => {
+  var label = util.clone(util.label('label'));
+
+  const value = await csgImageSnapshot(t, label);
+  t.true(value);
+});
+
+test.skip('text', async t => {
+  var text = util.text('text');
+
+  const value = await csgImageSnapshot(t, text);
+  t.true(value);
+});
+
 test.todo('shift');
-test.todo('zero');
+
+test('zero', async t => {
+  var object = CSG.sphere({ radius: 5 }).Zero();
+
+  const value = await csgImageSnapshot(t, object);
+  t.true(value);
+});
+
 test.todo('mirrored4');
 test.todo('calcFlush');
 test.todo('calcSnap');
@@ -120,12 +166,46 @@ test.todo('translator');
 test.todo('calcCenterWith');
 test.todo('centerWith');
 test.todo('getDelta');
-test.todo('bisect');
+
+test('bisect object positive', async t => {
+  var bisectCube = CSG.cube({
+    radius: 10
+  }).bisect('x', 2);
+
+  const value = await csgImageSnapshot(t, bisectCube.toArray());
+  t.true(value);
+});
+
+test('bisect object negative', async t => {
+  var bisectCube = CSG.cube({
+    radius: 10
+  }).bisect('x', -2);
+
+  const value = await csgImageSnapshot(t, bisectCube.toArray());
+  t.true(value);
+});
+
 test.todo('stretch');
 test.todo('poly2solid');
 test.todo('slices2poly');
 test.todo('normalVector');
 test.todo('sliceParams');
 test.todo('reShape');
-test.todo('chamfer');
-test.todo('fillet');
+
+test('chamfer', async t => {
+  var cube = CSG.cube({
+    radius: 10
+  }).chamfer(3, 'z+');
+
+  const value = await csgImageSnapshot(t, cube);
+  t.true(value);
+});
+
+test('fillet', async t => {
+  var cube = CSG.cube({
+    radius: 10
+  }).fillet(2, 'z+');
+
+  const value = await csgImageSnapshot(t, cube);
+  t.true(value);
+});

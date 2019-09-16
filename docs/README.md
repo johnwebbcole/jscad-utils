@@ -7,6 +7,7 @@
 [![view on npm](http://img.shields.io/npm/v/@jwc/jscad-utils.svg)](https://www.npmjs.org/package/@jwc/jscad-utils)
 [![npm module
 downloads](http://img.shields.io/npm/dt/@jwc/jscad-utils.svg)](https://www.npmjs.org/package/@jwc/jscad-utils)
+![Dependents](http://img.shields.io/librariesio/dependents/npm/@jwc%2Fjscad-utils)
 
 ![Twitter Follow](https://img.shields.io/twitter/follow/johnwebbcole?label=Follow&style=social)
 

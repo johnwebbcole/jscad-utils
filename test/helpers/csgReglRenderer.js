@@ -13,7 +13,7 @@ export default function csgReglRenderer(data, filename, options = {}) {
   debug('csgReglRenderer', filename);
   options = Object.assign(options, {
     camera: {
-      position: [25, 25, 25]
+      position: [25, -25, 25]
     },
     gl: {
       width: 1024,

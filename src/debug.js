@@ -1,3 +1,5 @@
+/* globals jscadUtilsDebug */
+
 const debugColors = [
   '#e41a1c',
   '#377eb8',

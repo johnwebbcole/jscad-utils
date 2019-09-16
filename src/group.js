@@ -1,6 +1,7 @@
-import jsCadCSG from '@jscad/csg';
 import { Debug } from './debug';
 const debug = Debug('jscadUtils:group');
+import { CSG, union } from './jscad';
+
 import {
   identity,
   toArray,
@@ -11,10 +12,11 @@ import {
   zipObject
 } from './util';
 
-function group(names = [], parts = {}) {
+function group(names = [], parts = {}, holes = []) {
   this.name = '';
   this.names = names;
   this.parts = parts;
+  this.holes = holes;
 }
 
 /**
@@ -58,7 +60,7 @@ group.prototype.add = function(object, name, hidden, subparts, parts) {
  * @param  {Function} map     A function that is run before unioning the parts together.
  * @return {CSG} A single `CSG` object of the unioned parts.
  */
-group.prototype.combine = function(pieces, options, map) {
+group.prototype.combine = function(pieces, options = {}, map = x => x) {
   var self = this;
   options = Object.assign(
     {
@@ -295,7 +297,7 @@ group.prototype.translate = function translate(x, y, z) {
  * Returns a new group from the list of parts.
  * @function pick
  * @param  {String} parts A comma separted string of parts to include in the new group.
- * @param  {Funciton} map   A function run on each part as its added to the new group.
+ * @param  {function} map   A function run on each part as its added to the new group.
  * @return {group} The new group with the picked parts.
  */
 group.prototype.pick = function(parts, map) {
@@ -339,9 +341,9 @@ group.prototype.array = function(parts, map) {
  */
 group.prototype.toArray = function(pieces) {
   var self = this;
-  pieces = pieces ? pieces.split(',') : self.names;
+  var piecesArray = pieces ? pieces.split(',') : self.names;
 
-  return pieces.map(function(piece) {
+  return piecesArray.map(function(piece) {
     if (!self.parts[piece])
       console.error(`Cannot find ${piece} in ${self.names}`);
     return self.parts[piece];
@@ -364,7 +366,7 @@ group.prototype.toArray = function(pieces) {
  * @return {object}         An object that has a parts dictionary, a `combine()` and `map()` function.
  */
 var Group = function Group(...args) {
-  debug('Group', ...args);
+  debug('Group', args);
   var self = { name: '', names: [], parts: {} };
   if (args && args.length > 0) {
     if (args.length === 2) {
@@ -387,7 +389,7 @@ var Group = function Group(...args) {
     }
   }
 
-  return new group(self.names, self.parts);
+  return new group(self.names, self.parts, self.holes);
 };
 
 export default Group;
