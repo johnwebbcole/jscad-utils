@@ -1,3 +1,5 @@
+/** @module triangle */
+
 /**
  * Convert degrees to radians.
  * @param  {Number} deg value in degrees

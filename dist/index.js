@@ -123,6 +123,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     return target;
   }
 
+  /** @module triangle */
+
   /**
    * Convert degrees to radians.
    * @param  {Number} deg value in degrees
@@ -211,7 +213,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     return r;
   };
 
-  var triangle = /*#__PURE__*/Object.freeze({
+  var triUtils = /*#__PURE__*/Object.freeze({
     toRadians: toRadians,
     toDegrees: toDegrees,
     solve: solve,
@@ -220,10 +222,16 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   });
 
   /**
+   * A set of array utilities.
+   * @module array
+   */
+
+  /**
    * Divides all elements in th array by `f`
    * @function div
    * @param {Array} a
    * @param {Number} f
+   * @memberof! array
    */
   var div = function div(a, f) {
     return a.map(function (e) {
@@ -789,8 +797,15 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   init(CSG$1);
 
   var debug = Debug('jscadUtils:group');
+  /**
+   * @function JsCadUtilsGroup
+   * @param  {string[]} names An array of object names in the group.
+   * @param  {object} parts An object with all parts in name value pairs.
+   * @param  {CSG[]} holes An array of CSG objects that will be subtracted after combination.
+   * @namespace JsCadUtilsGroup
+   */
 
-  function group() {
+  function JsCadUtilsGroup() {
     var names = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
     var parts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     var holes = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
@@ -801,16 +816,17 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   }
   /**
    * Add a CSG object to the current group.
-   * @param {CSG} object Object to add the parts dictionary.
+   * @param {CSG|JsCadUtilsGroup} object Object to add the parts dictionary.
    * @param {string} name   Name of the part
-   * @param {boolean} hidden If true, then the part not be added during a default `combine()`
-   * @param {string} subparts   Prefix for subparts if adding a group
-   * @param {string} parts   When adding a group, you can pick the parts you want to include as the named part.
+   * @param {boolean} [hidden] If true, then the part not be added during a default `combine()`
+   * @param {string} [subparts]   Prefix for subparts if adding a group
+   * @param {string} [parts]   When adding a group, you can pick the parts you want to include as the named part.
    * @function add
+   * @memberof! JsCadUtilsGroup
    */
 
-
-  group.prototype.add = function (object, name, hidden, subparts, parts) {
+  JsCadUtilsGroup.prototype.add = function (object, name, hidden, subparts, parts) {
+    debug('add', object, name, hidden, subparts, parts);
     var self = this;
 
     if (object.parts) {
@@ -837,14 +853,14 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   };
   /**
    * @function combine
-   * @param  {String} pieces  The parts to combine, if empty, then all named parts.
+   * @param  {String} [pieces]  The parts to combine, if empty, then all named parts.
    * @param  {Object} options Combine options
    * @param  {Function} map     A function that is run before unioning the parts together.
    * @return {CSG} A single `CSG` object of the unioned parts.
    */
 
 
-  group.prototype.combine = function (pieces) {
+  JsCadUtilsGroup.prototype.combine = function (pieces) {
     var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     var map = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : function (x) {
       return x;
@@ -857,9 +873,11 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
     if (pieces.length === 0) {
       throw new Error("no pieces found in ".concat(self.name, " pieces: ").concat(pieces, " parts: ").concat(Object.keys(self.parts), " names: ").concat(self.names));
-    }
+    } // debug('combine', self.names, self.parts);
+
 
     var g = union$1(mapPick(self.parts, pieces, function (value, key, object) {
+      // debug('combine', value, key, object);
       return map ? map(value, key, object) : identity(value);
     }, self.name));
     return g.subtractIf(self.holes && Array.isArray(self.holes) ? union$1(self.holes) : self.holes, self.holes && !options.noholes);
@@ -873,7 +891,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    */
 
 
-  group.prototype.map = function (cb) {
+  JsCadUtilsGroup.prototype.map = function (cb) {
     var self = this;
     self.parts = Object.keys(self.parts).filter(function (k) {
       return k !== 'holes';
@@ -897,12 +915,12 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   /**
    * Clone a group into a new group.
    * @function clone
-   * @param  {Function} map A function called on each part.
-   * @return {group} The new group.
+   * @param  {Function} [map] A function called on each part.
+   * @return {JsCadUtilsGroup} The new group.
    */
 
 
-  group.prototype.clone = function (map) {
+  JsCadUtilsGroup.prototype.clone = function (map) {
     var self = this;
     if (!map) map = identity; // console.warn('clone() has been refactored');
 
@@ -926,12 +944,12 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * @param  {CSG|String} solid The solid to rotate the group around
    * @param  {String} axis  Axis to rotate
    * @param  {Number} angle Angle in degrees
-   * @return {group}       The rotoated group.
+   * @return {JsCadUtilsGroup}       The rotoated group.
    * @function rotate
    */
 
 
-  group.prototype.rotate = function (solid, axis, angle) {
+  JsCadUtilsGroup.prototype.rotate = function (solid, axis, angle) {
     var self = this;
     var axes = {
       x: [1, 0, 0],
@@ -960,7 +978,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    */
 
 
-  group.prototype.combineAll = function (options, map) {
+  JsCadUtilsGroup.prototype.combineAll = function (options, map) {
     var self = this;
     return self.combine(Object.keys(self.parts).join(','), options, map);
   };
@@ -972,12 +990,12 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * @param  {CSG} to          A `CSG` object to snap the parts to.
    * @param  {String} axis        An axis string to snap on can be any combination of `x`, `y`, or `z`.
    * @param  {String} orientation This orientation to snap to on the axis.  A combination of `inside` or `outside` with a `+` or `-` sign.
-   * @param  {Number} delta       An offset to apply with the snap, in millimeters.
-   * @return {group} The group after snapping all parts to the `to` object.
+   * @param  {Number} [delta=0]       An offset to apply with the snap, in millimeters.
+   * @return {JsCadUtilsGroup} The group after snapping all parts to the `to` object.
    */
 
 
-  group.prototype.snap = function snap(part, to, axis, orientation, delta) {
+  JsCadUtilsGroup.prototype.snap = function snap(part, to, axis, orientation, delta) {
     var self = this; // debug(', self);
 
     var t = calcSnap(self.combine(part), to, axis, orientation, delta);
@@ -993,12 +1011,12 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * @param  {CSG} to          A `CSG` object to align the parts to.
    * @param  {String} axis        An axis string to align on can be any combination of `x`, `y`, or `z`.
    * @param  {Number} delta       An offset to apply with the align, in millimeters.
-   * @return {group} The group after aligning all parts to the `to` object.
+   * @return {JsCadUtilsGroup} The group after aligning all parts to the `to` object.
    
    */
 
 
-  group.prototype.align = function align(part, to, axis, delta) {
+  JsCadUtilsGroup.prototype.align = function align(part, to, axis, delta) {
     var self = this;
     var t = calcCenterWith(self.combine(part, {
       noholes: true
@@ -1017,13 +1035,13 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   /**
    * @function midlineTo
    * @param  {String} part       Comma separated list of parts in the group to align.
-   * @param  {CSG} to          A `CSG` object to align the parts to.
+   * @param  {Number} to          Where to align the midline to.
    * @param  {String} axis        An axis string to align on can be any combination of `x`, `y`, or `z`.
-   * @return {group} The group after aligning all parts to the `to` object.
+   * @return {JsCadUtilsGroup} The group after aligning all parts to the `to` object.
    */
 
 
-  group.prototype.midlineTo = function midlineTo(part, axis, to) {
+  JsCadUtilsGroup.prototype.midlineTo = function midlineTo(part, axis, to) {
     var self = this;
     var size = self.combine(part).size();
     var t = axisApply(axis, function (i, a) {
@@ -1044,13 +1062,13 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * Translates a group by a given ammount
    * @function translate
    * @param  {Number|Array} x The `x` value or an array of x, y and z.
-   * @param  {Number} y The `y` value.
-   * @param  {Number} z The `z` value.
-   * @return {group} The translated group.
+   * @param  {Number} [y] The `y` value.
+   * @param  {Number} [z] The `z` value.
+   * @return {JsCadUtilsGroup} The translated group.
    */
 
 
-  group.prototype.translate = function translate(x, y, z) {
+  JsCadUtilsGroup.prototype.translate = function translate(x, y, z) {
     var self = this;
     var t = Array.isArray(x) ? x : [x, y, z];
     debug('translate', t);
@@ -1068,11 +1086,11 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * @function pick
    * @param  {String} parts A comma separted string of parts to include in the new group.
    * @param  {function} map   A function run on each part as its added to the new group.
-   * @return {group} The new group with the picked parts.
+   * @return {JsCadUtilsGroup} The new group with the picked parts.
    */
 
 
-  group.prototype.pick = function (parts, map) {
+  JsCadUtilsGroup.prototype.pick = function (parts, map) {
     var self = this;
     var p = parts && parts.length > 0 && parts.split(',') || self.names;
     if (!map) map = identity;
@@ -1091,7 +1109,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    */
 
 
-  group.prototype.array = function (parts, map) {
+  JsCadUtilsGroup.prototype.array = function (parts, map) {
     var self = this;
     var p = parts && parts.length > 0 && parts.split(',') || self.names;
     if (!map) map = identity;
@@ -1111,7 +1129,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    */
 
 
-  group.prototype.toArray = function (pieces) {
+  JsCadUtilsGroup.prototype.toArray = function (pieces) {
     var self = this;
     var piecesArray = pieces ? pieces.split(',') : self.names;
     return piecesArray.map(function (piece) {
@@ -1130,28 +1148,24 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * The `map()` funciton allows you to modify each part
    * contained in the group object.
    *
-   * @param  {string} names   Comma separated list of part names.
-   * @param  {array | object} objects Array or object of parts.  If Array, the names list is used as names for each part.
-   * @return {object}         An object that has a parts dictionary, a `combine()` and `map()` function.
+   * @param  {string | object} [objectNames]   Comma separated list of part names.
+   * @param  {array | object} [addObjects] Array or object of parts.  If Array, the names list is used as names for each part.
+   * @return {JsCadUtilsGroup}         An object that has a parts dictionary, a `combine()` and `map()` function.
    */
 
 
-  var Group = function Group() {
-    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
-    debug('Group', args);
+  function Group(objectNames, addObjects) {
+    debug('Group', objectNames, addObjects);
     var self = {
       name: '',
       names: [],
       parts: {}
     };
 
-    if (args && args.length > 0) {
-      if (args.length === 2) {
-        var names = args[0],
-            objects = args[1];
+    if (objectNames) {
+      if (addObjects) {
+        var names = objectNames;
+        var objects = addObjects;
         self.names = names && names.length > 0 && names.split(',') || [];
 
         if (Array.isArray(objects)) {
@@ -1162,7 +1176,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
           self.parts = objects || {};
         }
       } else {
-        var objects = args[0]; // eslint-disable-line no-redeclare
+        var objects = objectNames; // eslint-disable-line no-redeclare
 
         self.names = Object.keys(objects).filter(function (k) {
           return k !== 'holes';
@@ -1172,8 +1186,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       }
     }
 
-    return new group(self.names, self.parts, self.holes);
-  };
+    return new JsCadUtilsGroup(self.names, self.parts, self.holes);
+  }
 
   var debug$1 = Debug('jscadUtils:util');
   // utilInit(CSG);
@@ -1676,6 +1690,17 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     objectSize = objectSize || size(bounds);
     return bounds[0].plus(objectSize.dividedBy(2));
   }
+  /**
+   * Calculates the transform array to move the midline of an object
+   * by value.  This is usefule when you have a diagram that provide
+   * the distance to an objects midline instead of the edge.
+   * @function calcmidlineTo
+   * @param  {CSG} o    A CSG object.
+   * @param  {String} axis A string with the axis to operate on.
+   * @param  {Number} to   Value to move the midline of the object to.
+   * @return {Number[]} The tranform array needed to move the object.
+   */
+
   function calcmidlineTo(o, axis, to) {
     var bounds = o.getBounds();
     var objectSize = size(bounds);
@@ -2106,7 +2131,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * [Cylinder description]
    * @param {Number} diameter Diameter of the cylinder
    * @param {Number} height   Height of the cylinder
-   * @param {Number} options  Options passed to the `CSG.cylinder` function.
+   * @param {Number} [options]  Options passed to the `CSG.cylinder` function.
    * @return {CSG} A CSG Cylinder
    */
 
@@ -2577,7 +2602,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   var compatV1 = _objectSpread2({}, util$1, {
     group: Group,
     init: init$1,
-    triangle: triangle,
+    triangle: triUtils,
     array: array,
     parts: parts$1,
     Boxes: Boxes,
@@ -2591,7 +2616,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   exports.compatV1 = compatV1;
   exports.init = init$1;
   exports.parts = parts$1;
-  exports.triangle = triangle;
+  exports.triUtils = triUtils;
   exports.util = util$1;
 
   return exports;

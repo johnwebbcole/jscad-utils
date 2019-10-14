@@ -68,7 +68,7 @@ export function RoundedCube(x, y, thickness, corner_radius) {
  * [Cylinder description]
  * @param {Number} diameter Diameter of the cylinder
  * @param {Number} height   Height of the cylinder
- * @param {Number} options  Options passed to the `CSG.cylinder` function.
+ * @param {Number} [options]  Options passed to the `CSG.cylinder` function.
  * @return {CSG} A CSG Cylinder
  */
 export function Cylinder(diameter, height, options) {

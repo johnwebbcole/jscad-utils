@@ -160,7 +160,16 @@ test.todo('calcFlush');
 test.todo('calcSnap');
 test.todo('snap');
 test.todo('flush');
-test.todo('calcmidlineTo');
+test('calcmidlineTo', t => {
+  var board = CSG.cube({
+    radius: 1
+  });
+
+  t.deepEqual(util.calcmidlineTo(board, 'x', 20), [19, 0, 0]);
+  t.deepEqual(util.calcmidlineTo(board, 'y', 10), [0, 9, 0]);
+  t.deepEqual(util.calcmidlineTo(board, 'z', 30), [0, 0, 29]);
+  t.deepEqual(util.calcmidlineTo(board, 'xyz', 5), [4, 4, 4]);
+});
 test.todo('midlineTo');
 test.todo('translator');
 test.todo('calcCenterWith');

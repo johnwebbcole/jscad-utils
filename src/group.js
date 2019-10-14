@@ -12,7 +12,14 @@ import {
   zipObject
 } from './util';
 
-function group(names = [], parts = {}, holes = []) {
+/**
+ * @function JsCadUtilsGroup
+ * @param  {string[]} names An array of object names in the group.
+ * @param  {object} parts An object with all parts in name value pairs.
+ * @param  {CSG[]} holes An array of CSG objects that will be subtracted after combination.
+ * @namespace JsCadUtilsGroup
+ */
+export function JsCadUtilsGroup(names = [], parts = {}, holes = []) {
   this.name = '';
   this.names = names;
   this.parts = parts;
@@ -21,14 +28,22 @@ function group(names = [], parts = {}, holes = []) {
 
 /**
  * Add a CSG object to the current group.
- * @param {CSG} object Object to add the parts dictionary.
+ * @param {CSG|JsCadUtilsGroup} object Object to add the parts dictionary.
  * @param {string} name   Name of the part
- * @param {boolean} hidden If true, then the part not be added during a default `combine()`
- * @param {string} subparts   Prefix for subparts if adding a group
- * @param {string} parts   When adding a group, you can pick the parts you want to include as the named part.
+ * @param {boolean} [hidden] If true, then the part not be added during a default `combine()`
+ * @param {string} [subparts]   Prefix for subparts if adding a group
+ * @param {string} [parts]   When adding a group, you can pick the parts you want to include as the named part.
  * @function add
+ * @memberof! JsCadUtilsGroup
  */
-group.prototype.add = function(object, name, hidden, subparts, parts) {
+JsCadUtilsGroup.prototype.add = function(
+  object,
+  name,
+  hidden,
+  subparts,
+  parts
+) {
+  debug('add', object, name, hidden, subparts, parts);
   var self = this;
   if (object.parts) {
     if (name) {
@@ -55,12 +70,16 @@ group.prototype.add = function(object, name, hidden, subparts, parts) {
 
 /**
  * @function combine
- * @param  {String} pieces  The parts to combine, if empty, then all named parts.
+ * @param  {String} [pieces]  The parts to combine, if empty, then all named parts.
  * @param  {Object} options Combine options
  * @param  {Function} map     A function that is run before unioning the parts together.
  * @return {CSG} A single `CSG` object of the unioned parts.
  */
-group.prototype.combine = function(pieces, options = {}, map = x => x) {
+JsCadUtilsGroup.prototype.combine = function(
+  pieces,
+  options = {},
+  map = x => x
+) {
   var self = this;
   options = Object.assign(
     {
@@ -77,11 +96,13 @@ group.prototype.combine = function(pieces, options = {}, map = x => x) {
       )} names: ${self.names}`
     );
   }
+  // debug('combine', self.names, self.parts);
   var g = union(
     mapPick(
       self.parts,
       pieces,
       function(value, key, object) {
+        // debug('combine', value, key, object);
         return map ? map(value, key, object) : identity(value);
       },
       self.name
@@ -101,7 +122,7 @@ group.prototype.combine = function(pieces, options = {}, map = x => x) {
  * @return {Object}      Returns this object so it can be chained
  * @function map
  */
-group.prototype.map = function(cb) {
+JsCadUtilsGroup.prototype.map = function(cb) {
   var self = this;
   self.parts = Object.keys(self.parts)
     .filter(k => k !== 'holes')
@@ -125,10 +146,10 @@ group.prototype.map = function(cb) {
 /**
  * Clone a group into a new group.
  * @function clone
- * @param  {Function} map A function called on each part.
- * @return {group} The new group.
+ * @param  {Function} [map] A function called on each part.
+ * @return {JsCadUtilsGroup} The new group.
  */
-group.prototype.clone = function(map) {
+JsCadUtilsGroup.prototype.clone = function(map) {
   var self = this;
   if (!map) map = identity;
 
@@ -153,10 +174,10 @@ group.prototype.clone = function(map) {
  * @param  {CSG|String} solid The solid to rotate the group around
  * @param  {String} axis  Axis to rotate
  * @param  {Number} angle Angle in degrees
- * @return {group}       The rotoated group.
+ * @return {JsCadUtilsGroup}       The rotoated group.
  * @function rotate
  */
-group.prototype.rotate = function(solid, axis, angle) {
+JsCadUtilsGroup.prototype.rotate = function(solid, axis, angle) {
   var self = this;
   var axes = {
     x: [1, 0, 0],
@@ -184,7 +205,7 @@ group.prototype.rotate = function(solid, axis, angle) {
  * @param  {Function} map     A function run on each part before unioning.
  * @return {CSG} A `CSG` object of all combined parts.
  */
-group.prototype.combineAll = function(options, map) {
+JsCadUtilsGroup.prototype.combineAll = function(options, map) {
   var self = this;
   return self.combine(Object.keys(self.parts).join(','), options, map);
 };
@@ -197,10 +218,16 @@ group.prototype.combineAll = function(options, map) {
  * @param  {CSG} to          A `CSG` object to snap the parts to.
  * @param  {String} axis        An axis string to snap on can be any combination of `x`, `y`, or `z`.
  * @param  {String} orientation This orientation to snap to on the axis.  A combination of `inside` or `outside` with a `+` or `-` sign.
- * @param  {Number} delta       An offset to apply with the snap, in millimeters.
- * @return {group} The group after snapping all parts to the `to` object.
+ * @param  {Number} [delta=0]       An offset to apply with the snap, in millimeters.
+ * @return {JsCadUtilsGroup} The group after snapping all parts to the `to` object.
  */
-group.prototype.snap = function snap(part, to, axis, orientation, delta) {
+JsCadUtilsGroup.prototype.snap = function snap(
+  part,
+  to,
+  axis,
+  orientation,
+  delta
+) {
   var self = this;
   // debug(', self);
   var t = calcSnap(self.combine(part), to, axis, orientation, delta);
@@ -218,10 +245,10 @@ group.prototype.snap = function snap(part, to, axis, orientation, delta) {
  * @param  {CSG} to          A `CSG` object to align the parts to.
  * @param  {String} axis        An axis string to align on can be any combination of `x`, `y`, or `z`.
  * @param  {Number} delta       An offset to apply with the align, in millimeters.
- * @return {group} The group after aligning all parts to the `to` object.
+ * @return {JsCadUtilsGroup} The group after aligning all parts to the `to` object.
  
  */
-group.prototype.align = function align(part, to, axis, delta) {
+JsCadUtilsGroup.prototype.align = function align(part, to, axis, delta) {
   var self = this;
   var t = calcCenterWith(
     self.combine(part, { noholes: true }),
@@ -244,11 +271,11 @@ group.prototype.align = function align(part, to, axis, delta) {
 /**
  * @function midlineTo
  * @param  {String} part       Comma separated list of parts in the group to align.
- * @param  {CSG} to          A `CSG` object to align the parts to.
+ * @param  {Number} to          Where to align the midline to.
  * @param  {String} axis        An axis string to align on can be any combination of `x`, `y`, or `z`.
- * @return {group} The group after aligning all parts to the `to` object.
+ * @return {JsCadUtilsGroup} The group after aligning all parts to the `to` object.
  */
-group.prototype.midlineTo = function midlineTo(part, axis, to) {
+JsCadUtilsGroup.prototype.midlineTo = function midlineTo(part, axis, to) {
   var self = this;
   var size = self.combine(part).size();
   var t = axisApply(axis, function(i, a) {
@@ -272,11 +299,11 @@ group.prototype.midlineTo = function midlineTo(part, axis, to) {
  * Translates a group by a given ammount
  * @function translate
  * @param  {Number|Array} x The `x` value or an array of x, y and z.
- * @param  {Number} y The `y` value.
- * @param  {Number} z The `z` value.
- * @return {group} The translated group.
+ * @param  {Number} [y] The `y` value.
+ * @param  {Number} [z] The `z` value.
+ * @return {JsCadUtilsGroup} The translated group.
  */
-group.prototype.translate = function translate(x, y, z) {
+JsCadUtilsGroup.prototype.translate = function translate(x, y, z) {
   var self = this;
 
   var t = Array.isArray(x) ? x : [x, y, z];
@@ -298,9 +325,9 @@ group.prototype.translate = function translate(x, y, z) {
  * @function pick
  * @param  {String} parts A comma separted string of parts to include in the new group.
  * @param  {function} map   A function run on each part as its added to the new group.
- * @return {group} The new group with the picked parts.
+ * @return {JsCadUtilsGroup} The new group with the picked parts.
  */
-group.prototype.pick = function(parts, map) {
+JsCadUtilsGroup.prototype.pick = function(parts, map) {
   var self = this;
   var p = (parts && parts.length > 0 && parts.split(',')) || self.names;
   if (!map) map = identity;
@@ -319,7 +346,7 @@ group.prototype.pick = function(parts, map) {
  * @param  {Function} map   A function run on each part as its added to the new array.
  * @return {Array} An array of `CSG` objects
  */
-group.prototype.array = function(parts, map) {
+JsCadUtilsGroup.prototype.array = function(parts, map) {
   var self = this;
   var p = (parts && parts.length > 0 && parts.split(',')) || self.names;
   if (!map) map = identity;
@@ -339,7 +366,7 @@ group.prototype.array = function(parts, map) {
  * @return {Array} An array of `CSG` objects.
  * @deprecated Use `array` instead of `toArray`.
  */
-group.prototype.toArray = function(pieces) {
+JsCadUtilsGroup.prototype.toArray = function(pieces) {
   var self = this;
   var piecesArray = pieces ? pieces.split(',') : self.names;
 
@@ -361,16 +388,17 @@ group.prototype.toArray = function(pieces) {
  * The `map()` funciton allows you to modify each part
  * contained in the group object.
  *
- * @param  {string} names   Comma separated list of part names.
- * @param  {array | object} objects Array or object of parts.  If Array, the names list is used as names for each part.
- * @return {object}         An object that has a parts dictionary, a `combine()` and `map()` function.
+ * @param  {string | object} [objectNames]   Comma separated list of part names.
+ * @param  {array | object} [addObjects] Array or object of parts.  If Array, the names list is used as names for each part.
+ * @return {JsCadUtilsGroup}         An object that has a parts dictionary, a `combine()` and `map()` function.
  */
-var Group = function Group(...args) {
-  debug('Group', args);
+export function Group(objectNames, addObjects) {
+  debug('Group', objectNames, addObjects);
   var self = { name: '', names: [], parts: {} };
-  if (args && args.length > 0) {
-    if (args.length === 2) {
-      var [names, objects] = args;
+  if (objectNames) {
+    if (addObjects) {
+      var names = objectNames;
+      var objects = addObjects;
 
       self.names = (names && names.length > 0 && names.split(',')) || [];
 
@@ -382,15 +410,14 @@ var Group = function Group(...args) {
         self.parts = objects || {};
       }
     } else {
-      var [objects] = args; // eslint-disable-line no-redeclare
+      var objects = objectNames; // eslint-disable-line no-redeclare
       self.names = Object.keys(objects).filter(k => k !== 'holes');
       self.parts = Object.assign({}, objects);
       self.holes = objects.holes;
     }
   }
 
-  return new group(self.names, self.parts, self.holes);
-};
+  return new JsCadUtilsGroup(self.names, self.parts, self.holes);
+}
 
 export default Group;
-export { Group };

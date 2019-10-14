@@ -15,7 +15,7 @@ function main() {
 
 // include:js
 // ../dist/compat.js
-var Parts, Boxes, Group, Debug;
+var Parts, Boxes, Group, Debug, array, triUtils;
 
 function initJscadutils(_CSG, options = {}) {
     options = Object.assign({
@@ -344,7 +344,7 @@ function initJscadutils(_CSG, options = {}) {
             r.b = Math.sqrt(Math.pow(r.c, 2) - Math.pow(r.a, 2));
             return r;
         };
-        var triangle = Object.freeze({
+        var triUtils = Object.freeze({
             toRadians,
             toDegrees,
             solve,
@@ -714,7 +714,7 @@ function initJscadutils(_CSG, options = {}) {
         var union$1 = scadApi.booleanOps.union;
         init(CSG$1);
         var debug = Debug("jscadUtils:group");
-        function group() {
+        function JsCadUtilsGroup() {
             var names = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
             var parts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
             var holes = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
@@ -723,7 +723,8 @@ function initJscadutils(_CSG, options = {}) {
             this.parts = parts;
             this.holes = holes;
         }
-        group.prototype.add = function(object, name, hidden, subparts, parts) {
+        JsCadUtilsGroup.prototype.add = function(object, name, hidden, subparts, parts) {
+            debug("add", object, name, hidden, subparts, parts);
             var self = this;
             if (object.parts) {
                 if (name) {
@@ -744,7 +745,7 @@ function initJscadutils(_CSG, options = {}) {
             }
             return self;
         };
-        group.prototype.combine = function(pieces) {
+        JsCadUtilsGroup.prototype.combine = function(pieces) {
             var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
             var map = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : function(x) {
                 return x;
@@ -762,7 +763,7 @@ function initJscadutils(_CSG, options = {}) {
             }, self.name));
             return g.subtractIf(self.holes && Array.isArray(self.holes) ? union$1(self.holes) : self.holes, self.holes && !options.noholes);
         };
-        group.prototype.map = function(cb) {
+        JsCadUtilsGroup.prototype.map = function(cb) {
             var self = this;
             self.parts = Object.keys(self.parts).filter(function(k) {
                 return k !== "holes";
@@ -781,7 +782,7 @@ function initJscadutils(_CSG, options = {}) {
             }
             return self;
         };
-        group.prototype.clone = function(map) {
+        JsCadUtilsGroup.prototype.clone = function(map) {
             var self = this;
             if (!map) map = identity;
             var group = Group();
@@ -797,7 +798,7 @@ function initJscadutils(_CSG, options = {}) {
             }
             return group;
         };
-        group.prototype.rotate = function(solid, axis, angle) {
+        JsCadUtilsGroup.prototype.rotate = function(solid, axis, angle) {
             var self = this;
             var axes = {
                 x: [ 1, 0, 0 ],
@@ -815,11 +816,11 @@ function initJscadutils(_CSG, options = {}) {
             });
             return self;
         };
-        group.prototype.combineAll = function(options, map) {
+        JsCadUtilsGroup.prototype.combineAll = function(options, map) {
             var self = this;
             return self.combine(Object.keys(self.parts).join(","), options, map);
         };
-        group.prototype.snap = function snap(part, to, axis, orientation, delta) {
+        JsCadUtilsGroup.prototype.snap = function snap(part, to, axis, orientation, delta) {
             var self = this;
             var t = calcSnap(self.combine(part), to, axis, orientation, delta);
             self.map(function(part) {
@@ -827,7 +828,7 @@ function initJscadutils(_CSG, options = {}) {
             });
             return self;
         };
-        group.prototype.align = function align(part, to, axis, delta) {
+        JsCadUtilsGroup.prototype.align = function align(part, to, axis, delta) {
             var self = this;
             var t = calcCenterWith(self.combine(part, {
                 noholes: true
@@ -837,7 +838,7 @@ function initJscadutils(_CSG, options = {}) {
             });
             return self;
         };
-        group.prototype.midlineTo = function midlineTo(part, axis, to) {
+        JsCadUtilsGroup.prototype.midlineTo = function midlineTo(part, axis, to) {
             var self = this;
             var size = self.combine(part).size();
             var t = axisApply(axis, function(i, a) {
@@ -848,7 +849,7 @@ function initJscadutils(_CSG, options = {}) {
             });
             return self;
         };
-        group.prototype.translate = function translate(x, y, z) {
+        JsCadUtilsGroup.prototype.translate = function translate(x, y, z) {
             var self = this;
             var t = Array.isArray(x) ? x : [ x, y, z ];
             debug("translate", t);
@@ -857,7 +858,7 @@ function initJscadutils(_CSG, options = {}) {
             });
             return self;
         };
-        group.prototype.pick = function(parts, map) {
+        JsCadUtilsGroup.prototype.pick = function(parts, map) {
             var self = this;
             var p = parts && parts.length > 0 && parts.split(",") || self.names;
             if (!map) map = identity;
@@ -867,7 +868,7 @@ function initJscadutils(_CSG, options = {}) {
             });
             return g;
         };
-        group.prototype.array = function(parts, map) {
+        JsCadUtilsGroup.prototype.array = function(parts, map) {
             var self = this;
             var p = parts && parts.length > 0 && parts.split(",") || self.names;
             if (!map) map = identity;
@@ -877,7 +878,7 @@ function initJscadutils(_CSG, options = {}) {
             });
             return a;
         };
-        group.prototype.toArray = function(pieces) {
+        JsCadUtilsGroup.prototype.toArray = function(pieces) {
             var self = this;
             var piecesArray = pieces ? pieces.split(",") : self.names;
             return piecesArray.map(function(piece) {
@@ -885,19 +886,17 @@ function initJscadutils(_CSG, options = {}) {
                 return self.parts[piece];
             });
         };
-        var Group = function Group() {
-            for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-                args[_key] = arguments[_key];
-            }
-            debug("Group", args);
+        function Group(objectNames, addObjects) {
+            debug("Group", objectNames, addObjects);
             var self = {
                 name: "",
                 names: [],
                 parts: {}
             };
-            if (args && args.length > 0) {
-                if (args.length === 2) {
-                    var names = args[0], objects = args[1];
+            if (objectNames) {
+                if (addObjects) {
+                    var names = objectNames;
+                    var objects = addObjects;
                     self.names = names && names.length > 0 && names.split(",") || [];
                     if (Array.isArray(objects)) {
                         self.parts = zipObject(self.names, objects);
@@ -907,7 +906,7 @@ function initJscadutils(_CSG, options = {}) {
                         self.parts = objects || {};
                     }
                 } else {
-                    var objects = args[0];
+                    var objects = objectNames;
                     self.names = Object.keys(objects).filter(function(k) {
                         return k !== "holes";
                     });
@@ -915,8 +914,8 @@ function initJscadutils(_CSG, options = {}) {
                     self.holes = objects.holes;
                 }
             }
-            return new group(self.names, self.parts, self.holes);
-        };
+            return new JsCadUtilsGroup(self.names, self.parts, self.holes);
+        }
         var debug$1 = Debug("jscadUtils:util");
         var NOZZEL_SIZE = .4;
         var nearest = {
@@ -1827,7 +1826,7 @@ function initJscadutils(_CSG, options = {}) {
         var compatV1 = _objectSpread2({}, util$1, {
             group: Group,
             init: init$1,
-            triangle,
+            triangle: triUtils,
             array,
             parts: parts$1,
             Boxes,
@@ -1840,7 +1839,7 @@ function initJscadutils(_CSG, options = {}) {
         exports.compatV1 = compatV1;
         exports.init = init$1;
         exports.parts = parts$1;
-        exports.triangle = triangle;
+        exports.triUtils = triUtils;
         exports.util = util$1;
         return exports;
     }({}, jsCadCSG, scadApi);
@@ -1852,6 +1851,8 @@ function initJscadutils(_CSG, options = {}) {
     Boxes = jscadUtils.Boxes;
     Group = jscadUtils.Group;
     Debug = jscadUtils.Debug;
+    array = jscadUtils.array;
+    triUtils = jscadUtils.triUtils;
     return jscadUtils;
 }
 

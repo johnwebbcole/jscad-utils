@@ -1,8 +1,14 @@
 /**
+ * A set of array utilities.
+ * @module array
+ */
+
+/**
  * Divides all elements in th array by `f`
  * @function div
  * @param {Array} a
  * @param {Number} f
+ * @memberof! array
  */
 export const div = function(a, f) {
   return a.map(function(e) {

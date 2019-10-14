@@ -1,5 +1,5 @@
 /* eslint-disable */
-var Parts, Boxes, Group, Debug;
+var Parts, Boxes, Group, Debug, array, triUtils;
 function initJscadutils(_CSG, options = {}) {
   options = Object.assign({ debug: '' }, options);
   var jsCadCSG = { CSG, CAG };
@@ -52,6 +52,8 @@ function initJscadutils(_CSG, options = {}) {
   Boxes = jscadUtils.Boxes;
   Group = jscadUtils.Group;
   Debug = jscadUtils.Debug;
+  array = jscadUtils.array;
+  triUtils = jscadUtils.triUtils;
 
   return jscadUtils;
 }

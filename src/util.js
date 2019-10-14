@@ -589,6 +589,16 @@ export function centroid(o, objectSize) {
   return bounds[0].plus(objectSize.dividedBy(2));
 }
 
+/**
+ * Calculates the transform array to move the midline of an object
+ * by value.  This is usefule when you have a diagram that provide
+ * the distance to an objects midline instead of the edge.
+ * @function calcmidlineTo
+ * @param  {CSG} o    A CSG object.
+ * @param  {String} axis A string with the axis to operate on.
+ * @param  {Number} to   Value to move the midline of the object to.
+ * @return {Number[]} The tranform array needed to move the object.
+ */
 export function calcmidlineTo(o, axis, to) {
   var bounds = o.getBounds();
   var objectSize = size(bounds);
