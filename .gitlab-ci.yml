@@ -1,4 +1,4 @@
-image: node:lts-alpine
+image: node:lts-buster
 
 pages:
   script:
