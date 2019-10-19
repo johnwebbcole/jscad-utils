@@ -10,10 +10,10 @@
     "jscad.json"
   ],
   "scripts": {
-    "test": "nyc --reporter=html ava",
+    "test": "nyc --reporter=html --reporter=lcov ava",
     "build": "gulp all",
     "start": "gulp",
-    "docs": "vuepress-jsdoc --source ./src --dist ./docs && npx vuepress build ./docs"
+    "docs": "vuepress-jsdoc --source ./srcx --dist ./docs && npx vuepress build ./docs"
   },
   "keywords": [
     "jscad"
@@ -35,19 +35,20 @@
     "@jscad/scad-api": "^0.5.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.6.2",
-    "@babel/preset-env": "^7.6.2",
+    "@babel/core": "^7.6.4",
+    "@babel/preset-env": "^7.6.3",
     "@babel/register": "^7.6.2",
+    "@jwc/jscad-test-utils": "^1.0.6",
     "@jwc/jscad2-img-utils": "0.0.2",
     "@jwc/jscad2-regl-renderer": "0.0.1",
-    "@vuepress/plugin-active-header-links": "^1.1.0",
-    "@vuepress/plugin-google-analytics": "^1.1.0",
+    "@vuepress/plugin-active-header-links": "^1.2.0",
+    "@vuepress/plugin-google-analytics": "^1.2.0",
     "ava": "^2.4.0",
     "babelify": "^10.0.0",
     "del": "^5.0.0",
-    "eslint": "^6.4.0",
+    "eslint": "^6.5.1",
     "eslint-plugin-ava": "^9.0.0",
-    "fsevents": "^2.0.7",
+    "fsevents": "^2.1.1",
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.0",
     "gulp-debug": "^4.0.0",
@@ -62,7 +63,7 @@
     "gulp-watch": "^5.0.1",
     "looks-same": "^7.2.1",
     "nyc": "^14.1.1",
-    "rollup": "^1.21.4",
+    "rollup": "^1.25.0",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-commonjs": "^10.0.2",
     "rollup-plugin-node-resolve": "^5.2.0",
@@ -77,6 +78,7 @@
       "src/**/*.js"
     ],
     "require": [
+      "esm",
       "@babel/register",
       "babel-polyfill",
       "./test/helpers/compat-env.js"

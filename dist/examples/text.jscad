@@ -56,7 +56,8 @@ function initJscadutils(_CSG, options = {}) {
         "use strict";
         jsCadCSG = jsCadCSG && jsCadCSG.hasOwnProperty("default") ? jsCadCSG["default"] : jsCadCSG;
         scadApi = scadApi && scadApi.hasOwnProperty("default") ? scadApi["default"] : scadApi;
-        var util$1 = Object.freeze({
+        var util = Object.freeze({
+            __proto__: null,
             get NOZZEL_SIZE() {
                 return NOZZEL_SIZE;
             },
@@ -341,6 +342,7 @@ function initJscadutils(_CSG, options = {}) {
             return r;
         };
         var triUtils = Object.freeze({
+            __proto__: null,
             toRadians,
             toDegrees,
             solve,
@@ -401,6 +403,7 @@ function initJscadutils(_CSG, options = {}) {
             return result;
         };
         var array = Object.freeze({
+            __proto__: null,
             div,
             addValue,
             addArray,
@@ -702,13 +705,14 @@ function initJscadutils(_CSG, options = {}) {
             proto.prototype._jscadutilsinit = true;
         }
         var init$1 = Object.freeze({
+            __proto__: null,
             default: init
         });
-        var CSG$1 = jsCadCSG.CSG, CAG = jsCadCSG.CAG;
+        var CSG = jsCadCSG.CSG, CAG = jsCadCSG.CAG;
         var rectangular_extrude = scadApi.extrusions.rectangular_extrude;
         var _scadApi$text = scadApi.text, vector_text = _scadApi$text.vector_text, vector_char = _scadApi$text.vector_char;
-        var union$1 = scadApi.booleanOps.union;
-        init(CSG$1);
+        var union = scadApi.booleanOps.union;
+        init(CSG);
         var debug = Debug("jscadUtils:group");
         function JsCadUtilsGroup() {
             var names = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
@@ -754,10 +758,10 @@ function initJscadutils(_CSG, options = {}) {
             if (pieces.length === 0) {
                 throw new Error("no pieces found in ".concat(self.name, " pieces: ").concat(pieces, " parts: ").concat(Object.keys(self.parts), " names: ").concat(self.names));
             }
-            var g = union$1(mapPick(self.parts, pieces, function(value, key, object) {
+            var g = union(mapPick(self.parts, pieces, function(value, key, object) {
                 return map ? map(value, key, object) : identity(value);
             }, self.name));
-            return g.subtractIf(self.holes && Array.isArray(self.holes) ? union$1(self.holes) : self.holes, self.holes && !options.noholes);
+            return g.subtractIf(self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
         };
         JsCadUtilsGroup.prototype.map = function(cb) {
             var self = this;
@@ -785,11 +789,11 @@ function initJscadutils(_CSG, options = {}) {
             Object.keys(self.parts).forEach(function(key) {
                 var part = self.parts[key];
                 var hidden = self.names.indexOf(key) == -1;
-                group.add(map(CSG$1.fromPolygons(part.toPolygons())), key, hidden);
+                group.add(map(CSG.fromPolygons(part.toPolygons())), key, hidden);
             });
             if (self.holes) {
                 group.holes = toArray(self.holes).map(function(part) {
-                    return map(CSG$1.fromPolygons(part.toPolygons()), "holes");
+                    return map(CSG.fromPolygons(part.toPolygons()), "holes");
                 });
             }
             return group;
@@ -860,7 +864,7 @@ function initJscadutils(_CSG, options = {}) {
             if (!map) map = identity;
             var g = Group();
             p.forEach(function(name) {
-                g.add(map(CSG$1.fromPolygons(self.parts[name].toPolygons()), name), name);
+                g.add(map(CSG.fromPolygons(self.parts[name].toPolygons()), name), name);
             });
             return g;
         };
@@ -870,7 +874,7 @@ function initJscadutils(_CSG, options = {}) {
             if (!map) map = identity;
             var a = [];
             p.forEach(function(name) {
-                a.push(map(CSG$1.fromPolygons(self.parts[name].toPolygons()), name));
+                a.push(map(CSG.fromPolygons(self.parts[name].toPolygons()), name));
             });
             return a;
         };
@@ -896,7 +900,7 @@ function initJscadutils(_CSG, options = {}) {
                     self.names = names && names.length > 0 && names.split(",") || [];
                     if (Array.isArray(objects)) {
                         self.parts = zipObject(self.names, objects);
-                    } else if (objects instanceof CSG$1) {
+                    } else if (objects instanceof CSG) {
                         self.parts = zipObject(self.names, [ objects ]);
                     } else {
                         self.parts = objects || {};
@@ -956,7 +960,11 @@ function initJscadutils(_CSG, options = {}) {
         function depreciated(method, error, message) {
             var msg = method + " is depreciated." + (" " + message || "");
             if (!error && console && console.error) console[error ? "error" : "warn"](msg);
-            if (error) throw new Error(msg);
+            if (error) {
+                var err = new Error(msg);
+                err.name = "JSCAD_UTILS_DEPRECATED";
+                throw err;
+            }
         }
         function inch(x) {
             return x * 25.4;
@@ -973,12 +981,12 @@ function initJscadutils(_CSG, options = {}) {
                     h: height || 2
                 }));
             });
-            return center(union$1(o));
+            return center(union(o));
         }
         function text(text) {
             var l = vector_char(0, 0, text);
             var _char = l.segments.reduce(function(result, segment) {
-                var path = new CSG$1.Path2D(segment);
+                var path = new CSG.Path2D(segment);
                 var cag = path.expandToCAG(2);
                 return result ? result.union(cag) : cag;
             }, undefined);
@@ -986,7 +994,7 @@ function initJscadutils(_CSG, options = {}) {
         }
         function unitCube(length, radius) {
             radius = radius || .5;
-            return CSG$1.cube({
+            return CSG.cube({
                 center: [ 0, 0, 0 ],
                 radius: [ radius, radius, length || .5 ]
             });
@@ -1304,13 +1312,13 @@ function initJscadutils(_CSG, options = {}) {
             }[[ axis, rotateaxis ].sort().join("")];
             var centroid = object.centroid();
             var rotateDelta = getDelta(objectSize, bounds, rotateOffsetAxis, rotateoffset);
-            var rotationCenter = options.rotationCenter || new CSG$1.Vector3D(axisApply("xyz", function(i, a) {
+            var rotationCenter = options.rotationCenter || new CSG.Vector3D(axisApply("xyz", function(i, a) {
                 if (a == axis) return cutDelta[i];
                 if (a == rotateOffsetAxis) return rotateDelta[i];
                 return centroid[a];
             }));
             var theRotationAxis = rotationAxes[rotateaxis];
-            var cutplane = CSG$1.OrthoNormalBasis.GetCartesian(info.orthoNormalCartesian[0], info.orthoNormalCartesian[1]).translate(cutDelta).rotate(rotationCenter, theRotationAxis, angle);
+            var cutplane = CSG.OrthoNormalBasis.GetCartesian(info.orthoNormalCartesian[0], info.orthoNormalCartesian[1]).translate(cutDelta).rotate(rotationCenter, theRotationAxis, angle);
             var g = Group("negative,positive", [ object.cutByPlane(cutplane.plane).color("red"), object.cutByPlane(cutplane.plane.flipped()).color("blue") ]);
             if (options.addRotationCenter) g.add(unitAxis(objectSize.length() + 10, .5, rotationCenter), "rotationCenter");
             return g;
@@ -1328,10 +1336,10 @@ function initJscadutils(_CSG, options = {}) {
         }
         function poly2solid(top, bottom, height) {
             if (top.sides.length == 0) {
-                return new CSG$1();
+                return new CSG();
             }
-            var offsetVector = CSG$1.Vector3D.Create(0, 0, height);
-            var normalVector = CSG$1.Vector3D.Create(0, 1, 0);
+            var offsetVector = CSG.Vector3D.Create(0, 0, height);
+            var normalVector = CSG.Vector3D.Create(0, 1, 0);
             var polygons = [];
             polygons = polygons.concat(bottom._toPlanePolygons({
                 translation: [ 0, 0, 0 ],
@@ -1343,18 +1351,18 @@ function initJscadutils(_CSG, options = {}) {
                 normalVector,
                 flipped: offsetVector.z < 0
             }));
-            var c1 = new CSG$1.Connector(offsetVector.times(0), [ 0, 0, offsetVector.z ], normalVector);
-            var c2 = new CSG$1.Connector(offsetVector, [ 0, 0, offsetVector.z ], normalVector);
+            var c1 = new CSG.Connector(offsetVector.times(0), [ 0, 0, offsetVector.z ], normalVector);
+            var c2 = new CSG.Connector(offsetVector, [ 0, 0, offsetVector.z ], normalVector);
             polygons = polygons.concat(bottom._toWallPolygons({
                 cag: top,
                 toConnector1: c1,
                 toConnector2: c2
             }));
-            return CSG$1.fromPolygons(polygons);
+            return CSG.fromPolygons(polygons);
         }
         function slices2poly(slices, options, axis) {
             var twistangle = options && parseFloat(options.twistangle) || 0;
-            var twiststeps = options && parseInt(options.twiststeps) || CSG$1.defaultResolution3D;
+            var twiststeps = options && parseInt(options.twiststeps) || CSG.defaultResolution3D;
             if (twistangle == 0 || twiststeps < 1) {
                 twiststeps = 1;
             }
@@ -1385,8 +1393,8 @@ function initJscadutils(_CSG, options = {}) {
                     var nextidx = idx + 1;
                     var top = !up ? slices[nextidx] : slice;
                     var bottom = up ? slices[nextidx] : slice;
-                    var c1 = new CSG$1.Connector(bottom.offset, connectorAxis, rotate(normalVector, twistangle, idx / slices.length));
-                    var c2 = new CSG$1.Connector(top.offset, connectorAxis, rotate(normalVector, twistangle, nextidx / slices.length));
+                    var c1 = new CSG.Connector(bottom.offset, connectorAxis, rotate(normalVector, twistangle, idx / slices.length));
+                    var c2 = new CSG.Connector(top.offset, connectorAxis, rotate(normalVector, twistangle, nextidx / slices.length));
                     polygons = polygons.concat(bottom.poly._toWallPolygons({
                         cag: top.poly,
                         toConnector1: c1,
@@ -1394,21 +1402,21 @@ function initJscadutils(_CSG, options = {}) {
                     }));
                 }
             });
-            return CSG$1.fromPolygons(polygons);
+            return CSG.fromPolygons(polygons);
         }
         function normalVector(axis) {
             var axisInfo = {
                 z: {
                     orthoNormalCartesian: [ "X", "Y" ],
-                    normalVector: CSG$1.Vector3D.Create(0, 1, 0)
+                    normalVector: CSG.Vector3D.Create(0, 1, 0)
                 },
                 x: {
                     orthoNormalCartesian: [ "Y", "Z" ],
-                    normalVector: CSG$1.Vector3D.Create(0, 0, 1)
+                    normalVector: CSG.Vector3D.Create(0, 0, 1)
                 },
                 y: {
                     orthoNormalCartesian: [ "X", "Z" ],
-                    normalVector: CSG$1.Vector3D.Create(0, 0, 1)
+                    normalVector: CSG.Vector3D.Create(0, 0, 1)
                 }
             };
             if (!axisInfo[axis]) error("normalVector: invalid axis " + axis);
@@ -1448,7 +1456,7 @@ function initJscadutils(_CSG, options = {}) {
             var ar = Math.abs(radius);
             var si = sliceParams(orientation, radius, b);
             if (si.axis !== "z") throw new Error('reShape error: CAG._toPlanePolytons only uses the "z" axis.  You must use the "z" axis for now.');
-            var cutplane = CSG$1.OrthoNormalBasis.GetCartesian(si.orthoNormalCartesian[0], si.orthoNormalCartesian[1]).translate(si.cutDelta);
+            var cutplane = CSG.OrthoNormalBasis.GetCartesian(si.orthoNormalCartesian[0], si.orthoNormalCartesian[1]).translate(si.cutDelta);
             var slice = object.sectionCut(cutplane);
             var first = axisApply(si.axis, function() {
                 return si.positive ? 0 : ar;
@@ -1462,25 +1470,25 @@ function initJscadutils(_CSG, options = {}) {
                 si
             }), si.axis).color(options.color);
             var remainder = object.cutByPlane(plane);
-            return union$1([ options.unionOriginal ? object : remainder, delta.translate(si.moveDelta) ]);
+            return union([ options.unionOriginal ? object : remainder, delta.translate(si.moveDelta) ]);
         }
         function chamfer(object, radius, orientation, options) {
             return reShape(object, radius, orientation, options, function(first, last, slice) {
                 return [ {
                     poly: slice,
-                    offset: new CSG$1.Vector3D(first)
+                    offset: new CSG.Vector3D(first)
                 }, {
                     poly: enlarge(slice, [ -radius * 2, -radius * 2 ]),
-                    offset: new CSG$1.Vector3D(last)
+                    offset: new CSG.Vector3D(last)
                 } ];
             });
         }
         function fillet(object, radius, orientation, options) {
             options = options || {};
             return reShape(object, radius, orientation, options, function(first, last, slice) {
-                var v1 = new CSG$1.Vector3D(first);
-                var v2 = new CSG$1.Vector3D(last);
-                var res = options.resolution || CSG$1.defaultResolution3D;
+                var v1 = new CSG.Vector3D(first);
+                var v2 = new CSG.Vector3D(last);
+                var res = options.resolution || CSG.defaultResolution3D;
                 var slices = range(0, res).map(function(i) {
                     var p = i > 0 ? i / (res - 1) : 0;
                     var v = v1.lerp(v2, p);
@@ -1511,7 +1519,7 @@ function initJscadutils(_CSG, options = {}) {
             return part.rotate(rotationCenter, rotationAxis, angle);
         }
         function clone(o) {
-            return CSG$1.fromPolygons(o.toPolygons());
+            return CSG.fromPolygons(o.toPolygons());
         }
         var debug$2 = Debug("jscadUtils:parts");
         var parts = {
@@ -1523,7 +1531,7 @@ function initJscadutils(_CSG, options = {}) {
         };
         function BBox() {
             var box = function box(object) {
-                return CSG$1.cube({
+                return CSG.cube({
                     center: object.centroid(),
                     radius: object.size().dividedBy(2)
                 });
@@ -1538,7 +1546,7 @@ function initJscadutils(_CSG, options = {}) {
         }
         function Cube(width) {
             var r = div(fromxyz(width), 2);
-            return CSG$1.cube({
+            return CSG.cube({
                 center: r,
                 radius: r
             });
@@ -1563,16 +1571,16 @@ function initJscadutils(_CSG, options = {}) {
             return roundedcube;
         }
         function Cylinder(diameter, height, options) {
-            debug$2("parts.Cylinder", diameter, height, options);
-            options = _objectSpread2({}, options, {
+            debug$2("parts.Cylinder", diameter, height, options = {});
+            options = Object.assign(options, {
                 start: [ 0, 0, 0 ],
                 end: [ 0, 0, height ],
                 radius: diameter / 2
             });
-            return CSG$1.cylinder(options);
+            return CSG.cylinder(options);
         }
         function Cone(diameter1, diameter2, height) {
-            return CSG$1.cylinder({
+            return CSG.cylinder({
                 start: [ 0, 0, 0 ],
                 end: [ 0, 0, height ],
                 radiusStart: diameter1 / 2,
@@ -1671,6 +1679,7 @@ function initJscadutils(_CSG, options = {}) {
             }
         };
         var parts$1 = Object.freeze({
+            __proto__: null,
             default: parts,
             BBox,
             Cube,
@@ -1685,38 +1694,39 @@ function initJscadutils(_CSG, options = {}) {
             Hardware
         });
         var debug$3 = Debug("jscadUtils:boxes");
-        var RabbetJoin = function RabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
-            return rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap);
-        };
+        function RabbetJoin(box, thickness, cutHeight) {
+            depreciated("RabbetJoin", true, "Use 'Rabbet' instead");
+            return rabbetJoin(box, thickness, cutHeight);
+        }
         function topMiddleBottom(box, thickness) {
             debug$3("TopMiddleBottom", box, thickness);
             var bottom = box.bisect("z", thickness);
             var top = bottom.parts.positive.bisect("z", -thickness);
-            return util.group("top,middle,bottom", [ top.parts.positive, top.parts.negative.color("green"), bottom.parts.negative ]);
+            return Group("top,middle,bottom", [ top.parts.positive, top.parts.negative.color("green"), bottom.parts.negative ]);
         }
         function Rabett(box, thickness, gap, height, face) {
             debug$3("Rabett", box, thickness, gap, height, face);
             gap = gap || .25;
             var inside = -thickness - gap;
             var outside = -thickness + gap;
-            var group = util.group();
+            var group = Group();
             var top = box.bisect("z", height);
             var bottom = top.parts.negative.bisect("z", height - face);
             group.add(union([ top.parts.positive, bottom.parts.positive.subtract(bottom.parts.positive.enlarge(outside, outside, 0)).color("green") ]), "top");
             group.add(union([ bottom.parts.negative, bottom.parts.positive.intersect(bottom.parts.positive.enlarge(inside, inside, 0)).color("yellow") ]), "bottom");
             return group;
         }
-        var RabettTopBottom = function rabbetTMB(box, thickness, gap) {
+        var RabettTopBottom = function rabbetTMB(box, thickness) {
+            var gap = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : .25;
             var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-            options = Object.assign(options, {
+            options = Object.assign({
                 removableTop: true,
                 removableBottom: true,
                 topWidth: -thickness,
                 bottomWidth: thickness
-            });
+            }, options);
             debug$3("RabettTopBottom", box, thickness, gap, options);
-            gap = gap || .25;
-            var group = util.group("", {
+            var group = Group("", {
                 box
             });
             var inside = -thickness - gap;
@@ -1746,7 +1756,7 @@ function initJscadutils(_CSG, options = {}) {
             var top = clear.snap(o, "z", "center+").union(o);
             var back = Parts.Cube([ cs.x + 6, 2, cs.z + 2.5 ]).align(cutout, "x").snap(cutout, "z", "center+").snap(cutout, "y", "outside-");
             var clip = Parts.Cube([ cs.x + 2 - gap, 1 - gap, cs.z + 2.5 ]).align(cutout, "x").snap(cutout, "z", "center+").snap(cutout, "y", "outside-");
-            return util.group("insert", {
+            return Group("insert", {
                 top,
                 bottom: clear.snap(o, "z", "center-").union(o),
                 cutout: union([ o, top ]),
@@ -1757,8 +1767,8 @@ function initJscadutils(_CSG, options = {}) {
         };
         var Rectangle = function Rectangle(size, thickness, cb) {
             thickness = thickness || 2;
-            var s = util.array.div(util.xyz2array(size), 2);
-            var r = util.array.add(s, thickness);
+            var s = div(xyz2array(size), 2);
+            var r = add(s, thickness);
             var box = CSG.cube({
                 center: r,
                 radius: r
@@ -1772,36 +1782,32 @@ function initJscadutils(_CSG, options = {}) {
         var Hollow = function Hollow(object, thickness, interiorcb, exteriorcb) {
             thickness = thickness || 2;
             var size = -thickness * 2;
-            interiorcb = interiorcb || util.identity;
+            interiorcb = interiorcb || identity;
             var box = object.subtract(interiorcb(object.enlarge([ size, size, size ])));
             if (exteriorcb) box = exteriorcb(box);
             return box;
         };
         var BBox$1 = function BBox(o) {
-            var s = util.array.div(util.xyz2array(o.size()), 2);
+            depreciated("BBox", true, "Use 'parts.BBox' instead");
+            var s = div(xyz2array(o.size()), 2);
             return CSG.cube({
                 center: s,
                 radius: s
             }).align(o, "xyz");
         };
         function getRadius(o) {
-            return util.array.div(util.xyz2array(o.size()), 2);
+            return div(xyz2array(o.size()), 2);
         }
-        function rabbetJoin(box, thickness, gap) {
-            var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-            options = Object.assign(options, {
-                removableTop: true,
-                removableBottom: true
-            });
-            gap = gap || .25;
-            var r = util.array.add(getRadius(box), -thickness / 2);
+        function rabbetJoin(box, thickness) {
+            var gap = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : .25;
+            var r = add(getRadius(box), -thickness / 2);
             r[2] = thickness / 2;
             var cutter = CSG.cube({
                 center: r,
                 radius: r
             }).align(box, "xy").color("green");
             var topCutter = cutter.snap(box, "z", "inside+");
-            var group = util.group("", {
+            var group = Group("", {
                 topCutter,
                 bottomCutter: cutter
             });
@@ -1810,6 +1816,7 @@ function initJscadutils(_CSG, options = {}) {
             return group;
         }
         var Boxes = Object.freeze({
+            __proto__: null,
             RabbetJoin,
             topMiddleBottom,
             Rabett,
@@ -1819,7 +1826,7 @@ function initJscadutils(_CSG, options = {}) {
             Hollow,
             BBox: BBox$1
         });
-        var compatV1 = _objectSpread2({}, util$1, {
+        var compatV1 = _objectSpread2({}, util, {
             group: Group,
             init: init$1,
             triangle: triUtils,
@@ -1836,7 +1843,7 @@ function initJscadutils(_CSG, options = {}) {
         exports.init = init$1;
         exports.parts = parts$1;
         exports.triUtils = triUtils;
-        exports.util = util$1;
+        exports.util = util;
         return exports;
     }({}, jsCadCSG, scadApi);
     const debug = jscadUtils.Debug("jscadUtils:initJscadutils");

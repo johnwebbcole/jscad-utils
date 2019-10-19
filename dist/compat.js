@@ -46,7 +46,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   jsCadCSG = jsCadCSG && jsCadCSG.hasOwnProperty('default') ? jsCadCSG['default'] : jsCadCSG;
   scadApi = scadApi && scadApi.hasOwnProperty('default') ? scadApi['default'] : scadApi;
 
-  var util$1 = /*#__PURE__*/Object.freeze({
+  var util = /*#__PURE__*/Object.freeze({
+    __proto__: null,
     get NOZZEL_SIZE () { return NOZZEL_SIZE; },
     get nearest () { return nearest; },
     get identity () { return identity; },
@@ -256,6 +257,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   };
 
   var triUtils = /*#__PURE__*/Object.freeze({
+    __proto__: null,
     toRadians: toRadians,
     toDegrees: toDegrees,
     solve: solve,
@@ -392,6 +394,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   };
 
   var array = /*#__PURE__*/Object.freeze({
+    __proto__: null,
     div: div,
     addValue: addValue,
     addArray: addArray,
@@ -826,17 +829,18 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   }
 
   var init$1 = /*#__PURE__*/Object.freeze({
+    __proto__: null,
     'default': init
   });
 
-  var CSG$1 = jsCadCSG.CSG,
+  var CSG = jsCadCSG.CSG,
       CAG = jsCadCSG.CAG;
   var rectangular_extrude = scadApi.extrusions.rectangular_extrude;
   var _scadApi$text = scadApi.text,
       vector_text = _scadApi$text.vector_text,
       vector_char = _scadApi$text.vector_char;
-  var union$1 = scadApi.booleanOps.union;
-  init(CSG$1);
+  var union = scadApi.booleanOps.union;
+  init(CSG);
 
   var debug = Debug('jscadUtils:group');
   /**
@@ -918,11 +922,11 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     } // debug('combine', self.names, self.parts);
 
 
-    var g = union$1(mapPick(self.parts, pieces, function (value, key, object) {
+    var g = union(mapPick(self.parts, pieces, function (value, key, object) {
       // debug('combine', value, key, object);
       return map ? map(value, key, object) : identity(value);
     }, self.name));
-    return g.subtractIf(self.holes && Array.isArray(self.holes) ? union$1(self.holes) : self.holes, self.holes && !options.noholes);
+    return g.subtractIf(self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
   };
   /**
    * Apply a function to each element in the group.
@@ -970,12 +974,12 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     Object.keys(self.parts).forEach(function (key) {
       var part = self.parts[key];
       var hidden = self.names.indexOf(key) == -1;
-      group.add(map(CSG$1.fromPolygons(part.toPolygons())), key, hidden);
+      group.add(map(CSG.fromPolygons(part.toPolygons())), key, hidden);
     });
 
     if (self.holes) {
       group.holes = toArray(self.holes).map(function (part) {
-        return map(CSG$1.fromPolygons(part.toPolygons()), 'holes');
+        return map(CSG.fromPolygons(part.toPolygons()), 'holes');
       });
     }
 
@@ -1138,7 +1142,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     if (!map) map = identity;
     var g = Group();
     p.forEach(function (name) {
-      g.add(map(CSG$1.fromPolygons(self.parts[name].toPolygons()), name), name);
+      g.add(map(CSG.fromPolygons(self.parts[name].toPolygons()), name), name);
     });
     return g;
   };
@@ -1157,7 +1161,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     if (!map) map = identity;
     var a = [];
     p.forEach(function (name) {
-      a.push(map(CSG$1.fromPolygons(self.parts[name].toPolygons()), name));
+      a.push(map(CSG.fromPolygons(self.parts[name].toPolygons()), name));
     });
     return a;
   };
@@ -1212,7 +1216,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
         if (Array.isArray(objects)) {
           self.parts = zipObject(self.names, objects);
-        } else if (objects instanceof CSG$1) {
+        } else if (objects instanceof CSG) {
           self.parts = zipObject(self.names, [objects]);
         } else {
           self.parts = objects || {};
@@ -1331,12 +1335,25 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
     throw new Error(msg);
   }
+  /**
+   * Shows a warning or error message.  Used to indicate a method
+   * has been depricated and what to use instead.
+   * @function depreciated
+   * @param  {string} method  The name of the method being depricated.
+   * @param  {boolean} error  Throws an error if called when true.
+   * @param  {string} message Instructions on what to use instead of the depricated method.
+   */
+
   function depreciated(method, error, message) {
     var msg = method + ' is depreciated.' + (' ' + message || ''); // eslint-disable-next-line no-console
 
     if (!error && console && console.error) console[error ? 'error' : 'warn'](msg); // eslint-disable-line no-console
 
-    if (error) throw new Error(msg);
+    if (error) {
+      var err = new Error(msg);
+      err.name = 'JSCAD_UTILS_DEPRECATED';
+      throw err;
+    }
   }
   /**
    * Convert an imperial `inch` to metric `mm`.
@@ -1372,13 +1389,13 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     // var foo = union(o);
     // console.trace('typeof', typeof foo);
 
-    return center(union$1(o));
+    return center(union(o));
   }
   function text(text) {
     var l = vector_char(0, 0, text); // l contains a list of polylines to draw
 
     var _char = l.segments.reduce(function (result, segment) {
-      var path = new CSG$1.Path2D(segment);
+      var path = new CSG.Path2D(segment);
       var cag = path.expandToCAG(2); // debug('reduce', result, segment, path, cag);
 
       return result ? result.union(cag) : cag;
@@ -1388,7 +1405,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   }
   function unitCube(length, radius) {
     radius = radius || 0.5;
-    return CSG$1.cube({
+    return CSG.cube({
       center: [0, 0, 0],
       radius: [radius, radius, length || 0.5]
     });
@@ -1845,13 +1862,13 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     }[[axis, rotateaxis].sort().join('')];
     var centroid = object.centroid();
     var rotateDelta = getDelta(objectSize, bounds, rotateOffsetAxis, rotateoffset);
-    var rotationCenter = options.rotationCenter || new CSG$1.Vector3D(axisApply('xyz', function (i, a) {
+    var rotationCenter = options.rotationCenter || new CSG.Vector3D(axisApply('xyz', function (i, a) {
       if (a == axis) return cutDelta[i];
       if (a == rotateOffsetAxis) return rotateDelta[i];
       return centroid[a];
     }));
     var theRotationAxis = rotationAxes[rotateaxis];
-    var cutplane = CSG$1.OrthoNormalBasis.GetCartesian(info.orthoNormalCartesian[0], info.orthoNormalCartesian[1]).translate(cutDelta).rotate(rotationCenter, theRotationAxis, angle);
+    var cutplane = CSG.OrthoNormalBasis.GetCartesian(info.orthoNormalCartesian[0], info.orthoNormalCartesian[1]).translate(cutDelta).rotate(rotationCenter, theRotationAxis, angle);
     var g = Group('negative,positive', [object.cutByPlane(cutplane.plane).color('red'), object.cutByPlane(cutplane.plane.flipped()).color('blue')]);
     if (options.addRotationCenter) g.add(unitAxis(objectSize.length() + 10, 0.5, rotationCenter), 'rotationCenter');
     return g;
@@ -1891,12 +1908,12 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   function poly2solid(top, bottom, height) {
     if (top.sides.length == 0) {
       // empty!
-      return new CSG$1();
+      return new CSG();
     } // var offsetVector = CSG.parseOptionAs3DVector(options, "offset", [0, 0, 10]);
 
 
-    var offsetVector = CSG$1.Vector3D.Create(0, 0, height);
-    var normalVector = CSG$1.Vector3D.Create(0, 1, 0);
+    var offsetVector = CSG.Vector3D.Create(0, 0, height);
+    var normalVector = CSG.Vector3D.Create(0, 1, 0);
     var polygons = []; // bottom and top
 
     polygons = polygons.concat(bottom._toPlanePolygons({
@@ -1910,19 +1927,19 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       flipped: offsetVector.z < 0
     })); // walls
 
-    var c1 = new CSG$1.Connector(offsetVector.times(0), [0, 0, offsetVector.z], normalVector);
-    var c2 = new CSG$1.Connector(offsetVector, [0, 0, offsetVector.z], normalVector);
+    var c1 = new CSG.Connector(offsetVector.times(0), [0, 0, offsetVector.z], normalVector);
+    var c2 = new CSG.Connector(offsetVector, [0, 0, offsetVector.z], normalVector);
     polygons = polygons.concat(bottom._toWallPolygons({
       cag: top,
       toConnector1: c1,
       toConnector2: c2
     })); // }
 
-    return CSG$1.fromPolygons(polygons);
+    return CSG.fromPolygons(polygons);
   }
   function slices2poly(slices, options, axis) {
     var twistangle = options && parseFloat(options.twistangle) || 0;
-    var twiststeps = options && parseInt(options.twiststeps) || CSG$1.defaultResolution3D;
+    var twiststeps = options && parseInt(options.twiststeps) || CSG.defaultResolution3D;
 
     if (twistangle == 0 || twiststeps < 1) {
       twiststeps = 1;
@@ -1961,8 +1978,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
         var nextidx = idx + 1;
         var top = !up ? slices[nextidx] : slice;
         var bottom = up ? slices[nextidx] : slice;
-        var c1 = new CSG$1.Connector(bottom.offset, connectorAxis, rotate(normalVector, twistangle, idx / slices.length));
-        var c2 = new CSG$1.Connector(top.offset, connectorAxis, rotate(normalVector, twistangle, nextidx / slices.length)); // debug('slices2poly.slices', c1.point, c2.point);
+        var c1 = new CSG.Connector(bottom.offset, connectorAxis, rotate(normalVector, twistangle, idx / slices.length));
+        var c2 = new CSG.Connector(top.offset, connectorAxis, rotate(normalVector, twistangle, nextidx / slices.length)); // debug('slices2poly.slices', c1.point, c2.point);
 
         polygons = polygons.concat(bottom.poly._toWallPolygons({
           cag: top.poly,
@@ -1971,21 +1988,21 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
         }));
       }
     });
-    return CSG$1.fromPolygons(polygons);
+    return CSG.fromPolygons(polygons);
   }
   function normalVector(axis) {
     var axisInfo = {
       z: {
         orthoNormalCartesian: ['X', 'Y'],
-        normalVector: CSG$1.Vector3D.Create(0, 1, 0)
+        normalVector: CSG.Vector3D.Create(0, 1, 0)
       },
       x: {
         orthoNormalCartesian: ['Y', 'Z'],
-        normalVector: CSG$1.Vector3D.Create(0, 0, 1)
+        normalVector: CSG.Vector3D.Create(0, 0, 1)
       },
       y: {
         orthoNormalCartesian: ['X', 'Z'],
-        normalVector: CSG$1.Vector3D.Create(0, 0, 1)
+        normalVector: CSG.Vector3D.Create(0, 0, 1)
       }
     };
     if (!axisInfo[axis]) error('normalVector: invalid axis ' + axis);
@@ -2034,7 +2051,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     var ar = Math.abs(radius);
     var si = sliceParams(orientation, radius, b);
     if (si.axis !== 'z') throw new Error('reShape error: CAG._toPlanePolytons only uses the "z" axis.  You must use the "z" axis for now.');
-    var cutplane = CSG$1.OrthoNormalBasis.GetCartesian(si.orthoNormalCartesian[0], si.orthoNormalCartesian[1]).translate(si.cutDelta);
+    var cutplane = CSG.OrthoNormalBasis.GetCartesian(si.orthoNormalCartesian[0], si.orthoNormalCartesian[1]).translate(si.cutDelta);
     var slice = object.sectionCut(cutplane);
     var first = axisApply(si.axis, function () {
       return si.positive ? 0 : ar;
@@ -2048,25 +2065,25 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       si: si
     }), si.axis).color(options.color);
     var remainder = object.cutByPlane(plane);
-    return union$1([options.unionOriginal ? object : remainder, delta.translate(si.moveDelta)]);
+    return union([options.unionOriginal ? object : remainder, delta.translate(si.moveDelta)]);
   }
   function chamfer(object, radius, orientation, options) {
     return reShape(object, radius, orientation, options, function (first, last, slice) {
       return [{
         poly: slice,
-        offset: new CSG$1.Vector3D(first)
+        offset: new CSG.Vector3D(first)
       }, {
         poly: enlarge(slice, [-radius * 2, -radius * 2]),
-        offset: new CSG$1.Vector3D(last)
+        offset: new CSG.Vector3D(last)
       }];
     });
   }
   function fillet(object, radius, orientation, options) {
     options = options || {};
     return reShape(object, radius, orientation, options, function (first, last, slice) {
-      var v1 = new CSG$1.Vector3D(first);
-      var v2 = new CSG$1.Vector3D(last);
-      var res = options.resolution || CSG$1.defaultResolution3D;
+      var v1 = new CSG.Vector3D(first);
+      var v2 = new CSG.Vector3D(last);
+      var res = options.resolution || CSG.defaultResolution3D;
       var slices = range(0, res).map(function (i) {
         var p = i > 0 ? i / (res - 1) : 0;
         var v = v1.lerp(v2, p);
@@ -2102,7 +2119,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     return part.rotate(rotationCenter, rotationAxis, angle);
   }
   function clone(o) {
-    return CSG$1.fromPolygons(o.toPolygons());
+    return CSG.fromPolygons(o.toPolygons());
   }
 
   var debug$2 = Debug('jscadUtils:parts');
@@ -2115,7 +2132,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   };
   function BBox() {
     var box = function box(object) {
-      return CSG$1.cube({
+      return CSG.cube({
         center: object.centroid(),
         radius: object.size().dividedBy(2)
       });
@@ -2132,11 +2149,17 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   }
   function Cube(width) {
     var r = div(fromxyz(width), 2);
-    return CSG$1.cube({
+    return CSG.cube({
       center: r,
       radius: r
     });
-  }
+  } // export function Sphere(diameter) {
+  //   return CSG.sphere({
+  //     cener: [0, 0, 0],
+  //     radius: diameter / 2
+  //   });
+  // }
+
   /**
    * Creates a cube with the `x` and `y` corners rounded.  The `z` faces are flat.
    * Intended to create circut boards and similar objects.
@@ -2144,8 +2167,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * @function RoundedCube
    * @param  {Number|CSG} x             The `x` dimension size or a CSG object to get dimensions from.
    * @param  {Number} y             The `y` dimension size
-   * @param  {Number} thickness     Thickness in the `z` dimension of the cube.
-   * @param  {Number} corner_radius Radius of the corners.
+   * @param  {Number} [thickness=1.62]     Thickness in the `z` dimension of the cube.
+   * @param  {Number} [corner_radius] Radius of the corners.
    * @return {CSG} A csg rounded cube.
    */
 
@@ -2170,21 +2193,22 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     return roundedcube;
   }
   /**
-   * [Cylinder description]
+   * A Cylinder primative located at the origin.
    * @param {Number} diameter Diameter of the cylinder
    * @param {Number} height   Height of the cylinder
-   * @param {Number} [options]  Options passed to the `CSG.cylinder` function.
+   * @param {Object} [options]  Options passed to the `CSG.cylinder` function.
+   * @param {number} [options.resolution] The number of segments to create in 360 degrees of rotation.
    * @return {CSG} A CSG Cylinder
    */
 
   function Cylinder(diameter, height, options) {
-    debug$2('parts.Cylinder', diameter, height, options);
-    options = _objectSpread2({}, options, {
+    debug$2('parts.Cylinder', diameter, height, options = {});
+    options = Object.assign(options, {
       start: [0, 0, 0],
       end: [0, 0, height],
       radius: diameter / 2
     });
-    return CSG$1.cylinder(options);
+    return CSG.cylinder(options);
   }
   /**
    * Creats a cone.
@@ -2196,7 +2220,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    */
 
   function Cone(diameter1, diameter2, height) {
-    return CSG$1.cylinder({
+    return CSG.cylinder({
       start: [0, 0, 0],
       end: [0, 0, height],
       radiusStart: diameter1 / 2,
@@ -2235,11 +2259,13 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   }
   /**
    * Create a tube
-   * @param {Number} outsideDiameter Outside diameter of the tube
-   * @param {Number} insideDiameter  Inside diameter of the tube
-   * @param {Number} height          Height of the tube
-   * @param {Object} outsideOptions  Options passed to the outside cylinder
-   * @param {Object} insideOptions   Options passed to the inside cylinder
+   * @param {Number} outsideDiameter Outside diameter of the tube.
+   * @param {Number} insideDiameter  Inside diameter of the tube.
+   * @param {Number} height          Height of the tube.
+   * @param {Object} [outsideOptions]  Options passed to the outside cylinder.
+   * @param {number} [outsideOptions.resolution] The resolution option determines the number of segments to create in 360 degrees of rotation.
+   * @param {Object} [insideOptions]   Options passed to the inside cylinder
+   * @param {number} [insideOptions.resolution] The resolution option determines the number of segments to create in 360 degrees of rotation.
    * @returns {CSG}  A CSG Tube
    */
 
@@ -2365,6 +2391,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   };
 
   var parts$1 = /*#__PURE__*/Object.freeze({
+    __proto__: null,
     'default': parts,
     BBox: BBox,
     Cube: Cube,
@@ -2380,6 +2407,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   });
 
   var debug$3 = Debug('jscadUtils:boxes');
+  /** @typedef {import("./group").JsCadUtilsGroup} JsCadUtilsGroup */
+
   /**
    * jscad box and join utilities.  This should be considered experimental,
    * but there are some usefull utilities here.
@@ -2389,36 +2418,35 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
      * Create a [rabbet joint](https://en.wikipedia.org/wiki/Rabbet) in a CSG solid.
      * This was designed for cubes, but should work on other types of objects.
      *
-     * Splits a CGS object into a top and bottom objects.  The two objects will
+     * Splits a CSG object into a top and bottom objects.  The two objects will
      * fit together with a rabbet join.
-     * @param {CGS} box          A `CSG` object to create the rabbet join in.
+     * @param {CSG} box          A `CSG` object to create the rabbet join in.
      * @param {Number} thickness    [description]
      * @param {Number} cutHeight    [description]
-     * @param {Number} rabbetHeight [description]
-     * @param {Number} cheekGap     [description]
-     * @return {Object} An object with `top` and `bottom` CGS objects.
+     * @return {Object} An object with `top` and `bottom` CSG objects.
 
      * @function RabbetJoin
      * @deprecated Use `Rabbet` instead.
      */
 
-  var RabbetJoin = function RabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap) {
-    return rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap);
-  };
+  function RabbetJoin(box, thickness, cutHeight) {
+    depreciated('RabbetJoin', true, 'Use \'Rabbet\' instead');
+    return rabbetJoin(box, thickness, cutHeight);
+  }
   /**
    * Cuts a CSG object into three parts, a top and bottom of `thickness`
    * height, and the remaining middle.
    * @function topMiddleBottom
    * @param  {CSG} box       A `CSG` object.
    * @param  {Number} thickness The thickness of the top and bottom parts.
-   * @return {group} A `Group` object with the `top`, `middle` and `bottom` parts.
+   * @return {JsCadUtilsGroup} A `Group` object with the `top`, `middle` and `bottom` parts.
    */
 
   function topMiddleBottom(box, thickness) {
     debug$3('TopMiddleBottom', box, thickness);
     var bottom = box.bisect('z', thickness);
     var top = bottom.parts.positive.bisect('z', -thickness);
-    return util.group('top,middle,bottom', [top.parts.positive, top.parts.negative.color('green'), bottom.parts.negative]);
+    return Group('top,middle,bottom', [top.parts.positive, top.parts.negative.color('green'), bottom.parts.negative]);
   }
   /**
    * This will bisect an object using a rabett join.  Returns a
@@ -2446,7 +2474,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * @param {Number} gap       Gap between the join cheeks.
    * @param {Number} height    Offset from the bottom to bisect the object at.  Negative numbers offset from the top.
    * @param {Number} face      Size of the join face.
-   * @return {group} A group object with `positive`, `negative` parts.
+   * @return {JsCadUtilsGroup} A group object with `positive`, `negative` parts.
    */
 
   function Rabett(box, thickness, gap, height, face) {
@@ -2454,7 +2482,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     gap = gap || 0.25;
     var inside = -thickness - gap;
     var outside = -thickness + gap;
-    var group = util.group();
+    var group = Group();
     var top = box.bisect('z', height);
     var bottom = top.parts.negative.bisect('z', height - face);
     group.add(union([top.parts.positive, bottom.parts.positive.subtract(bottom.parts.positive.enlarge(outside, outside, 0)).color('green')]), 'top');
@@ -2477,7 +2505,6 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    *
    *     var box = Boxes.RabettTopBottom(cbox, 3, 0.25);
    *
-   *
    *     return union([
    *         box.parts.top.translate([0, 0, 20]),
    *         box.parts.middle.translate([0, 0, 10]),
@@ -2488,24 +2515,24 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * @param {CSG} box       A hollow object.
    * @param {Number} thickness The thickness of the object walls
    * @param {Number} gap       The gap between the top/bottom and the walls.
-   * @param {Object} options   Options to have a `removableTop` or `removableBottom`.  Both default to `true`.
-   * @param {Boolean} options.removableTop   The top will be removable.
-   * @param {Boolean} options.removableBottom   The bottom will be removable.
-   * @return {group} An A hollow version of the original object..
+   * @param {Object} [options]   Options to have a `removableTop` or `removableBottom`.  Both default to `true`.
+   * @param {Boolean} [options.removableTop=true]   The top will be removable.
+   * @param {Boolean} [options.removableBottom=true]   The bottom will be removable.
+   * @return {JsCadUtilsGroup} An A hollow version of the original object..
    * @memberof module:Boxes
    */
 
-  var RabettTopBottom = function rabbetTMB(box, thickness, gap) {
+  var RabettTopBottom = function rabbetTMB(box, thickness) {
+    var gap = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0.25;
     var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-    options = Object.assign(options, {
+    options = Object.assign({
       removableTop: true,
       removableBottom: true,
       topWidth: -thickness,
       bottomWidth: thickness
-    });
+    }, options);
     debug$3('RabettTopBottom', box, thickness, gap, options);
-    gap = gap || 0.25;
-    var group = util.group('', {
+    var group = Group('', {
       box: box
     });
     var inside = -thickness - gap;
@@ -2541,7 +2568,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     var top = clear.snap(o, 'z', 'center+').union(o);
     var back = Parts.Cube([cs.x + 6, 2, cs.z + 2.5]).align(cutout, 'x').snap(cutout, 'z', 'center+').snap(cutout, 'y', 'outside-');
     var clip = Parts.Cube([cs.x + 2 - gap, 1 - gap, cs.z + 2.5]).align(cutout, 'x').snap(cutout, 'z', 'center+').snap(cutout, 'y', 'outside-');
-    return util.group('insert', {
+    return Group('insert', {
       top: top,
       bottom: clear.snap(o, 'z', 'center-').union(o),
       cutout: union([o, top]),
@@ -2552,8 +2579,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   };
   var Rectangle = function Rectangle(size, thickness, cb) {
     thickness = thickness || 2;
-    var s = util.array.div(util.xyz2array(size), 2);
-    var r = util.array.add(s, thickness);
+    var s = div(xyz2array(size), 2);
+    var r = add(s, thickness);
     var box = CSG.cube({
       center: r,
       radius: r
@@ -2573,9 +2600,9 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * ![A hollowed out cylinder](../images/rabett.png)
    *
    * @param {CSG}   object    A CSG object
-   * @param {Number}   thickness The thickness of the walls.
-   * @param {Function} interiorcb        A callback that allows processing the object before returning.
-   * * @param {Function} exteriorcb        A callback that allows processing the object before returning.
+   * @param {Number}   [thickness=2] The thickness of the walls.
+   * @param {Function} [interiorcb]        A callback that allows processing the object before returning.
+   * @param {Function} [exteriorcb]        A callback that allows processing the object before returning.
    * @return {CSG} An A hollow version of the original object..
    * @memberof module:Boxes
    */
@@ -2583,7 +2610,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   var Hollow = function Hollow(object, thickness, interiorcb, exteriorcb) {
     thickness = thickness || 2;
     var size = -thickness * 2;
-    interiorcb = interiorcb || util.identity;
+    interiorcb = interiorcb || identity;
     var box = object.subtract(interiorcb(object.enlarge([size, size, size])));
     if (exteriorcb) box = exteriorcb(box);
     return box;
@@ -2592,11 +2619,13 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * Create a box that surounds the object.
    * @param {CSG} o The object to create a bounding box for.
    * @return {CSG} The bounding box aligned with the object.
+   * @deprecated use parts.BBox
    * @memberof module:Boxes
    */
 
   var BBox$1 = function BBox(o) {
-    var s = util.array.div(util.xyz2array(o.size()), 2);
+    depreciated('BBox', true, 'Use \'parts.BBox\' instead');
+    var s = div(xyz2array(o.size()), 2);
     return CSG.cube({
       center: s,
       radius: s
@@ -2604,24 +2633,19 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   };
 
   function getRadius(o) {
-    return util.array.div(util.xyz2array(o.size()), 2);
+    return div(xyz2array(o.size()), 2);
   }
 
-  function rabbetJoin(box, thickness, gap) {
-    var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-    options = Object.assign(options, {
-      removableTop: true,
-      removableBottom: true
-    });
-    gap = gap || 0.25;
-    var r = util.array.add(getRadius(box), -thickness / 2);
+  function rabbetJoin(box, thickness) {
+    var gap = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0.25;
+    var r = add(getRadius(box), -thickness / 2);
     r[2] = thickness / 2;
     var cutter = CSG.cube({
       center: r,
       radius: r
     }).align(box, 'xy').color('green');
     var topCutter = cutter.snap(box, 'z', 'inside+');
-    var group = util.group('', {
+    var group = Group('', {
       topCutter: topCutter,
       bottomCutter: cutter
     });
@@ -2631,6 +2655,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   }
 
   var Boxes = /*#__PURE__*/Object.freeze({
+    __proto__: null,
     RabbetJoin: RabbetJoin,
     topMiddleBottom: topMiddleBottom,
     Rabett: Rabett,
@@ -2641,7 +2666,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     BBox: BBox$1
   });
 
-  var compatV1 = _objectSpread2({}, util$1, {
+  var compatV1 = _objectSpread2({}, util, {
     group: Group,
     init: init$1,
     triangle: triUtils,
@@ -2659,7 +2684,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   exports.init = init$1;
   exports.parts = parts$1;
   exports.triUtils = triUtils;
-  exports.util = util$1;
+  exports.util = util;
 
   return exports;
 

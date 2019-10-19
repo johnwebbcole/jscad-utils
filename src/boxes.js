@@ -1,5 +1,12 @@
+import { CSG, union } from '../src/jscad';
 import { Debug } from './debug';
 const debug = Debug('jscadUtils:boxes');
+import Group from './group';
+import * as array from './array';
+import { identity, xyz2array, depreciated } from './util';
+
+/** @typedef {import("./group").JsCadUtilsGroup} JsCadUtilsGroup */
+
 /**
  * jscad box and join utilities.  This should be considered experimental,
  * but there are some usefull utilities here.
@@ -8,27 +15,20 @@ const debug = Debug('jscadUtils:boxes');
    * Create a [rabbet joint](https://en.wikipedia.org/wiki/Rabbet) in a CSG solid.
    * This was designed for cubes, but should work on other types of objects.
    *
-   * Splits a CGS object into a top and bottom objects.  The two objects will
+   * Splits a CSG object into a top and bottom objects.  The two objects will
    * fit together with a rabbet join.
-   * @param {CGS} box          A `CSG` object to create the rabbet join in.
+   * @param {CSG} box          A `CSG` object to create the rabbet join in.
    * @param {Number} thickness    [description]
    * @param {Number} cutHeight    [description]
-   * @param {Number} rabbetHeight [description]
-   * @param {Number} cheekGap     [description]
-   * @return {Object} An object with `top` and `bottom` CGS objects.
+   * @return {Object} An object with `top` and `bottom` CSG objects.
 
    * @function RabbetJoin
    * @deprecated Use `Rabbet` instead.
    */
-export const RabbetJoin = function RabbetJoin(
-  box,
-  thickness,
-  cutHeight,
-  rabbetHeight,
-  cheekGap
-) {
-  return rabbetJoin(box, thickness, cutHeight, rabbetHeight, cheekGap);
-};
+export function RabbetJoin(box, thickness, cutHeight) {
+  depreciated('RabbetJoin', true, 'Use \'Rabbet\' instead');
+  return rabbetJoin(box, thickness, cutHeight);
+}
 
 /**
  * Cuts a CSG object into three parts, a top and bottom of `thickness`
@@ -36,14 +36,14 @@ export const RabbetJoin = function RabbetJoin(
  * @function topMiddleBottom
  * @param  {CSG} box       A `CSG` object.
  * @param  {Number} thickness The thickness of the top and bottom parts.
- * @return {group} A `Group` object with the `top`, `middle` and `bottom` parts.
+ * @return {JsCadUtilsGroup} A `Group` object with the `top`, `middle` and `bottom` parts.
  */
 export function topMiddleBottom(box, thickness) {
   debug('TopMiddleBottom', box, thickness);
   var bottom = box.bisect('z', thickness);
   var top = bottom.parts.positive.bisect('z', -thickness);
 
-  return util.group('top,middle,bottom', [
+  return Group('top,middle,bottom', [
     top.parts.positive,
     top.parts.negative.color('green'),
     bottom.parts.negative
@@ -76,7 +76,7 @@ export function topMiddleBottom(box, thickness) {
  * @param {Number} gap       Gap between the join cheeks.
  * @param {Number} height    Offset from the bottom to bisect the object at.  Negative numbers offset from the top.
  * @param {Number} face      Size of the join face.
- * @return {group} A group object with `positive`, `negative` parts.
+ * @return {JsCadUtilsGroup} A group object with `positive`, `negative` parts.
  */
 export function Rabett(box, thickness, gap, height, face) {
   debug('Rabett', box, thickness, gap, height, face);
@@ -84,7 +84,7 @@ export function Rabett(box, thickness, gap, height, face) {
   var inside = -thickness - gap;
   var outside = -thickness + gap;
 
-  var group = util.group();
+  var group = Group();
   var top = box.bisect('z', height);
   var bottom = top.parts.negative.bisect('z', height - face);
 
@@ -127,7 +127,6 @@ export function Rabett(box, thickness, gap, height, face) {
  *
  *     var box = Boxes.RabettTopBottom(cbox, 3, 0.25);
  *
- *
  *     return union([
  *         box.parts.top.translate([0, 0, 20]),
  *         box.parts.middle.translate([0, 0, 10]),
@@ -138,28 +137,30 @@ export function Rabett(box, thickness, gap, height, face) {
  * @param {CSG} box       A hollow object.
  * @param {Number} thickness The thickness of the object walls
  * @param {Number} gap       The gap between the top/bottom and the walls.
- * @param {Object} options   Options to have a `removableTop` or `removableBottom`.  Both default to `true`.
- * @param {Boolean} options.removableTop   The top will be removable.
- * @param {Boolean} options.removableBottom   The bottom will be removable.
- * @return {group} An A hollow version of the original object..
+ * @param {Object} [options]   Options to have a `removableTop` or `removableBottom`.  Both default to `true`.
+ * @param {Boolean} [options.removableTop=true]   The top will be removable.
+ * @param {Boolean} [options.removableBottom=true]   The bottom will be removable.
+ * @return {JsCadUtilsGroup} An A hollow version of the original object..
  * @memberof module:Boxes
  */
 export const RabettTopBottom = function rabbetTMB(
   box,
   thickness,
-  gap,
+  gap = 0.25,
   options = {}
 ) {
-  options = Object.assign(options, {
-    removableTop: true,
-    removableBottom: true,
-    topWidth: -thickness,
-    bottomWidth: thickness
-  });
+  options = Object.assign(
+    {
+      removableTop: true,
+      removableBottom: true,
+      topWidth: -thickness,
+      bottomWidth: thickness
+    },
+    options
+  );
   debug('RabettTopBottom', box, thickness, gap, options);
-  gap = gap || 0.25;
 
-  var group = util.group('', {
+  var group = Group('', {
     box: box
   });
 
@@ -230,7 +231,7 @@ export const CutOut = function cutOut(o, h, box, plug, gap) {
     .snap(cutout, 'z', 'center+')
     .snap(cutout, 'y', 'outside-');
 
-  return util.group('insert', {
+  return Group('insert', {
     top: top,
     bottom: clear.snap(o, 'z', 'center-').union(o),
     cutout: union([o, top]),
@@ -250,9 +251,9 @@ export const CutOut = function cutOut(o, h, box, plug, gap) {
 
 export const Rectangle = function(size, thickness, cb) {
   thickness = thickness || 2;
-  var s = util.array.div(util.xyz2array(size), 2);
+  var s = array.div(xyz2array(size), 2);
 
-  var r = util.array.add(s, thickness);
+  var r = array.add(s, thickness);
   var box = CSG.cube({
     center: r,
     radius: r
@@ -277,16 +278,16 @@ export const Rectangle = function(size, thickness, cb) {
  * ![A hollowed out cylinder](../images/rabett.png)
  *
  * @param {CSG}   object    A CSG object
- * @param {Number}   thickness The thickness of the walls.
- * @param {Function} interiorcb        A callback that allows processing the object before returning.
- * * @param {Function} exteriorcb        A callback that allows processing the object before returning.
+ * @param {Number}   [thickness=2] The thickness of the walls.
+ * @param {Function} [interiorcb]        A callback that allows processing the object before returning.
+ * @param {Function} [exteriorcb]        A callback that allows processing the object before returning.
  * @return {CSG} An A hollow version of the original object..
  * @memberof module:Boxes
  */
 export const Hollow = function(object, thickness, interiorcb, exteriorcb) {
   thickness = thickness || 2;
   var size = -thickness * 2;
-  interiorcb = interiorcb || util.identity;
+  interiorcb = interiorcb || identity;
   var box = object.subtract(interiorcb(object.enlarge([size, size, size])));
 
   if (exteriorcb) box = exteriorcb(box);
@@ -297,10 +298,12 @@ export const Hollow = function(object, thickness, interiorcb, exteriorcb) {
  * Create a box that surounds the object.
  * @param {CSG} o The object to create a bounding box for.
  * @return {CSG} The bounding box aligned with the object.
+ * @deprecated use parts.BBox
  * @memberof module:Boxes
  */
 export const BBox = function(o) {
-  var s = util.array.div(util.xyz2array(o.size()), 2);
+  depreciated('BBox', true, 'Use \'parts.BBox\' instead');
+  var s = array.div(xyz2array(o.size()), 2);
   return CSG.cube({
     center: s,
     radius: s
@@ -308,17 +311,11 @@ export const BBox = function(o) {
 };
 
 function getRadius(o) {
-  return util.array.div(util.xyz2array(o.size()), 2);
+  return array.div(xyz2array(o.size()), 2);
 }
 
-function rabbetJoin(box, thickness, gap, options = {}) {
-  options = Object.assign(options, {
-    removableTop: true,
-    removableBottom: true
-  });
-
-  gap = gap || 0.25;
-  var r = util.array.add(getRadius(box), -thickness / 2);
+function rabbetJoin(box, thickness, gap = 0.25) {
+  var r = array.add(getRadius(box), -thickness / 2);
   r[2] = thickness / 2;
   var cutter = CSG.cube({
     center: r,
@@ -329,7 +326,7 @@ function rabbetJoin(box, thickness, gap, options = {}) {
 
   var topCutter = cutter.snap(box, 'z', 'inside+');
 
-  var group = util.group('', {
+  var group = Group('', {
     topCutter: topCutter,
     bottomCutter: cutter
   });

@@ -38,3 +38,5 @@ docs/code
 
 .nyc_output
 coverage
+
+srcx

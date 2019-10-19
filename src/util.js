@@ -118,12 +118,24 @@ export function error(msg) {
   throw new Error(msg);
 }
 
+/**
+ * Shows a warning or error message.  Used to indicate a method
+ * has been depricated and what to use instead.
+ * @function depreciated
+ * @param  {string} method  The name of the method being depricated.
+ * @param  {boolean} error  Throws an error if called when true.
+ * @param  {string} message Instructions on what to use instead of the depricated method.
+ */
 export function depreciated(method, error, message) {
   var msg = method + ' is depreciated.' + (' ' + message || '');
   // eslint-disable-next-line no-console
   if (!error && console && console.error)
     console[error ? 'error' : 'warn'](msg); // eslint-disable-line no-console
-  if (error) throw new Error(msg);
+  if (error) {
+    var err = new Error(msg);
+    err.name = 'JSCAD_UTILS_DEPRECATED';
+    throw err;
+  }
 }
 
 /**

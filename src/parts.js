@@ -1,9 +1,5 @@
-// import jsCadCSG from '@jscad/csg';
-// const { CSG, CAG } = jsCadCSG;
-import { CSG, CAG } from './jscad';
+import { CSG, CAG, union } from './jscad';
 import { fromxyz, div } from './array';
-// import scadApi from '@jscad/scad-api';
-// const { cube, sphere, cylinder } = scadApi.primitives3d;
 import * as util from './util';
 import Group from './group';
 import { Debug } from './debug';
@@ -31,6 +27,13 @@ export function Cube(width) {
     radius: r
   });
 }
+
+// export function Sphere(diameter) {
+//   return CSG.sphere({
+//     cener: [0, 0, 0],
+//     radius: diameter / 2
+//   });
+// }
 /**
  * Creates a cube with the `x` and `y` corners rounded.  The `z` faces are flat.
  * Intended to create circut boards and similar objects.
@@ -38,8 +41,8 @@ export function Cube(width) {
  * @function RoundedCube
  * @param  {Number|CSG} x             The `x` dimension size or a CSG object to get dimensions from.
  * @param  {Number} y             The `y` dimension size
- * @param  {Number} thickness     Thickness in the `z` dimension of the cube.
- * @param  {Number} corner_radius Radius of the corners.
+ * @param  {Number} [thickness=1.62]     Thickness in the `z` dimension of the cube.
+ * @param  {Number} [corner_radius] Radius of the corners.
  * @return {CSG} A csg rounded cube.
  */
 export function RoundedCube(x, y, thickness, corner_radius) {
@@ -65,20 +68,20 @@ export function RoundedCube(x, y, thickness, corner_radius) {
 }
 
 /**
- * [Cylinder description]
+ * A Cylinder primative located at the origin.
  * @param {Number} diameter Diameter of the cylinder
  * @param {Number} height   Height of the cylinder
- * @param {Number} [options]  Options passed to the `CSG.cylinder` function.
+ * @param {Object} [options]  Options passed to the `CSG.cylinder` function.
+ * @param {number} [options.resolution] The number of segments to create in 360 degrees of rotation.
  * @return {CSG} A CSG Cylinder
  */
 export function Cylinder(diameter, height, options) {
-  debug('parts.Cylinder', diameter, height, options);
-  options = {
-    ...options,
+  debug('parts.Cylinder', diameter, height, (options = {}));
+  options = Object.assign(options, {
     start: [0, 0, 0],
     end: [0, 0, height],
     radius: diameter / 2
-  };
+  });
   return CSG.cylinder(options);
 }
 
@@ -144,11 +147,13 @@ export function Triangle(base, height) {
 
 /**
  * Create a tube
- * @param {Number} outsideDiameter Outside diameter of the tube
- * @param {Number} insideDiameter  Inside diameter of the tube
- * @param {Number} height          Height of the tube
- * @param {Object} outsideOptions  Options passed to the outside cylinder
- * @param {Object} insideOptions   Options passed to the inside cylinder
+ * @param {Number} outsideDiameter Outside diameter of the tube.
+ * @param {Number} insideDiameter  Inside diameter of the tube.
+ * @param {Number} height          Height of the tube.
+ * @param {Object} [outsideOptions]  Options passed to the outside cylinder.
+ * @param {number} [outsideOptions.resolution] The resolution option determines the number of segments to create in 360 degrees of rotation.
+ * @param {Object} [insideOptions]   Options passed to the inside cylinder
+ * @param {number} [insideOptions.resolution] The resolution option determines the number of segments to create in 360 degrees of rotation.
  * @returns {CSG}  A CSG Tube
  */
 export function Tube(

@@ -2,12 +2,18 @@ import test from 'ava';
 // import { nearlyEqual } from './helpers/nearlyEqual';
 import * as util from '../src/util';
 
-import csgImageSnapshot from './helpers/csgImageSnapshot';
+import { csgImageSnapshot } from '@jwc/jscad-test-utils';
 import { CSG } from '../src/jscad';
 
 test.after.always.cb('wait for logging', t => {
   setTimeout(t.end, 100);
 });
+
+const snapshotOptions = {
+  camera: {
+    position: [25, -25, 25]
+  }
+};
 
 test('import util', t => {
   // console.log(
@@ -106,7 +112,8 @@ test('fit', async t => {
   // and return the union
   const value = await csgImageSnapshot(
     t,
-    cube.union(l.fit([s.x - 2, s.y - 2, 0], true).color('blue'))
+    cube.union(l.fit([s.x - 2, s.y - 2, 0], true).color('blue')),
+    snapshotOptions
   );
   t.true(value);
 });
@@ -135,14 +142,14 @@ test('cm', t => {
 test('label', async t => {
   var label = util.clone(util.label('label'));
 
-  const value = await csgImageSnapshot(t, label);
+  const value = await csgImageSnapshot(t, label, snapshotOptions);
   t.true(value);
 });
 
 test.skip('text', async t => {
   var text = util.text('text');
 
-  const value = await csgImageSnapshot(t, text);
+  const value = await csgImageSnapshot(t, text, snapshotOptions);
   t.true(value);
 });
 
@@ -151,7 +158,7 @@ test.todo('shift');
 test('zero', async t => {
   var object = CSG.sphere({ radius: 5 }).Zero();
 
-  const value = await csgImageSnapshot(t, object);
+  const value = await csgImageSnapshot(t, object, snapshotOptions);
   t.true(value);
 });
 
@@ -181,7 +188,11 @@ test('bisect object positive', async t => {
     radius: 10
   }).bisect('x', 2);
 
-  const value = await csgImageSnapshot(t, bisectCube.toArray());
+  const value = await csgImageSnapshot(
+    t,
+    bisectCube.toArray(),
+    snapshotOptions
+  );
   t.true(value);
 });
 
@@ -190,7 +201,11 @@ test('bisect object negative', async t => {
     radius: 10
   }).bisect('x', -2);
 
-  const value = await csgImageSnapshot(t, bisectCube.toArray());
+  const value = await csgImageSnapshot(
+    t,
+    bisectCube.toArray(),
+    snapshotOptions
+  );
   t.true(value);
 });
 
@@ -206,7 +221,7 @@ test('chamfer', async t => {
     radius: 10
   }).chamfer(3, 'z+');
 
-  const value = await csgImageSnapshot(t, cube);
+  const value = await csgImageSnapshot(t, cube, snapshotOptions);
   t.true(value);
 });
 
@@ -215,6 +230,6 @@ test('fillet', async t => {
     radius: 10
   }).fillet(2, 'z+');
 
-  const value = await csgImageSnapshot(t, cube);
+  const value = await csgImageSnapshot(t, cube, snapshotOptions);
   t.true(value);
 });
