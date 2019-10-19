@@ -1,8 +1,6 @@
 'use strict';
 /* eslint-env node */
-var fs = require('fs');
 var gulp = require('gulp');
-var concat = require('gulp-concat');
 var rollup = require('rollup');
 var debug = require('gulp-debug');
 var inject = require('gulp-inject');

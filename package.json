@@ -39,18 +39,14 @@
     "@babel/preset-env": "^7.6.3",
     "@babel/register": "^7.6.2",
     "@jwc/jscad-test-utils": "^1.0.6",
-    "@jwc/jscad2-img-utils": "0.0.2",
-    "@jwc/jscad2-regl-renderer": "0.0.1",
     "@vuepress/plugin-active-header-links": "^1.2.0",
     "@vuepress/plugin-google-analytics": "^1.2.0",
     "ava": "^2.4.0",
-    "babelify": "^10.0.0",
     "del": "^5.0.0",
     "eslint": "^6.5.1",
     "eslint-plugin-ava": "^9.0.0",
     "fsevents": "^2.1.1",
     "gulp": "^4.0.2",
-    "gulp-concat": "^2.6.0",
     "gulp-debug": "^4.0.0",
     "gulp-eslint": "^6.0.0",
     "gulp-inject": "^5.0.4",
@@ -61,7 +57,6 @@
     "gulp-terser": "^1.2.0",
     "gulp-util": "^3.0.7",
     "gulp-watch": "^5.0.1",
-    "looks-same": "^7.2.1",
     "nyc": "^14.1.1",
     "rollup": "^1.25.0",
     "rollup-plugin-babel": "^4.3.3",
@@ -89,10 +84,7 @@
       "@babel/preset-env"
     ]
   },
-  "optionalDependencies": {
-    "@jwc/jscad2-img-utils": "0.0.2",
-    "@jwc/jscad2-regl-renderer": "0.0.1"
-  },
+  "optionalDependencies": {},
   "peerDependencies": {
     "gl": "^4.3.3",
     "vuepress": "^1.0.3"
