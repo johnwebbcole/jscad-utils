@@ -75,13 +75,14 @@ export function RoundedCube(x, y, thickness, corner_radius) {
  * @param {number} [options.resolution] The number of segments to create in 360 degrees of rotation.
  * @return {CSG} A CSG Cylinder
  */
-export function Cylinder(diameter, height, options) {
-  debug('parts.Cylinder', diameter, height, (options = {}));
+export function Cylinder(diameter, height, options = {}) {
   options = Object.assign(options, {
     start: [0, 0, 0],
     end: [0, 0, height],
     radius: diameter / 2
   });
+  debug('parts.Cylinder', diameter, height, options);
+
   return CSG.cylinder(options);
 }
 

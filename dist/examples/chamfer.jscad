@@ -1569,13 +1569,14 @@ function initJscadutils(_CSG, options = {}) {
             });
             return roundedcube;
         }
-        function Cylinder(diameter, height, options) {
-            debug$2("parts.Cylinder", diameter, height, options = {});
+        function Cylinder(diameter, height) {
+            var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
             options = Object.assign(options, {
                 start: [ 0, 0, 0 ],
                 end: [ 0, 0, height ],
                 radius: diameter / 2
             });
+            debug$2("parts.Cylinder", diameter, height, options);
             return CSG.cylinder(options);
         }
         function Cone(diameter1, diameter2, height) {

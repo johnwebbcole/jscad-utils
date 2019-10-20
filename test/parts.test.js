@@ -41,6 +41,18 @@ test('Cylinder', async t => {
   t.true(value);
 });
 
+test('Cylinder resolution 6', async t => {
+  var part = Parts.Cylinder(10, 10, { resolution: 6 });
+  const value = await csgImageSnapshot(t, part, snapshotOptions);
+  t.true(value);
+});
+
+test('Cylinder resolution 128', async t => {
+  var part = Parts.Cylinder(10, 10, { resolution: 128 });
+  const value = await csgImageSnapshot(t, part, snapshotOptions);
+  t.true(value);
+});
+
 test('Cone', async t => {
   var part = Parts.Cone(10, 0, 10);
   const value = await csgImageSnapshot(t, part, snapshotOptions);
