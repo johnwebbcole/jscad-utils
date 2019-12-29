@@ -113,9 +113,11 @@ export function print(msg, o) {
   );
 }
 
-export function error(msg) {
+export function error(msg, name) {
   if (console && console.error) console.error(msg); // eslint-disable-line no-console
-  throw new Error(msg);
+  var err = new Error(msg);
+  err.name = name || 'JSCAD_UTILS_ERROR';
+  throw err;
 }
 
 /**
@@ -539,8 +541,8 @@ export function calcSnap(moveobj, withobj, axes, orientation, delta = 0) {
 
   return delta
     ? axisApply(axes, function(i) {
-      return t[i] + delta;
-    })
+        return t[i] + delta;
+      })
     : t;
 }
 
@@ -690,22 +692,65 @@ export function getDelta(size, bounds, axis, offset, nonzero) {
  * ![bisect example](../images/bisect.png)
  * @param  {CSG} object object to bisect
  * @param  {string} axis   axis to cut along
- * @param  {number} offset offset to cut at
- * @param  {number} angle angle to rotate the cut plane to
+ * @param  {number} [offset] offset to cut at
+ * @param  {number} [angle] angle to rotate the cut plane to
  * @param  {string} rotateaxis
  * @param  {number} rotateoffset
  * @param  {Object} options
+ * @param  {boolean} [options.addRotationCenter=false]
+ * @param  {Array[Number]} [options.cutDelta]
+ * @param  {CSG.Vector3D} [options.rotationCenter]
  * @return {object}  Returns a group object with a parts object.
  */
-export function bisect(
-  object,
-  axis,
-  offset,
-  angle,
-  rotateaxis,
-  rotateoffset,
-  options = {}
-) {
+export function bisect(...args) {
+  debug('****', args.length);
+  if (args.length < 2) {
+    error('bisect requries an object and an axis', 'JSCAD_UTILS_INVALID_ARGS');
+  }
+  var object = args[0];
+  var axis = args[1];
+  var offset,
+    angle = 0,
+    rotateaxis,
+    rotateoffset,
+    options = {};
+
+  /**
+   * Allow the options object to include the parameters.
+   */
+  for (var i = 2; i < args.length; i++) {
+    if (args[i] instanceof Object) {
+      options = args[i];
+      if (options.offset) offset = options.offset;
+      if (options.angle) angle = options.angle;
+      if (options.rotateaxis) rotateaxis = options.rotateaxis;
+      if (options.rotateoffset) rotateoffset = options.rotateoffset;
+    } else {
+      switch (i) {
+        case 2:
+          offset = args[i];
+          break;
+        case 3:
+          angle = args[i];
+          break;
+        case 4:
+          rotateaxis = args[i];
+          break;
+        case 5:
+          rotateoffset = args[i];
+          break;
+        case 6:
+          options = args[i];
+          break;
+      }
+    }
+  }
+  // if (args.length > 2) offset = args[2];
+  // if (args.length > 3) angle = args[3];
+  // if (args.length > 4) rotateaxis = args[4];
+  // if (args.length > 5) rotateoffset = args[5];
+  // if (args.length > 6) options = args[6];
+
   options = Object.assign(options, {
     addRotationCenter: false
   });
@@ -754,9 +799,25 @@ export function bisect(
     .translate(cutDelta)
     .rotate(rotationCenter, theRotationAxis, angle);
 
+  debug(
+    'bisect',
+    debug.enabled && {
+      axis,
+      offset,
+      angle,
+      rotateaxis,
+      cutDelta,
+      rotateOffsetAxis,
+      rotationCenter,
+      theRotationAxis,
+      cutplane,
+      options
+    }
+  );
+
   var g = Group('negative,positive', [
-    object.cutByPlane(cutplane.plane).color('red'),
-    object.cutByPlane(cutplane.plane.flipped()).color('blue')
+    object.cutByPlane(cutplane.plane).color(options.color && 'red'),
+    object.cutByPlane(cutplane.plane.flipped()).color(options.color && 'blue')
   ]);
 
   if (options.addRotationCenter)
@@ -888,11 +949,11 @@ export function slices2poly(slices, options, axis) {
   var rotate =
     twistangle === 0
       ? function rotateZero(v) {
-        return v;
-      }
+          return v;
+        }
       : function rotate(v, angle, percent) {
-        return v[rotateAxis](angle * percent);
-      };
+          return v[rotateAxis](angle * percent);
+        };
 
   // walls
   var connectorAxis = last.offset.minus(first.offset).abs();

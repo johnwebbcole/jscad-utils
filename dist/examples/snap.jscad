@@ -419,27 +419,39 @@ function initJscadutils(_CSG, options = {}) {
             range
         });
         var debugColors = [ "#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", "#ffff33", "#a65628", "#f781bf", "#999999" ];
+        var termColors = [ "\\033[0;34m", "\\033[0;32m", "\\033[0;36m", "\\033[0;31m", "\\033[0;35m", "\\033[0;33m", "\\033[1;33m", "\\033[0;30m", "\\033[1;34m" ];
         var debugCount = 0;
         var Debug = function Debug(name) {
-            var style = "color:".concat(debugColors[debugCount++ % debugColors.length]);
-            var checks = jscadUtilsDebug || {
+            var checks = Object.assign({
                 enabled: [],
-                disabled: []
-            };
+                disabled: [],
+                options: {
+                    browser: true
+                }
+            }, jscadUtilsDebug || {});
+            var style = checks.options.browser ? "color:".concat(debugColors[debugCount++ % debugColors.length]) : "".concat(termColors[debugCount++ % termColors.length]);
             var enabled = checks.enabled.some(function checkEnabled(check) {
                 return check.test(name);
             }) && !checks.disabled.some(function checkEnabled(check) {
                 return check.test(name);
             });
-            return enabled ? function() {
+            var logger = enabled ? checks.options.browser ? function() {
                 var _console;
                 for (var _len = arguments.length, msg = new Array(_len), _key = 0; _key < _len; _key++) {
                     msg[_key] = arguments[_key];
                 }
                 (_console = console).log.apply(_console, [ "%c%s", style, name ].concat(msg));
             } : function() {
+                var _console2;
+                for (var _len2 = arguments.length, msg = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+                    msg[_key2] = arguments[_key2];
+                }
+                (_console2 = console).log.apply(_console2, [ "".concat(name) ].concat(msg));
+            } : function() {
                 return undefined;
             };
+            logger.enabled = enabled;
+            return logger;
         };
         var nameArray = {
             aliceblue: "#f0f8ff",
@@ -681,8 +693,11 @@ function initJscadutils(_CSG, options = {}) {
             proto.prototype.chamfer = function chamfer$1(radius, orientation, options) {
                 return chamfer(this, radius, orientation, options);
             };
-            proto.prototype.bisect = function bisect$1(axis, offset, angle, rotateaxis, rotateoffset, options) {
-                return bisect(this, axis, offset, angle, rotateaxis, rotateoffset, options);
+            proto.prototype.bisect = function bisect$1() {
+                for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+                    args[_key] = arguments[_key];
+                }
+                return bisect.apply(util, [ this ].concat(args));
             };
             proto.prototype.stretch = function stretch$1(axis, distance, offset) {
                 return stretch(this, axis, distance, offset);
@@ -956,9 +971,11 @@ function initJscadutils(_CSG, options = {}) {
         function print(msg, o) {
             debug$1(msg, JSON.stringify(o.getBounds()), JSON.stringify(this.size(o.getBounds())));
         }
-        function error(msg) {
+        function error(msg, name) {
             if (console && console.error) console.error(msg);
-            throw new Error(msg);
+            var err = new Error(msg);
+            err.name = name || "JSCAD_UTILS_ERROR";
+            throw err;
         }
         function depreciated(method, error, message) {
             var msg = method + " is depreciated." + (" " + message || "");
@@ -1293,8 +1310,48 @@ function initJscadutils(_CSG, options = {}) {
                 return bounds[0][a] + (isEmpty(dist) ? size[axis] / 2 : dist);
             });
         }
-        function bisect(object, axis, offset, angle, rotateaxis, rotateoffset) {
-            var options = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : {};
+        function bisect() {
+            for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+                args[_key] = arguments[_key];
+            }
+            debug$1("****", args.length);
+            if (args.length < 2) {
+                error("bisect requries an object and an axis", "JSCAD_UTILS_INVALID_ARGS");
+            }
+            var object = args[0];
+            var axis = args[1];
+            var offset, angle = 0, rotateaxis, rotateoffset, options = {};
+            for (var i = 2; i < args.length; i++) {
+                if (args[i] instanceof Object) {
+                    options = args[i];
+                    if (options.offset) offset = options.offset;
+                    if (options.angle) angle = options.angle;
+                    if (options.rotateaxis) rotateaxis = options.rotateaxis;
+                    if (options.rotateoffset) rotateoffset = options.rotateoffset;
+                } else {
+                    switch (i) {
+                      case 2:
+                        offset = args[i];
+                        break;
+
+                      case 3:
+                        angle = args[i];
+                        break;
+
+                      case 4:
+                        rotateaxis = args[i];
+                        break;
+
+                      case 5:
+                        rotateoffset = args[i];
+                        break;
+
+                      case 6:
+                        options = args[i];
+                        break;
+                    }
+                }
+            }
             options = Object.assign(options, {
                 addRotationCenter: false
             });
@@ -1322,7 +1379,19 @@ function initJscadutils(_CSG, options = {}) {
             }));
             var theRotationAxis = rotationAxes[rotateaxis];
             var cutplane = CSG.OrthoNormalBasis.GetCartesian(info.orthoNormalCartesian[0], info.orthoNormalCartesian[1]).translate(cutDelta).rotate(rotationCenter, theRotationAxis, angle);
-            var g = Group("negative,positive", [ object.cutByPlane(cutplane.plane).color("red"), object.cutByPlane(cutplane.plane.flipped()).color("blue") ]);
+            debug$1("bisect", debug$1.enabled && {
+                axis,
+                offset,
+                angle,
+                rotateaxis,
+                cutDelta,
+                rotateOffsetAxis,
+                rotationCenter,
+                theRotationAxis,
+                cutplane,
+                options
+            });
+            var g = Group("negative,positive", [ object.cutByPlane(cutplane.plane).color(options.color && "red"), object.cutByPlane(cutplane.plane.flipped()).color(options.color && "blue") ]);
             if (options.addRotationCenter) g.add(unitAxis(objectSize.length() + 10, .5, rotationCenter), "rotationCenter");
             return g;
         }
@@ -1533,19 +1602,19 @@ function initJscadutils(_CSG, options = {}) {
             Cone
         };
         function BBox() {
-            var box = function box(object) {
+            function box(object) {
                 return CSG.cube({
                     center: object.centroid(),
                     radius: object.size().dividedBy(2)
                 });
-            };
+            }
             for (var _len = arguments.length, objects = new Array(_len), _key = 0; _key < _len; _key++) {
                 objects[_key] = arguments[_key];
             }
             return objects.reduce(function(bbox, part) {
                 var object = bbox ? union([ bbox, box(part) ]) : part;
                 return box(object);
-            });
+            }, undefined);
         }
         function Cube(width) {
             var r = div(fromxyz(width), 2);
@@ -1575,21 +1644,25 @@ function initJscadutils(_CSG, options = {}) {
         }
         function Cylinder(diameter, height) {
             var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-            options = Object.assign(options, {
+            debug$2("parts.Cylinder", diameter, height, options);
+            options = Object.assign({
                 start: [ 0, 0, 0 ],
                 end: [ 0, 0, height ],
-                radius: diameter / 2
-            });
-            debug$2("parts.Cylinder", diameter, height, options);
+                radius: diameter / 2,
+                resolution: CSG.defaultResolution2D
+            }, options);
             return CSG.cylinder(options);
         }
         function Cone(diameter1, diameter2, height) {
-            return CSG.cylinder({
+            var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+            debug$2("parts.Cone", diameter1, diameter2, height, options);
+            return CSG.cylinder(Object.assign({
                 start: [ 0, 0, 0 ],
                 end: [ 0, 0, height ],
                 radiusStart: diameter1 / 2,
-                radiusEnd: diameter2 / 2
-            });
+                radiusEnd: diameter2 / 2,
+                resolution: CSG.defaultResolution2D
+            }, options));
         }
         function Hexagon(diameter, height) {
             debug$2("hexagon", diameter, height);
@@ -1704,7 +1777,9 @@ function initJscadutils(_CSG, options = {}) {
         }
         function topMiddleBottom(box, thickness) {
             debug$3("TopMiddleBottom", box, thickness);
-            var bottom = box.bisect("z", thickness);
+            var bottom = box.bisect("z", thickness, {
+                color: true
+            });
             var top = bottom.parts.positive.bisect("z", -thickness);
             return Group("top,middle,bottom", [ top.parts.positive, top.parts.negative.color("green"), bottom.parts.negative ]);
         }
@@ -1714,8 +1789,12 @@ function initJscadutils(_CSG, options = {}) {
             var inside = -thickness - gap;
             var outside = -thickness + gap;
             var group = Group();
-            var top = box.bisect("z", height);
-            var bottom = top.parts.negative.bisect("z", height - face);
+            var top = box.bisect("z", height, {
+                color: true
+            });
+            var bottom = top.parts.negative.bisect("z", height - face, {
+                color: true
+            });
             group.add(union([ top.parts.positive, bottom.parts.positive.subtract(bottom.parts.positive.enlarge(outside, outside, 0)).color("green") ]), "top");
             group.add(union([ bottom.parts.negative, bottom.parts.positive.intersect(bottom.parts.positive.enlarge(inside, inside, 0)).color("yellow") ]), "bottom");
             return group;
@@ -1736,12 +1815,16 @@ function initJscadutils(_CSG, options = {}) {
             var inside = -thickness - gap;
             var outside = -thickness + gap;
             if (options.removableTop) {
-                var top = box.bisect("z", options.topWidth);
+                var top = box.bisect("z", options.topWidth, {
+                    color: true
+                });
                 group.add(top.parts.positive.enlarge([ inside, inside, 0 ]), "top");
                 if (!options.removableBottom) group.add(box.subtract(top.parts.positive.enlarge([ outside, outside, 0 ])), "bottom");
             }
             if (options.removableBottom) {
-                var bottom = box.bisect("z", options.bottomWidth);
+                var bottom = box.bisect("z", options.bottomWidth, {
+                    color: true
+                });
                 group.add(bottom.parts.negative.enlarge([ outside, outside, 0 ]), "bottomCutout", true);
                 group.add(bottom.parts.negative.enlarge([ inside, inside, 0 ]), "bottom");
                 if (!options.removableTop) group.add(box.subtract(group.parts.bottomCutout), "top");

@@ -30,7 +30,7 @@ export function JsCadUtilsGroup(names = [], parts = {}, holes = []) {
  * Add a CSG object to the current group.
  * @param {CSG|JsCadUtilsGroup} object Object to add the parts dictionary.
  * @param {string} name   Name of the part
- * @param {boolean} [hidden] If true, then the part not be added during a default `combine()`
+ * @param {boolean} [hidden] If true, then the part will not be added during a default `combine()`
  * @param {string} [subparts]   Prefix for subparts if adding a group
  * @param {string} [parts]   When adding a group, you can pick the parts you want to include as the named part.
  * @function add

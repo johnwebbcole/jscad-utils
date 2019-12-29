@@ -26,7 +26,7 @@ import { identity, xyz2array, depreciated } from './util';
    * @deprecated Use `Rabbet` instead.
    */
 export function RabbetJoin(box, thickness, cutHeight) {
-  depreciated('RabbetJoin', true, 'Use \'Rabbet\' instead');
+  depreciated('RabbetJoin', true, "Use 'Rabbet' instead");
   return rabbetJoin(box, thickness, cutHeight);
 }
 
@@ -40,7 +40,7 @@ export function RabbetJoin(box, thickness, cutHeight) {
  */
 export function topMiddleBottom(box, thickness) {
   debug('TopMiddleBottom', box, thickness);
-  var bottom = box.bisect('z', thickness);
+  var bottom = box.bisect('z', thickness, { color: true });
   var top = bottom.parts.positive.bisect('z', -thickness);
 
   return Group('top,middle,bottom', [
@@ -85,8 +85,8 @@ export function Rabett(box, thickness, gap, height, face) {
   var outside = -thickness + gap;
 
   var group = Group();
-  var top = box.bisect('z', height);
-  var bottom = top.parts.negative.bisect('z', height - face);
+  var top = box.bisect('z', height, { color: true });
+  var bottom = top.parts.negative.bisect('z', height - face, { color: true });
 
   group.add(
     union([
@@ -168,7 +168,7 @@ export const RabettTopBottom = function rabbetTMB(
   var outside = -thickness + gap;
 
   if (options.removableTop) {
-    var top = box.bisect('z', options.topWidth);
+    var top = box.bisect('z', options.topWidth, { color: true });
     group.add(top.parts.positive.enlarge([inside, inside, 0]), 'top');
 
     if (!options.removableBottom)
@@ -179,7 +179,7 @@ export const RabettTopBottom = function rabbetTMB(
   }
 
   if (options.removableBottom) {
-    var bottom = box.bisect('z', options.bottomWidth);
+    var bottom = box.bisect('z', options.bottomWidth, { color: true });
 
     group.add(
       bottom.parts.negative.enlarge([outside, outside, 0]),
@@ -302,7 +302,7 @@ export const Hollow = function(object, thickness, interiorcb, exteriorcb) {
  * @memberof module:Boxes
  */
 export const BBox = function(o) {
-  depreciated('BBox', true, 'Use \'parts.BBox\' instead');
+  depreciated('BBox', true, "Use 'parts.BBox' instead");
   var s = array.div(xyz2array(o.size()), 2);
   return CSG.cube({
     center: s,

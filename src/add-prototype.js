@@ -100,23 +100,8 @@ export default function init(proto) {
     return util.chamfer(this, radius, orientation, options);
   };
 
-  proto.prototype.bisect = function bisect(
-    axis,
-    offset,
-    angle,
-    rotateaxis,
-    rotateoffset,
-    options
-  ) {
-    return util.bisect(
-      this,
-      axis,
-      offset,
-      angle,
-      rotateaxis,
-      rotateoffset,
-      options
-    );
+  proto.prototype.bisect = function bisect(...args) {
+    return util.bisect(this, ...args);
   };
 
   proto.prototype.stretch = function stretch(axis, distance, offset) {

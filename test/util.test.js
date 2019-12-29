@@ -186,7 +186,7 @@ test.todo('getDelta');
 test('bisect object positive', async t => {
   var bisectCube = CSG.cube({
     radius: 10
-  }).bisect('x', 2);
+  }).bisect('x', 2, { color: true });
 
   const value = await csgImageSnapshot(
     t,
@@ -199,7 +199,7 @@ test('bisect object positive', async t => {
 test('bisect object negative', async t => {
   var bisectCube = CSG.cube({
     radius: 10
-  }).bisect('x', -2);
+  }).bisect('x', -2, { color: true });
 
   const value = await csgImageSnapshot(
     t,

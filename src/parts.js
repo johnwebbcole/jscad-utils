@@ -8,16 +8,24 @@ const debug = Debug('jscadUtils:parts');
 
 export default { BBox, Cube, RoundedCube, Cylinder, Cone };
 
+/**
+ * Returns a CSG cube object with the same extent of all
+ * parameters objects passed in.
+ * @function BBox
+ * @param  {CSG} ...objects Any number of CSG objects to create a bounding box for.
+ * @return {CSG} A box with the size of the extents of all of the passed in objects
+ */
 export function BBox(...objects) {
-  var box = object =>
-    CSG.cube({
+  function box(object) {
+    return CSG.cube({
       center: object.centroid(),
       radius: object.size().dividedBy(2)
     });
+  }
   return objects.reduce(function(bbox, part) {
     var object = bbox ? union([bbox, box(part)]) : part;
     return box(object);
-  });
+  }, undefined);
 }
 
 export function Cube(width) {
@@ -76,12 +84,16 @@ export function RoundedCube(x, y, thickness, corner_radius) {
  * @return {CSG} A CSG Cylinder
  */
 export function Cylinder(diameter, height, options = {}) {
-  options = Object.assign(options, {
-    start: [0, 0, 0],
-    end: [0, 0, height],
-    radius: diameter / 2
-  });
   debug('parts.Cylinder', diameter, height, options);
+  options = Object.assign(
+    {
+      start: [0, 0, 0],
+      end: [0, 0, height],
+      radius: diameter / 2,
+      resolution: CSG.defaultResolution2D
+    },
+    options
+  );
 
   return CSG.cylinder(options);
 }
@@ -92,15 +104,23 @@ export function Cylinder(diameter, height, options = {}) {
  * @param  {Number} diameter1 Radius of the bottom of the cone.
  * @param  {Number} diameter2 Radius of the top of the cone.
  * @param  {Number} height    Height of the cone.
+ * @param  {Object} options  Additional options passed to `CSG.cylinder`.
  * @return {CSG} A CSG cone object.
  */
-export function Cone(diameter1, diameter2, height) {
-  return CSG.cylinder({
-    start: [0, 0, 0],
-    end: [0, 0, height],
-    radiusStart: diameter1 / 2,
-    radiusEnd: diameter2 / 2
-  });
+export function Cone(diameter1, diameter2, height, options = {}) {
+  debug('parts.Cone', diameter1, diameter2, height, options);
+  return CSG.cylinder(
+    Object.assign(
+      {
+        start: [0, 0, 0],
+        end: [0, 0, height],
+        radiusStart: diameter1 / 2,
+        radiusEnd: diameter2 / 2,
+        resolution: CSG.defaultResolution2D
+      },
+      options
+    )
+  );
 }
 
 /**

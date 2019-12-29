@@ -12,6 +12,19 @@ const debugColors = [
   '#999999'
 ];
 
+const termColors = [
+  '\\033[0;34m',
+  '\\033[0;32m',
+  '\\033[0;36m',
+  '\\033[0;31m',
+  '\\033[0;35m',
+  '\\033[0;33m',
+  '\\033[1;33m',
+  '\\033[0;30m',
+  '\\033[1;34m'
+];
+const termNoColor = '\\033[0m';
+
 var debugCount = 0;
 
 /**
@@ -33,8 +46,14 @@ var debugCount = 0;
  * @return {Function} A debug function if enabled otherwise an empty function.
  */
 export const Debug = function(name) {
-  var style = `color:${debugColors[debugCount++ % debugColors.length]}`;
-  var checks = jscadUtilsDebug || { enabled: [], disabled: [] };
+  var checks = Object.assign(
+    { enabled: [], disabled: [], options: { browser: true } },
+    jscadUtilsDebug || {}
+  );
+  var style = checks.options.browser
+    ? `color:${debugColors[debugCount++ % debugColors.length]}`
+    : `${termColors[debugCount++ % termColors.length]}`;
+
   var enabled =
     checks.enabled.some(function checkEnabled(check) {
       return check.test(name);
@@ -43,9 +62,17 @@ export const Debug = function(name) {
       return check.test(name);
     });
 
-  return enabled
-    ? (...msg) => {
-      console.log('%c%s', style, name, ...msg);
-    }
+  var logger = enabled
+    ? checks.options.browser
+      ? (...msg) => {
+          console.log('%c%s', style, name, ...msg);
+        }
+      : (...msg) => {
+          console.log(`${name}`, ...msg);
+        }
     : () => undefined;
+
+  logger.enabled = enabled;
+
+  return logger;
 };

@@ -5,4 +5,8 @@ const {
 } = require('@jscad/scad-api').booleanOps;
 global.union = union;
 
-global.jscadUtilsDebug = { enabled: [], disabled: [] };
+global.jscadUtilsDebug = {
+  enabled: [/jscadUtils:parts/],
+  disabled: [],
+  options: { browser: false }
+};

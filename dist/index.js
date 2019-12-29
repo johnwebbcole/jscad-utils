@@ -367,6 +367,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
   /* globals jscadUtilsDebug */
   var debugColors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999'];
+  var termColors = ['\\033[0;34m', '\\033[0;32m', '\\033[0;36m', '\\033[0;31m', '\\033[0;35m', '\\033[0;33m', '\\033[1;33m', '\\033[0;30m', '\\033[1;34m'];
   var debugCount = 0;
   /**
    * Creates a function that uses `console.log` with a styled name.  The name
@@ -388,17 +389,20 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    */
 
   var Debug = function Debug(name) {
-    var style = "color:".concat(debugColors[debugCount++ % debugColors.length]);
-    var checks = jscadUtilsDebug || {
+    var checks = Object.assign({
       enabled: [],
-      disabled: []
-    };
+      disabled: [],
+      options: {
+        browser: true
+      }
+    }, jscadUtilsDebug || {});
+    var style = checks.options.browser ? "color:".concat(debugColors[debugCount++ % debugColors.length]) : "".concat(termColors[debugCount++ % termColors.length]);
     var enabled = checks.enabled.some(function checkEnabled(check) {
       return check.test(name);
     }) && !checks.disabled.some(function checkEnabled(check) {
       return check.test(name);
     });
-    return enabled ? function () {
+    var logger = enabled ? checks.options.browser ? function () {
       var _console;
 
       for (var _len = arguments.length, msg = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -407,8 +411,18 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
       (_console = console).log.apply(_console, ['%c%s', style, name].concat(msg));
     } : function () {
+      var _console2;
+
+      for (var _len2 = arguments.length, msg = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        msg[_key2] = arguments[_key2];
+      }
+
+      (_console2 = console).log.apply(_console2, ["".concat(name)].concat(msg));
+    } : function () {
       return undefined;
     };
+    logger.enabled = enabled;
+    return logger;
   };
 
   /**
@@ -744,8 +758,12 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       return chamfer(this, radius, orientation, options);
     };
 
-    proto.prototype.bisect = function bisect$1(axis, offset, angle, rotateaxis, rotateoffset, options) {
-      return bisect(this, axis, offset, angle, rotateaxis, rotateoffset, options);
+    proto.prototype.bisect = function bisect$1() {
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      return bisect.apply(util, [this].concat(args));
     };
 
     proto.prototype.stretch = function stretch$1(axis, distance, offset) {
@@ -822,7 +840,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * Add a CSG object to the current group.
    * @param {CSG|JsCadUtilsGroup} object Object to add the parts dictionary.
    * @param {string} name   Name of the part
-   * @param {boolean} [hidden] If true, then the part not be added during a default `combine()`
+   * @param {boolean} [hidden] If true, then the part will not be added during a default `combine()`
    * @param {string} [subparts]   Prefix for subparts if adding a group
    * @param {string} [parts]   When adding a group, you can pick the parts you want to include as the named part.
    * @function add
@@ -1288,10 +1306,12 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   function print(msg, o) {
     debug$1(msg, JSON.stringify(o.getBounds()), JSON.stringify(this.size(o.getBounds())));
   }
-  function error(msg) {
+  function error(msg, name) {
     if (console && console.error) console.error(msg); // eslint-disable-line no-console
 
-    throw new Error(msg);
+    var err = new Error(msg);
+    err.name = name || 'JSCAD_UTILS_ERROR';
+    throw err;
   }
   /**
    * Shows a warning or error message.  Used to indicate a method
@@ -1790,16 +1810,76 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * ![bisect example](../images/bisect.png)
    * @param  {CSG} object object to bisect
    * @param  {string} axis   axis to cut along
-   * @param  {number} offset offset to cut at
-   * @param  {number} angle angle to rotate the cut plane to
+   * @param  {number} [offset] offset to cut at
+   * @param  {number} [angle] angle to rotate the cut plane to
    * @param  {string} rotateaxis
    * @param  {number} rotateoffset
    * @param  {Object} options
+   * @param  {boolean} [options.addRotationCenter=false]
+   * @param  {Array[Number]} [options.cutDelta]
+   * @param  {CSG.Vector3D} [options.rotationCenter]
    * @return {object}  Returns a group object with a parts object.
    */
 
-  function bisect(object, axis, offset, angle, rotateaxis, rotateoffset) {
-    var options = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : {};
+  function bisect() {
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    debug$1('****', args.length);
+
+    if (args.length < 2) {
+      error('bisect requries an object and an axis', 'JSCAD_UTILS_INVALID_ARGS');
+    }
+
+    var object = args[0];
+    var axis = args[1];
+    var offset,
+        angle = 0,
+        rotateaxis,
+        rotateoffset,
+        options = {};
+    /**
+     * Allow the options object to include the parameters.
+     */
+
+    for (var i = 2; i < args.length; i++) {
+      if (args[i] instanceof Object) {
+        options = args[i];
+        if (options.offset) offset = options.offset;
+        if (options.angle) angle = options.angle;
+        if (options.rotateaxis) rotateaxis = options.rotateaxis;
+        if (options.rotateoffset) rotateoffset = options.rotateoffset;
+      } else {
+        switch (i) {
+          case 2:
+            offset = args[i];
+            break;
+
+          case 3:
+            angle = args[i];
+            break;
+
+          case 4:
+            rotateaxis = args[i];
+            break;
+
+          case 5:
+            rotateoffset = args[i];
+            break;
+
+          case 6:
+            options = args[i];
+            break;
+        }
+      }
+    } // if (args.length > 2) offset = args[2];
+    // if (args.length > 3) angle = args[3];
+    // if (args.length > 4) rotateaxis = args[4];
+    // if (args.length > 5) rotateoffset = args[5];
+    // if (args.length > 6) options = args[6];
+
+
     options = Object.assign(options, {
       addRotationCenter: false
     });
@@ -1827,7 +1907,19 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     }));
     var theRotationAxis = rotationAxes[rotateaxis];
     var cutplane = CSG.OrthoNormalBasis.GetCartesian(info.orthoNormalCartesian[0], info.orthoNormalCartesian[1]).translate(cutDelta).rotate(rotationCenter, theRotationAxis, angle);
-    var g = Group('negative,positive', [object.cutByPlane(cutplane.plane).color('red'), object.cutByPlane(cutplane.plane.flipped()).color('blue')]);
+    debug$1('bisect', debug$1.enabled && {
+      axis: axis,
+      offset: offset,
+      angle: angle,
+      rotateaxis: rotateaxis,
+      cutDelta: cutDelta,
+      rotateOffsetAxis: rotateOffsetAxis,
+      rotationCenter: rotationCenter,
+      theRotationAxis: theRotationAxis,
+      cutplane: cutplane,
+      options: options
+    });
+    var g = Group('negative,positive', [object.cutByPlane(cutplane.plane).color(options.color && 'red'), object.cutByPlane(cutplane.plane.flipped()).color(options.color && 'blue')]);
     if (options.addRotationCenter) g.add(unitAxis(objectSize.length() + 10, 0.5, rotationCenter), 'rotationCenter');
     return g;
   }
@@ -2088,13 +2180,21 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     Cylinder: Cylinder,
     Cone: Cone
   };
+  /**
+   * Returns a CSG cube object with the same extent of all
+   * parameters objects passed in.
+   * @function BBox
+   * @param  {CSG} ...objects Any number of CSG objects to create a bounding box for.
+   * @return {CSG} A box with the size of the extents of all of the passed in objects
+   */
+
   function BBox() {
-    var box = function box(object) {
+    function box(object) {
       return CSG.cube({
         center: object.centroid(),
         radius: object.size().dividedBy(2)
       });
-    };
+    }
 
     for (var _len = arguments.length, objects = new Array(_len), _key = 0; _key < _len; _key++) {
       objects[_key] = arguments[_key];
@@ -2103,7 +2203,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     return objects.reduce(function (bbox, part) {
       var object = bbox ? union([bbox, box(part)]) : part;
       return box(object);
-    });
+    }, undefined);
   }
   function Cube(width) {
     var r = div(fromxyz(width), 2);
@@ -2161,12 +2261,13 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
   function Cylinder(diameter, height) {
     var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-    options = Object.assign(options, {
+    debug$2('parts.Cylinder', diameter, height, options);
+    options = Object.assign({
       start: [0, 0, 0],
       end: [0, 0, height],
-      radius: diameter / 2
-    });
-    debug$2('parts.Cylinder', diameter, height, options);
+      radius: diameter / 2,
+      resolution: CSG.defaultResolution2D
+    }, options);
     return CSG.cylinder(options);
   }
   /**
@@ -2175,16 +2276,20 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * @param  {Number} diameter1 Radius of the bottom of the cone.
    * @param  {Number} diameter2 Radius of the top of the cone.
    * @param  {Number} height    Height of the cone.
+   * @param  {Object} options  Additional options passed to `CSG.cylinder`.
    * @return {CSG} A CSG cone object.
    */
 
   function Cone(diameter1, diameter2, height) {
-    return CSG.cylinder({
+    var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+    debug$2('parts.Cone', diameter1, diameter2, height, options);
+    return CSG.cylinder(Object.assign({
       start: [0, 0, 0],
       end: [0, 0, height],
       radiusStart: diameter1 / 2,
-      radiusEnd: diameter2 / 2
-    });
+      radiusEnd: diameter2 / 2,
+      resolution: CSG.defaultResolution2D
+    }, options));
   }
   /**
    * Creates a hexagon.
@@ -2389,7 +2494,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
      */
 
   function RabbetJoin(box, thickness, cutHeight) {
-    depreciated('RabbetJoin', true, 'Use \'Rabbet\' instead');
+    depreciated('RabbetJoin', true, "Use 'Rabbet' instead");
     return rabbetJoin(box, thickness, cutHeight);
   }
   /**
@@ -2403,7 +2508,9 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
   function topMiddleBottom(box, thickness) {
     debug$3('TopMiddleBottom', box, thickness);
-    var bottom = box.bisect('z', thickness);
+    var bottom = box.bisect('z', thickness, {
+      color: true
+    });
     var top = bottom.parts.positive.bisect('z', -thickness);
     return Group('top,middle,bottom', [top.parts.positive, top.parts.negative.color('green'), bottom.parts.negative]);
   }
@@ -2442,8 +2549,12 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     var inside = -thickness - gap;
     var outside = -thickness + gap;
     var group = Group();
-    var top = box.bisect('z', height);
-    var bottom = top.parts.negative.bisect('z', height - face);
+    var top = box.bisect('z', height, {
+      color: true
+    });
+    var bottom = top.parts.negative.bisect('z', height - face, {
+      color: true
+    });
     group.add(union([top.parts.positive, bottom.parts.positive.subtract(bottom.parts.positive.enlarge(outside, outside, 0)).color('green')]), 'top');
     group.add(union([bottom.parts.negative, bottom.parts.positive.intersect(bottom.parts.positive.enlarge(inside, inside, 0)).color('yellow')]), 'bottom');
     return group;
@@ -2498,13 +2609,17 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     var outside = -thickness + gap;
 
     if (options.removableTop) {
-      var top = box.bisect('z', options.topWidth);
+      var top = box.bisect('z', options.topWidth, {
+        color: true
+      });
       group.add(top.parts.positive.enlarge([inside, inside, 0]), 'top');
       if (!options.removableBottom) group.add(box.subtract(top.parts.positive.enlarge([outside, outside, 0])), 'bottom');
     }
 
     if (options.removableBottom) {
-      var bottom = box.bisect('z', options.bottomWidth);
+      var bottom = box.bisect('z', options.bottomWidth, {
+        color: true
+      });
       group.add(bottom.parts.negative.enlarge([outside, outside, 0]), 'bottomCutout', true);
       group.add(bottom.parts.negative.enlarge([inside, inside, 0]), 'bottom');
       if (!options.removableTop) group.add(box.subtract(group.parts.bottomCutout), 'top');
@@ -2583,7 +2698,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    */
 
   var BBox$1 = function BBox(o) {
-    depreciated('BBox', true, 'Use \'parts.BBox\' instead');
+    depreciated('BBox', true, "Use 'parts.BBox' instead");
     var s = div(xyz2array(o.size()), 2);
     return CSG.cube({
       center: s,
