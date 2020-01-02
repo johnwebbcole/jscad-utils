@@ -9,7 +9,8 @@ import {
   mapPick,
   calcCenterWith,
   axisApply,
-  zipObject
+  zipObject,
+  error
 } from './util';
 
 /**
@@ -80,39 +81,52 @@ JsCadUtilsGroup.prototype.combine = function(
   options = {},
   map = x => x
 ) {
-  var self = this;
-  options = Object.assign(
-    {
-      noholes: false
-    },
-    options
-  );
+  try {
+    var self = this;
+    options = Object.assign(
+      {
+        noholes: false
+      },
+      options
+    );
 
-  pieces = pieces ? pieces.split(',') : self.names;
-  if (pieces.length === 0) {
-    throw new Error(
-      `no pieces found in ${self.name} pieces: ${pieces} parts: ${Object.keys(
-        self.parts
-      )} names: ${self.names}`
+    pieces = pieces ? pieces.split(',') : self.names;
+    if (pieces.length === 0) {
+      throw new Error(
+        `no pieces found in ${self.name} pieces: ${pieces} parts: ${Object.keys(
+          self.parts
+        )} names: ${self.names}`
+      );
+    }
+    debug('combine', self.names, self.parts);
+    var g = union(
+      mapPick(
+        self.parts,
+        pieces,
+        function(value, key, object) {
+          // debug('combine', value, key, object);
+          return map ? map(value, key, object) : identity(value);
+        },
+        self.name
+      )
+    );
+
+    return g.subtractIf(
+      self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes,
+      self.holes && !options.noholes
+    );
+  } catch (err) {
+    debug('combine error', this, pieces, options, err);
+    throw error(
+      `group::combine error "${err.message || err.toString()}"
+this: ${this}
+pieces: "${pieces}"
+options: ${JSON.stringify(options, null, 2)}
+stack: ${err.stack}
+`,
+      'JSCAD_UTILS_GROUP_ERROR'
     );
   }
-  // debug('combine', self.names, self.parts);
-  var g = union(
-    mapPick(
-      self.parts,
-      pieces,
-      function(value, key, object) {
-        // debug('combine', value, key, object);
-        return map ? map(value, key, object) : identity(value);
-      },
-      self.name
-    )
-  );
-
-  return g.subtractIf(
-    self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes,
-    self.holes && !options.noholes
-  );
 };
 
 /**
@@ -146,15 +160,24 @@ JsCadUtilsGroup.prototype.map = function(cb) {
 /**
  * Clone a group into a new group.
  * @function clone
+ * @param  {String} [name] A new name for the cloned group.
  * @param  {Function} [map] A function called on each part.
  * @return {JsCadUtilsGroup} The new group.
  */
-JsCadUtilsGroup.prototype.clone = function(map) {
+JsCadUtilsGroup.prototype.clone = function(name, map) {
+  debug('clone', name, typeof name, map);
   var self = this;
+  /**
+   * For backwards compatibility
+   */
+  if (typeof name == 'function') {
+    map = name;
+    name = undefined;
+  }
   if (!map) map = identity;
 
   // console.warn('clone() has been refactored');
-  var group = Group();
+  var group = Group(name);
   Object.keys(self.parts).forEach(function(key) {
     var part = self.parts[key];
     var hidden = self.names.indexOf(key) == -1;
@@ -249,23 +272,38 @@ JsCadUtilsGroup.prototype.snap = function snap(
  
  */
 JsCadUtilsGroup.prototype.align = function align(part, to, axis, delta) {
-  var self = this;
-  var t = calcCenterWith(
-    self.combine(part, { noholes: true }),
-    axis,
-    to,
-    delta
-  );
-  self.map(function(part /*, name */) {
-    return part.translate(t);
-  });
+  try {
+    var self = this;
+    var t = calcCenterWith(
+      self.combine(part, { noholes: true }),
+      axis,
+      to,
+      delta
+    );
+    self.map(function(part /*, name */) {
+      return part.translate(t);
+    });
 
-  // if (self.holes)
-  //     self.holes = util.ifArray(self.holes, function(hole) {
-  //         return hole.translate(t);
-  //     });
+    // if (self.holes)
+    //     self.holes = util.ifArray(self.holes, function(hole) {
+    //         return hole.translate(t);
+    //     });
 
-  return self;
+    return self;
+  } catch (err) {
+    debug('align error', this, part, to, axis, delta, err);
+    throw error(
+      `group::align error "${err.message || err.toString()}"
+this: ${this}
+part: "${part}"
+to: ${to}
+axis: "${axis}"
+delta: "${delta}"
+stack: ${err.stack}
+`,
+      'JSCAD_UTILS_GROUP_ERROR'
+    );
+  }
 };
 
 /**
@@ -377,6 +415,20 @@ JsCadUtilsGroup.prototype.toArray = function(pieces) {
   });
 };
 
+JsCadUtilsGroup.prototype.toString = function() {
+  return `{
+  name: "${this.name}",
+  names: "${this.names.join(',')}", 
+  parts: "${Object.keys(this.parts)}",
+  holes: "${this.holes}"
+}`;
+};
+
+JsCadUtilsGroup.prototype.setName = function(name) {
+  this.name = name;
+  return this;
+};
+
 /**
  * Creates a `group` object given a comma separated
  * list of names, and an array or object.  If an object
@@ -410,10 +462,14 @@ export function Group(objectNames, addObjects) {
         self.parts = objects || {};
       }
     } else {
-      var objects = objectNames; // eslint-disable-line no-redeclare
-      self.names = Object.keys(objects).filter(k => k !== 'holes');
-      self.parts = Object.assign({}, objects);
-      self.holes = objects.holes;
+      if (typeof objectNames == 'string') {
+        self.name = objectNames;
+      } else {
+        var objects = objectNames; // eslint-disable-line no-redeclare
+        self.names = Object.keys(objects).filter(k => k !== 'holes');
+        self.parts = Object.assign({}, objects);
+        self.holes = objects.holes;
+      }
     }
   }
 

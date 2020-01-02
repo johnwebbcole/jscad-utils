@@ -67,7 +67,8 @@ export function RoundedCube(x, y, thickness, corner_radius) {
   var roundedcube = CAG.roundedRectangle({
     center: [r[0], r[1], 0],
     radius: r,
-    roundradius: corner_radius
+    roundradius: corner_radius,
+    resolution: CSG.defaultResolution2D
   }).extrude({
     offset: [0, 0, thickness || 1.62]
   });
@@ -212,7 +213,8 @@ export function Board(width, height, corner_radius, thickness) {
   var board = CAG.roundedRectangle({
     center: [r[0], r[1], 0],
     radius: r,
-    roundradius: corner_radius
+    roundradius: corner_radius,
+    resolution: CSG.defaultResolution2D
   }).extrude({
     offset: [0, 0, thickness || 1.62]
   });
@@ -233,6 +235,11 @@ export const Hardware = {
   },
 
   Screw: function(head, thread, headClearSpace, options) {
+    util.depreciated(
+      'Screw',
+      false,
+      'Use the jscad-hardware screw methods instead'
+    );
     options = Object.assign(options, {
       orientation: 'up',
       clearance: [0, 0, 0]
@@ -275,6 +282,12 @@ export const Hardware = {
     clearLength,
     options
   ) {
+    util.depreciated(
+      'PanHeadScrew',
+      false,
+      'Use the jscad-hardware screw methods instead'
+    );
+
     var head = Cylinder(headDiameter, headLength);
     var thread = Cylinder(diameter, length);
 
@@ -302,6 +315,11 @@ export const Hardware = {
     clearLength,
     options
   ) {
+    util.depreciated(
+      'HexHeadScrew',
+      false,
+      'Use the jscad-hardware screw methods instead'
+    );
     var head = Hexagon(headDiameter, headLength);
     var thread = Cylinder(diameter, length);
 
@@ -329,6 +347,11 @@ export const Hardware = {
     clearLength,
     options
   ) {
+    util.depreciated(
+      'FlatHeadScrew',
+      false,
+      'Use the jscad-hardware screw methods instead'
+    );
     var head = Cone(headDiameter, diameter, headLength);
     // var head = Cylinder(headDiameter, headLength);
     var thread = Cylinder(diameter, length);

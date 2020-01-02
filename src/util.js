@@ -113,10 +113,26 @@ export function print(msg, o) {
   );
 }
 
-export function error(msg, name) {
-  if (console && console.error) console.error(msg); // eslint-disable-line no-console
+export function jscadToString(o) {
+  if (typeof o == 'object') {
+    if (o.polygons) {
+      // is this CSG like?
+      return `{
+polygons: ${o.polygons.length},
+properties: "${Object.keys(o.properties)}"
+}
+`;
+    }
+  } else {
+    return o.toString();
+  }
+}
+
+export function error(msg, name, error) {
+  if (console && console.error) console.error(msg, error); // eslint-disable-line no-console
   var err = new Error(msg);
   err.name = name || 'JSCAD_UTILS_ERROR';
+  err._error = error;
   throw err;
 }
 
@@ -597,10 +613,18 @@ export function axis2array(axes, valfun) {
 }
 
 export function centroid(o, objectSize) {
-  var bounds = o.getBounds();
-  objectSize = objectSize || size(bounds);
+  try {
+    var bounds = o.getBounds();
+    objectSize = objectSize || size(bounds);
 
-  return bounds[0].plus(objectSize.dividedBy(2));
+    return bounds[0].plus(objectSize.dividedBy(2));
+  } catch (err) {
+    error(
+      `centroid error o:${jscadToString(o)} objectSize: ${objectSize}`,
+      undefined,
+      err
+    );
+  }
 }
 
 /**
@@ -663,7 +687,7 @@ export function centerWith(o, axis, withObj) {
  * @param  {Bounds} bounds  Bounds of the object
  * @param  {String} axis    Axis to find the point on
  * @param  {Number} offset  Offset from either end
- * @param  {Boolean} nonzero When true, no offset values under 1e-4 are allowed.
+ * @param  {Boolean} [nonzero] When true, no offset values under 1e-4 are allowed.
  * @return {Point}         The point along the axis.
  */
 export function getDelta(size, bounds, axis, offset, nonzero) {
@@ -703,7 +727,6 @@ export function getDelta(size, bounds, axis, offset, nonzero) {
  * @return {object}  Returns a group object with a parts object.
  */
 export function bisect(...args) {
-  debug('****', args.length);
   if (args.length < 2) {
     error('bisect requries an object and an axis', 'JSCAD_UTILS_INVALID_ARGS');
   }
@@ -745,11 +768,6 @@ export function bisect(...args) {
       }
     }
   }
-  // if (args.length > 2) offset = args[2];
-  // if (args.length > 3) angle = args[3];
-  // if (args.length > 4) rotateaxis = args[4];
-  // if (args.length > 5) rotateoffset = args[5];
-  // if (args.length > 6) options = args[6];
 
   options = Object.assign(options, {
     addRotationCenter: false

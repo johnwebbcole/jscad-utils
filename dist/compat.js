@@ -56,6 +56,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     get isEmpty () { return isEmpty; },
     get isNegative () { return isNegative; },
     get print () { return print; },
+    get jscadToString () { return jscadToString; },
     get error () { return error; },
     get depreciated () { return depreciated; },
     get inch () { return inch; },
@@ -116,6 +117,20 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     get rotateAround () { return rotateAround; },
     get clone () { return clone; }
   });
+
+  function _typeof(obj) {
+    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+      _typeof = function (obj) {
+        return typeof obj;
+      };
+    } else {
+      _typeof = function (obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+      };
+    }
+
+    return _typeof(obj);
+  }
 
   function _defineProperty(obj, key, value) {
     if (key in obj) {
@@ -929,22 +944,28 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     var map = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : function (x) {
       return x;
     };
-    var self = this;
-    options = Object.assign({
-      noholes: false
-    }, options);
-    pieces = pieces ? pieces.split(',') : self.names;
 
-    if (pieces.length === 0) {
-      throw new Error("no pieces found in ".concat(self.name, " pieces: ").concat(pieces, " parts: ").concat(Object.keys(self.parts), " names: ").concat(self.names));
-    } // debug('combine', self.names, self.parts);
+    try {
+      var self = this;
+      options = Object.assign({
+        noholes: false
+      }, options);
+      pieces = pieces ? pieces.split(',') : self.names;
 
+      if (pieces.length === 0) {
+        throw new Error("no pieces found in ".concat(self.name, " pieces: ").concat(pieces, " parts: ").concat(Object.keys(self.parts), " names: ").concat(self.names));
+      }
 
-    var g = union(mapPick(self.parts, pieces, function (value, key, object) {
-      // debug('combine', value, key, object);
-      return map ? map(value, key, object) : identity(value);
-    }, self.name));
-    return g.subtractIf(self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
+      debug('combine', self.names, self.parts);
+      var g = union(mapPick(self.parts, pieces, function (value, key, object) {
+        // debug('combine', value, key, object);
+        return map ? map(value, key, object) : identity(value);
+      }, self.name));
+      return g.subtractIf(self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
+    } catch (err) {
+      debug('combine error', this, pieces, options, err);
+      throw error("group::combine error \"".concat(err.message || err.toString(), "\"\nthis: ").concat(this, "\npieces: \"").concat(pieces, "\"\noptions: ").concat(JSON.stringify(options, null, 2), "\nstack: ").concat(err.stack, "\n"), 'JSCAD_UTILS_GROUP_ERROR');
+    }
   };
   /**
    * Apply a function to each element in the group.
@@ -979,16 +1000,27 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   /**
    * Clone a group into a new group.
    * @function clone
+   * @param  {String} [name] A new name for the cloned group.
    * @param  {Function} [map] A function called on each part.
    * @return {JsCadUtilsGroup} The new group.
    */
 
 
-  JsCadUtilsGroup.prototype.clone = function (map) {
+  JsCadUtilsGroup.prototype.clone = function (name, map) {
+    debug('clone', name, _typeof(name), map);
     var self = this;
+    /**
+     * For backwards compatibility
+     */
+
+    if (typeof name == 'function') {
+      map = name;
+      name = undefined;
+    }
+
     if (!map) map = identity; // console.warn('clone() has been refactored');
 
-    var group = Group();
+    var group = Group(name);
     Object.keys(self.parts).forEach(function (key) {
       var part = self.parts[key];
       var hidden = self.names.indexOf(key) == -1;
@@ -1081,20 +1113,25 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
 
   JsCadUtilsGroup.prototype.align = function align(part, to, axis, delta) {
-    var self = this;
-    var t = calcCenterWith(self.combine(part, {
-      noholes: true
-    }), axis, to, delta);
-    self.map(function (part
-    /*, name */
-    ) {
-      return part.translate(t);
-    }); // if (self.holes)
-    //     self.holes = util.ifArray(self.holes, function(hole) {
-    //         return hole.translate(t);
-    //     });
+    try {
+      var self = this;
+      var t = calcCenterWith(self.combine(part, {
+        noholes: true
+      }), axis, to, delta);
+      self.map(function (part
+      /*, name */
+      ) {
+        return part.translate(t);
+      }); // if (self.holes)
+      //     self.holes = util.ifArray(self.holes, function(hole) {
+      //         return hole.translate(t);
+      //     });
 
-    return self;
+      return self;
+    } catch (err) {
+      debug('align error', this, part, to, axis, delta, err);
+      throw error("group::align error \"".concat(err.message || err.toString(), "\"\nthis: ").concat(this, "\npart: \"").concat(part, "\"\nto: ").concat(to, "\naxis: \"").concat(axis, "\"\ndelta: \"").concat(delta, "\"\nstack: ").concat(err.stack, "\n"), 'JSCAD_UTILS_GROUP_ERROR');
+    }
   };
   /**
    * @function midlineTo
@@ -1201,6 +1238,15 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       return self.parts[piece];
     });
   };
+
+  JsCadUtilsGroup.prototype.toString = function () {
+    return "{\n  name: \"".concat(this.name, "\",\n  names: \"").concat(this.names.join(','), "\", \n  parts: \"").concat(Object.keys(this.parts), "\",\n  holes: \"").concat(this.holes, "\"\n}");
+  };
+
+  JsCadUtilsGroup.prototype.setName = function (name) {
+    this.name = name;
+    return this;
+  };
   /**
    * Creates a `group` object given a comma separated
    * list of names, and an array or object.  If an object
@@ -1240,13 +1286,17 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
           self.parts = objects || {};
         }
       } else {
-        var objects = objectNames; // eslint-disable-line no-redeclare
+        if (typeof objectNames == 'string') {
+          self.name = objectNames;
+        } else {
+          var objects = objectNames; // eslint-disable-line no-redeclare
 
-        self.names = Object.keys(objects).filter(function (k) {
-          return k !== 'holes';
-        });
-        self.parts = Object.assign({}, objects);
-        self.holes = objects.holes;
+          self.names = Object.keys(objects).filter(function (k) {
+            return k !== 'holes';
+          });
+          self.parts = Object.assign({}, objects);
+          self.holes = objects.holes;
+        }
       }
     }
 
@@ -1348,11 +1398,22 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   function print(msg, o) {
     debug$1(msg, JSON.stringify(o.getBounds()), JSON.stringify(this.size(o.getBounds())));
   }
-  function error(msg, name) {
-    if (console && console.error) console.error(msg); // eslint-disable-line no-console
+  function jscadToString(o) {
+    if (_typeof(o) == 'object') {
+      if (o.polygons) {
+        // is this CSG like?
+        return "{\npolygons: ".concat(o.polygons.length, ",\nproperties: \"").concat(Object.keys(o.properties), "\"\n}\n");
+      }
+    } else {
+      return o.toString();
+    }
+  }
+  function error(msg, name, error) {
+    if (console && console.error) console.error(msg, error); // eslint-disable-line no-console
 
     var err = new Error(msg);
     err.name = name || 'JSCAD_UTILS_ERROR';
+    err._error = error;
     throw err;
   }
   /**
@@ -1765,9 +1826,13 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     return a;
   }
   function centroid(o, objectSize) {
-    var bounds = o.getBounds();
-    objectSize = objectSize || size(bounds);
-    return bounds[0].plus(objectSize.dividedBy(2));
+    try {
+      var bounds = o.getBounds();
+      objectSize = objectSize || size(bounds);
+      return bounds[0].plus(objectSize.dividedBy(2));
+    } catch (err) {
+      error("centroid error o:".concat(jscadToString(o), " objectSize: ").concat(objectSize), undefined, err);
+    }
   }
   /**
    * Calculates the transform array to move the midline of an object
@@ -1822,7 +1887,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * @param  {Bounds} bounds  Bounds of the object
    * @param  {String} axis    Axis to find the point on
    * @param  {Number} offset  Offset from either end
-   * @param  {Boolean} nonzero When true, no offset values under 1e-4 are allowed.
+   * @param  {Boolean} [nonzero] When true, no offset values under 1e-4 are allowed.
    * @return {Point}         The point along the axis.
    */
 
@@ -1867,8 +1932,6 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
       args[_key] = arguments[_key];
     }
-
-    debug$1('****', args.length);
 
     if (args.length < 2) {
       error('bisect requries an object and an axis', 'JSCAD_UTILS_INVALID_ARGS');
@@ -1915,12 +1978,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
             break;
         }
       }
-    } // if (args.length > 2) offset = args[2];
-    // if (args.length > 3) angle = args[3];
-    // if (args.length > 4) rotateaxis = args[4];
-    // if (args.length > 5) rotateoffset = args[5];
-    // if (args.length > 6) options = args[6];
-
+    }
 
     options = Object.assign(options, {
       addRotationCenter: false
@@ -2286,7 +2344,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     var roundedcube = CAG.roundedRectangle({
       center: [r[0], r[1], 0],
       radius: r,
-      roundradius: corner_radius
+      roundradius: corner_radius,
+      resolution: CSG.defaultResolution2D
     }).extrude({
       offset: [0, 0, thickness || 1.62]
     });
@@ -2399,7 +2458,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     var board = CAG.roundedRectangle({
       center: [r[0], r[1], 0],
       radius: r,
-      roundradius: corner_radius
+      roundradius: corner_radius,
+      resolution: CSG.defaultResolution2D
     }).extrude({
       offset: [0, 0, thickness || 1.62]
     });
@@ -2417,6 +2477,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       }
     },
     Screw: function Screw(head, thread, headClearSpace, options) {
+      depreciated('Screw', false, 'Use the jscad-hardware screw methods instead');
       options = Object.assign(options, {
         orientation: 'up',
         clearance: [0, 0, 0]
@@ -2444,6 +2505,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
      * @param {object} options      Screw options include orientation and clerance scale.
      */
     PanHeadScrew: function PanHeadScrew(headDiameter, headLength, diameter, length, clearLength, options) {
+      depreciated('PanHeadScrew', false, 'Use the jscad-hardware screw methods instead');
       var head = Cylinder(headDiameter, headLength);
       var thread = Cylinder(diameter, length);
 
@@ -2464,6 +2526,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
      * @param {object} options      Screw options include orientation and clerance scale.
      */
     HexHeadScrew: function HexHeadScrew(headDiameter, headLength, diameter, length, clearLength, options) {
+      depreciated('HexHeadScrew', false, 'Use the jscad-hardware screw methods instead');
       var head = Hexagon(headDiameter, headLength);
       var thread = Cylinder(diameter, length);
 
@@ -2484,6 +2547,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
      * @param {object} options      options
      */
     FlatHeadScrew: function FlatHeadScrew(headDiameter, headLength, diameter, length, clearLength, options) {
+      depreciated('FlatHeadScrew', false, 'Use the jscad-hardware screw methods instead');
       var head = Cone(headDiameter, diameter, headLength); // var head = Cylinder(headDiameter, headLength);
 
       var thread = Cylinder(diameter, length);
