@@ -59,7 +59,7 @@ JsCadUtilsGroup.prototype.add = function(
       }
     } else {
       Object.assign(self.parts, object.parts);
-      self.names = self.names.concat(object.names);
+      if (!hidden) self.names = self.names.concat(object.names);
     }
   } else {
     if (!hidden) self.names.push(name);
@@ -103,9 +103,9 @@ JsCadUtilsGroup.prototype.combine = function(
       mapPick(
         self.parts,
         pieces,
-        function(value, key, object) {
+        function(value, key, index, object) {
           // debug('combine', value, key, object);
-          return map ? map(value, key, object) : identity(value);
+          return map ? map(value, key, index, object) : identity(value);
         },
         self.name
       )
@@ -251,14 +251,29 @@ JsCadUtilsGroup.prototype.snap = function snap(
   orientation,
   delta
 ) {
-  var self = this;
-  // debug(', self);
-  var t = calcSnap(self.combine(part), to, axis, orientation, delta);
-  self.map(function(part) {
-    return part.translate(t);
-  });
-
-  return self;
+  try {
+    var self = this;
+    // debug(', self);
+    var t = calcSnap(self.combine(part), to, axis, orientation, delta);
+    self.map(function(part) {
+      return part.translate(t);
+    });
+    return self;
+  } catch (err) {
+    debug('snap error', this, part, to, axis, delta, err);
+    throw error(
+      `group::snap error "${err.message || err.toString()}"
+this: ${this}
+part: "${part}"
+to: ${to}
+axis: "${axis}"
+orientation: "${orientation}"
+delta: "${delta}"
+stack: ${err.stack}
+`,
+      'JSCAD_UTILS_GROUP_ERROR'
+    );
+  }
 };
 
 /**
@@ -386,14 +401,37 @@ JsCadUtilsGroup.prototype.pick = function(parts, map) {
  */
 JsCadUtilsGroup.prototype.array = function(parts, map) {
   var self = this;
+  // try {
   var p = (parts && parts.length > 0 && parts.split(',')) || self.names;
   if (!map) map = identity;
 
   var a = [];
-  p.forEach(function(name) {
+  p.forEach(name => {
+    if (!self.parts[name]) {
+      debug('array error', this, parts);
+      throw error(
+        `group::array error "${name}" not found.
+this: ${this}
+parts: "${parts}"
+`,
+        'JSCAD_UTILS_GROUP_ERROR'
+      );
+    }
+
     a.push(map(CSG.fromPolygons(self.parts[name].toPolygons()), name));
   });
   return a;
+  //   } catch (err) {
+  //     debug('array error', this, parts, err);
+  //     throw error(
+  //       `group::array error "${err.message || err.toString()}"
+  // this: ${this}
+  // parts: "${parts}"
+  // stack: ${err.stack}
+  // `,
+  //       'JSCAD_UTILS_GROUP_ERROR'
+  //     );
+  //   }
 };
 
 /**
@@ -462,6 +500,9 @@ export function Group(objectNames, addObjects) {
         self.parts = objects || {};
       }
     } else {
+      /**
+       * First param is a stirng, assume that is the name of the group.
+       */
       if (typeof objectNames == 'string') {
         self.name = objectNames;
       } else {

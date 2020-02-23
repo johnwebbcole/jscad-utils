@@ -814,7 +814,7 @@ function initJscadutils(_CSG, options = {}) {
                     }
                 } else {
                     Object.assign(self.parts, object.parts);
-                    self.names = self.names.concat(object.names);
+                    if (!hidden) self.names = self.names.concat(object.names);
                 }
             } else {
                 if (!hidden) self.names.push(name);
@@ -837,8 +837,8 @@ function initJscadutils(_CSG, options = {}) {
                     throw new Error("no pieces found in ".concat(self.name, " pieces: ").concat(pieces, " parts: ").concat(Object.keys(self.parts), " names: ").concat(self.names));
                 }
                 debug("combine", self.names, self.parts);
-                var g = union(mapPick(self.parts, pieces, function(value, key, object) {
-                    return map ? map(value, key, object) : identity(value);
+                var g = union(mapPick(self.parts, pieces, function(value, key, index, object) {
+                    return map ? map(value, key, index, object) : identity(value);
                 }, self.name));
                 return g.subtractIf(self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
             } catch (err) {
@@ -909,12 +909,17 @@ function initJscadutils(_CSG, options = {}) {
             return self.combine(Object.keys(self.parts).join(","), options, map);
         };
         JsCadUtilsGroup.prototype.snap = function snap(part, to, axis, orientation, delta) {
-            var self = this;
-            var t = calcSnap(self.combine(part), to, axis, orientation, delta);
-            self.map(function(part) {
-                return part.translate(t);
-            });
-            return self;
+            try {
+                var self = this;
+                var t = calcSnap(self.combine(part), to, axis, orientation, delta);
+                self.map(function(part) {
+                    return part.translate(t);
+                });
+                return self;
+            } catch (err) {
+                debug("snap error", this, part, to, axis, delta, err);
+                throw error('group::snap error "'.concat(err.message || err.toString(), '"\nthis: ').concat(this, '\npart: "').concat(part, '"\nto: ').concat(to, '\naxis: "').concat(axis, '"\norientation: "').concat(orientation, '"\ndelta: "').concat(delta, '"\nstack: ').concat(err.stack, "\n"), "JSCAD_UTILS_GROUP_ERROR");
+            }
         };
         JsCadUtilsGroup.prototype.align = function align(part, to, axis, delta) {
             try {
@@ -962,11 +967,16 @@ function initJscadutils(_CSG, options = {}) {
             return g;
         };
         JsCadUtilsGroup.prototype.array = function(parts, map) {
+            var _this = this;
             var self = this;
             var p = parts && parts.length > 0 && parts.split(",") || self.names;
             if (!map) map = identity;
             var a = [];
             p.forEach(function(name) {
+                if (!self.parts[name]) {
+                    debug("array error", _this, parts);
+                    throw error('group::array error "'.concat(name, '" not found.\nthis: ').concat(_this, '\nparts: "').concat(parts, '"\n'), "JSCAD_UTILS_GROUP_ERROR");
+                }
                 a.push(map(CSG.fromPolygons(self.parts[name].toPolygons()), name));
             });
             return a;
@@ -1157,11 +1167,11 @@ function initJscadutils(_CSG, options = {}) {
             }, {});
         }
         function mapPick(o, names, f, options) {
-            return names.reduce(function(result, name) {
+            return names.reduce(function(result, name, index) {
                 if (!o[name]) {
                     throw new Error("".concat(name, " not found in ").concat(options.name, ": ").concat(Object.keys(o).join(",")));
                 }
-                result.push(f ? f(o[name]) : o[name]);
+                result.push(f ? f(o[name], name, index, o) : o[name]);
                 return result;
             }, []);
         }
@@ -1222,7 +1232,7 @@ function initJscadutils(_CSG, options = {}) {
             if (Array.isArray(x)) {
                 a = x;
             } else {
-                a = [ x, y, z ];
+                a = [ x, y || x, z || x ];
             }
             var objectSize = size(object);
             var objectCentroid = centroid(object, objectSize);

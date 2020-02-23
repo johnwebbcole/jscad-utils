@@ -879,7 +879,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
         }
       } else {
         Object.assign(self.parts, object.parts);
-        self.names = self.names.concat(object.names);
+        if (!hidden) self.names = self.names.concat(object.names);
       }
     } else {
       if (!hidden) self.names.push(name);
@@ -915,9 +915,9 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       }
 
       debug('combine', self.names, self.parts);
-      var g = union(mapPick(self.parts, pieces, function (value, key, object) {
+      var g = union(mapPick(self.parts, pieces, function (value, key, index, object) {
         // debug('combine', value, key, object);
-        return map ? map(value, key, object) : identity(value);
+        return map ? map(value, key, index, object) : identity(value);
       }, self.name));
       return g.subtractIf(self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
     } catch (err) {
@@ -1050,13 +1050,18 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
 
   JsCadUtilsGroup.prototype.snap = function snap(part, to, axis, orientation, delta) {
-    var self = this; // debug(', self);
+    try {
+      var self = this; // debug(', self);
 
-    var t = calcSnap(self.combine(part), to, axis, orientation, delta);
-    self.map(function (part) {
-      return part.translate(t);
-    });
-    return self;
+      var t = calcSnap(self.combine(part), to, axis, orientation, delta);
+      self.map(function (part) {
+        return part.translate(t);
+      });
+      return self;
+    } catch (err) {
+      debug('snap error', this, part, to, axis, delta, err);
+      throw error("group::snap error \"".concat(err.message || err.toString(), "\"\nthis: ").concat(this, "\npart: \"").concat(part, "\"\nto: ").concat(to, "\naxis: \"").concat(axis, "\"\norientation: \"").concat(orientation, "\"\ndelta: \"").concat(delta, "\"\nstack: ").concat(err.stack, "\n"), 'JSCAD_UTILS_GROUP_ERROR');
+    }
   };
   /**
    * Aligns all parts in a group to another `CSG` object.
@@ -1169,14 +1174,32 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
 
   JsCadUtilsGroup.prototype.array = function (parts, map) {
-    var self = this;
+    var _this = this;
+
+    var self = this; // try {
+
     var p = parts && parts.length > 0 && parts.split(',') || self.names;
     if (!map) map = identity;
     var a = [];
     p.forEach(function (name) {
+      if (!self.parts[name]) {
+        debug('array error', _this, parts);
+        throw error("group::array error \"".concat(name, "\" not found.\nthis: ").concat(_this, "\nparts: \"").concat(parts, "\"\n"), 'JSCAD_UTILS_GROUP_ERROR');
+      }
+
       a.push(map(CSG.fromPolygons(self.parts[name].toPolygons()), name));
     });
-    return a;
+    return a; //   } catch (err) {
+    //     debug('array error', this, parts, err);
+    //     throw error(
+    //       `group::array error "${err.message || err.toString()}"
+    // this: ${this}
+    // parts: "${parts}"
+    // stack: ${err.stack}
+    // `,
+    //       'JSCAD_UTILS_GROUP_ERROR'
+    //     );
+    //   }
   };
   /**
    * Converts all pieces or the picked pieces of a group into an array of `CSG`
@@ -1244,6 +1267,9 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
           self.parts = objects || {};
         }
       } else {
+        /**
+         * First param is a stirng, assume that is the name of the group.
+         */
         if (typeof objectNames == 'string') {
           self.name = objectNames;
         } else {
@@ -1511,12 +1537,12 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     }, {});
   }
   function mapPick(o, names, f, options) {
-    return names.reduce(function (result, name) {
+    return names.reduce(function (result, name, index) {
       if (!o[name]) {
         throw new Error("".concat(name, " not found in ").concat(options.name, ": ").concat(Object.keys(o).join(',')));
       }
 
-      result.push(f ? f(o[name]) : o[name]);
+      result.push(f ? f(o[name], name, index, o) : o[name]);
       return result;
     }, []);
   }
@@ -1607,7 +1633,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     if (Array.isArray(x)) {
       a = x;
     } else {
-      a = [x, y, z];
+      a = [x, y || x, z || x];
     }
 
     var objectSize = size(object);

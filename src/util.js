@@ -288,13 +288,13 @@ export function pick(o, names) {
 }
 
 export function mapPick(o, names, f, options) {
-  return names.reduce(function(result, name) {
+  return names.reduce(function(result, name, index) {
     if (!o[name]) {
       throw new Error(
         `${name} not found in ${options.name}: ${Object.keys(o).join(',')}`
       );
     }
-    result.push(f ? f(o[name]) : o[name]);
+    result.push(f ? f(o[name], name, index, o) : o[name]);
     return result;
   }, []);
 }
@@ -396,7 +396,7 @@ export function enlarge(object, x, y, z) {
   if (Array.isArray(x)) {
     a = x;
   } else {
-    a = [x, y, z];
+    a = [x, y || x, z || x];
   }
 
   var objectSize = size(object);
