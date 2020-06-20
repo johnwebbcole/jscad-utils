@@ -30,7 +30,7 @@ export const nearest = {
    * @param  {Number} [nozzie=0]                Number of nozzel sizes to add to the value
    * @return {Number}                           Multiple of nozzel size
    */
-  under: function(desired, nozzel = NOZZEL_SIZE, nozzie = 0) {
+  under: function (desired, nozzel = NOZZEL_SIZE, nozzie = 0) {
     return (Math.floor(desired / nozzel) + nozzie) * nozzel;
   },
   /**
@@ -41,7 +41,7 @@ export const nearest = {
    * @param  {Number} [nozzie=0]                Number of nozzel sizes to add to the value
    * @return {Number}                           Multiple of nozzel size
    */
-  over: function(desired, nozzel = NOZZEL_SIZE, nozzie = 0) {
+  over: function (desired, nozzel = NOZZEL_SIZE, nozzie = 0) {
     return (Math.ceil(desired / nozzel) + nozzie) * nozzel;
   }
 };
@@ -179,7 +179,7 @@ export function cm(x) {
 export function label(text, x, y, width, height) {
   var l = vector_text(x || 0, y || 0, text); // l contains a list of polylines to draw
   var o = [];
-  l.forEach(function(pl) {
+  l.forEach(function (pl) {
     // pl = polyline (not closed)
     o.push(
       rectangular_extrude(pl, {
@@ -196,7 +196,7 @@ export function label(text, x, y, width, height) {
 
 export function text(text) {
   var l = vector_char(0, 0, text); // l contains a list of polylines to draw
-  var char = l.segments.reduce(function(result, segment) {
+  var char = l.segments.reduce(function (result, segment) {
     var path = new CSG.Path2D(segment);
     var cag = path.expandToCAG(2);
     // debug('reduce', result, segment, path, cag);
@@ -214,16 +214,12 @@ export function unitCube(length, radius) {
 }
 
 export function unitAxis(length, radius, centroid) {
-  // echo(length, JSON.stringify(centroid));
+  debug(length, centroid);
   centroid = centroid || [0, 0, 0];
   return unitCube(length, radius)
     .union([
-      unitCube(length, radius)
-        .rotateY(90)
-        .setColor(0, 1, 0),
-      unitCube(length, radius)
-        .rotateX(90)
-        .setColor(0, 0, 1)
+      unitCube(length, radius).rotateY(90).setColor(0, 1, 0),
+      unitCube(length, radius).rotateX(90).setColor(0, 0, 1)
     ])
     .translate(centroid);
 }
@@ -255,7 +251,7 @@ export function segment(object, segments, axis) {
 }
 
 export function zipObject(names, values) {
-  return names.reduce(function(result, value, idx) {
+  return names.reduce(function (result, value, idx) {
     result[value] = values[idx];
     return result;
   }, {});
@@ -269,26 +265,26 @@ export function zipObject(names, values) {
  * @function map
  */
 export function map(o, f) {
-  return Object.keys(o).map(function(key) {
+  return Object.keys(o).map(function (key) {
     return f(o[key], key, o);
   });
 }
 
 export function mapValues(o, f) {
-  return Object.keys(o).map(function(key) {
+  return Object.keys(o).map(function (key) {
     return f(o[key], key);
   });
 }
 
 export function pick(o, names) {
-  return names.reduce(function(result, name) {
+  return names.reduce(function (result, name) {
     result[name] = o[name];
     return result;
   }, {});
 }
 
 export function mapPick(o, names, f, options) {
-  return names.reduce(function(result, name, index) {
+  return names.reduce(function (result, name, index) {
     if (!o[name]) {
       throw new Error(
         `${name} not found in ${options.name}: ${Object.keys(o).join(',')}`
@@ -404,7 +400,7 @@ export function enlarge(object, x, y, z) {
 
   var idx = 0;
 
-  var t = map(objectSize, function(i) {
+  var t = map(objectSize, function (i) {
     return scale(i, a[idx++]);
   });
 
@@ -455,7 +451,7 @@ export function fit(object, x, y, z, keep_aspect_ratio) {
   var min = array.min(s);
   return centerWith(
     object.scale(
-      s.map(function(d, i) {
+      s.map(function (d, i) {
         if (a[i] === 0) return 1; // don't scale when value is zero
         return keep_aspect_ratio ? min : d;
       })
@@ -517,7 +513,7 @@ export function calcFlush(moveobj, withobj, axes, mside, wside) {
     w[-1] = array.toxyz(withobj.centroid());
   }
 
-  return this.axisApply(axes, function(i, axis) {
+  return this.axisApply(axes, function (i, axis) {
     return w[side[0]][axis] - m[side[1]][axis];
   });
 }
@@ -551,12 +547,12 @@ export function calcSnap(moveobj, withobj, axes, orientation, delta = 0) {
     w[-1] = withobj.centroid();
   }
 
-  var t = axisApply(axes, function(i, axis) {
+  var t = axisApply(axes, function (i, axis) {
     return w[side[0]][axis] - m[side[1]][axis];
   });
 
   return delta
-    ? axisApply(axes, function(i) {
+    ? axisApply(axes, function (i) {
         return t[i] + delta;
       })
     : t;
@@ -589,7 +585,7 @@ export function axisApply(axes, valfun, a) {
     y: 1,
     z: 2
   };
-  axes.split('').forEach(function(axis) {
+  axes.split('').forEach(function (axis) {
     retval[lookup[axis]] = valfun(lookup[axis], axis);
   });
 
@@ -605,7 +601,7 @@ export function axis2array(axes, valfun) {
     z: 2
   };
 
-  axes.split('').forEach(function(axis) {
+  axes.split('').forEach(function (axis) {
     var i = lookup[axis];
     a[i] = valfun(i, axis);
   });
@@ -641,7 +637,7 @@ export function calcmidlineTo(o, axis, to) {
   var bounds = o.getBounds();
   var objectSize = size(bounds);
 
-  return axisApply(axis, function(i, a) {
+  return axisApply(axis, function (i, a) {
     return to - objectSize[a] / 2;
   });
 }
@@ -654,7 +650,7 @@ export function translator(o, axis, withObj) {
   var objectCentroid = centroid(o);
   var withCentroid = centroid(withObj);
   // echo('centerWith', centroid, withCentroid);
-  var t = axisApply(axis, function(i) {
+  var t = axisApply(axis, function (i) {
     return withCentroid[i] - objectCentroid[i];
   });
 
@@ -665,7 +661,7 @@ export function calcCenterWith(o, axes, withObj, delta = 0) {
   var objectCentroid = centroid(o);
   var withCentroid = centroid(withObj);
 
-  var t = axisApply(axes, function(i, axis) {
+  var t = axisApply(axes, function (i, axis) {
     return withCentroid[axis] - objectCentroid[axis];
   });
 
@@ -699,7 +695,7 @@ export function getDelta(size, bounds, axis, offset, nonzero) {
   // if the offset is negative, then it's an offset from
   // the positive side of the axis
   var dist = isNegative(offset) ? (offset = size[axis] + offset) : offset;
-  return axisApply(axis, function(i, a) {
+  return axisApply(axis, function (i, a) {
     return bounds[0][a] + (isEmpty(dist) ? size[axis] / 2 : dist);
   });
 }
@@ -802,7 +798,7 @@ export function bisect(...args) {
   var rotationCenter =
     options.rotationCenter ||
     new CSG.Vector3D(
-      axisApply('xyz', function(i, a) {
+      axisApply('xyz', function (i, a) {
         if (a == axis) return cutDelta[i];
         if (a == rotateOffsetAxis) return rotateDelta[i];
         return centroid[a];
@@ -976,7 +972,7 @@ export function slices2poly(slices, options, axis) {
   // walls
   var connectorAxis = last.offset.minus(first.offset).abs();
   // debug('connectorAxis', connectorAxis);
-  slices.forEach(function(slice, idx) {
+  slices.forEach(function (slice, idx) {
     if (idx < slices.length - 1) {
       var nextidx = idx + 1;
       var top = !up ? slices[nextidx] : slice;
@@ -1050,10 +1046,10 @@ export function sliceParams(orientation, radius, bounds) {
   return Object.assign(
     {
       axis: axis,
-      cutDelta: axisApply(axis, function(i, a) {
+      cutDelta: axisApply(axis, function (i, a) {
         return bounds[info.sizeIdx][a] + Math.abs(radius) * info.sizeDir;
       }),
-      moveDelta: axisApply(axis, function(i, a) {
+      moveDelta: axisApply(axis, function (i, a) {
         return bounds[info.sizeIdx][a] + Math.abs(radius) * info.moveDir;
       })
     },
@@ -1090,11 +1086,11 @@ export function reShape(object, radius, orientation, options, slicer) {
 
   var slice = object.sectionCut(cutplane);
 
-  var first = axisApply(si.axis, function() {
+  var first = axisApply(si.axis, function () {
     return si.positive ? 0 : ar;
   });
 
-  var last = axisApply(si.axis, function() {
+  var last = axisApply(si.axis, function () {
     return si.positive ? ar : 0;
   });
 
@@ -1118,7 +1114,7 @@ export function reShape(object, radius, orientation, options, slicer) {
 }
 
 export function chamfer(object, radius, orientation, options) {
-  return reShape(object, radius, orientation, options, function(
+  return reShape(object, radius, orientation, options, function (
     first,
     last,
     slice
@@ -1138,7 +1134,7 @@ export function chamfer(object, radius, orientation, options) {
 
 export function fillet(object, radius, orientation, options) {
   options = options || {};
-  return reShape(object, radius, orientation, options, function(
+  return reShape(object, radius, orientation, options, function (
     first,
     last,
     slice
@@ -1148,7 +1144,7 @@ export function fillet(object, radius, orientation, options) {
 
     var res = options.resolution || CSG.defaultResolution3D;
 
-    var slices = array.range(0, res).map(function(i) {
+    var slices = array.range(0, res).map(function (i) {
       var p = i > 0 ? i / (res - 1) : 0;
       var v = v1.lerp(v2, p);
 
@@ -1180,7 +1176,18 @@ export function rotateAround(part, solid, axis, angle) {
 
   return part.rotate(rotationCenter, rotationAxis, angle);
 }
+function cloneProperties(from, to, depth = 0) {
+  return Object.entries(from).reduce((props, [key, value]) => {
+    props[key] = value;
 
+    return props;
+  }, to);
+}
 export function clone(o) {
-  return CSG.fromPolygons(o.toPolygons());
+  var c = CSG.fromPolygons(o.toPolygons());
+
+  cloneProperties(o, c);
+
+  debug('clone', o, c, CSG);
+  return c;
 }

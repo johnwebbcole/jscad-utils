@@ -45,6 +45,23 @@ export const solve = function(p1, p2) {
  * Solve a partial triangle object. Angles are in degrees.
  * Angle `C` is set to 90 degrees. Requires a Side and an
  * Angle.
+ *
+ *       /\
+ *      / B\
+ *   c /    \  a
+ *    /      \
+ *   /A      C\
+ *  /----------\
+ *        b
+ *
+ *           /|
+ *          /B|
+ *         /  |
+ *       c/   |a
+ *       /A  C|
+ *      /_____|
+ *         b
+ *
  * @param  {Number} r.a Length of side `a`
  * @param  {Number} r.A Angle `A` in degrees
  * @param  {Number} r.b Length of side `b`

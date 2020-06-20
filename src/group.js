@@ -4,12 +4,14 @@ import { CSG, union } from './jscad';
 
 import {
   identity,
+  unitCube,
   toArray,
   calcSnap,
   mapPick,
   calcCenterWith,
   axisApply,
   zipObject,
+  clone,
   error
 } from './util';
 
@@ -37,7 +39,7 @@ export function JsCadUtilsGroup(names = [], parts = {}, holes = []) {
  * @function add
  * @memberof! JsCadUtilsGroup
  */
-JsCadUtilsGroup.prototype.add = function(
+JsCadUtilsGroup.prototype.add = function (
   object,
   name,
   hidden,
@@ -53,7 +55,7 @@ JsCadUtilsGroup.prototype.add = function(
       self.parts[name] = object.combine(parts);
 
       if (subparts) {
-        Object.keys(object.parts).forEach(function(key) {
+        Object.keys(object.parts).forEach(function (key) {
           self.parts[subparts + key] = object.parts[key];
         });
       }
@@ -76,10 +78,10 @@ JsCadUtilsGroup.prototype.add = function(
  * @param  {Function} map     A function that is run before unioning the parts together.
  * @return {CSG} A single `CSG` object of the unioned parts.
  */
-JsCadUtilsGroup.prototype.combine = function(
+JsCadUtilsGroup.prototype.combine = function (
   pieces,
   options = {},
-  map = x => x
+  map = (x) => x
 ) {
   try {
     var self = this;
@@ -103,7 +105,7 @@ JsCadUtilsGroup.prototype.combine = function(
       mapPick(
         self.parts,
         pieces,
-        function(value, key, index, object) {
+        function (value, key, index, object) {
           // debug('combine', value, key, object);
           return map ? map(value, key, index, object) : identity(value);
         },
@@ -136,18 +138,18 @@ stack: ${err.stack}
  * @return {Object}      Returns this object so it can be chained
  * @function map
  */
-JsCadUtilsGroup.prototype.map = function(cb) {
+JsCadUtilsGroup.prototype.map = function (cb) {
   var self = this;
   self.parts = Object.keys(self.parts)
-    .filter(k => k !== 'holes')
-    .reduce(function(result, key) {
+    .filter((k) => k !== 'holes')
+    .reduce(function (result, key) {
       result[key] = cb(self.parts[key], key);
       return result;
     }, {});
 
   if (self.holes) {
     if (Array.isArray(self.holes)) {
-      self.holes = self.holes.map(function(hole, idx) {
+      self.holes = self.holes.map(function (hole, idx) {
         return cb(hole, idx);
       });
     } else {
@@ -164,7 +166,7 @@ JsCadUtilsGroup.prototype.map = function(cb) {
  * @param  {Function} [map] A function called on each part.
  * @return {JsCadUtilsGroup} The new group.
  */
-JsCadUtilsGroup.prototype.clone = function(name, map) {
+JsCadUtilsGroup.prototype.clone = function (name, map) {
   debug('clone', name, typeof name, map);
   var self = this;
   /**
@@ -178,14 +180,15 @@ JsCadUtilsGroup.prototype.clone = function(name, map) {
 
   // console.warn('clone() has been refactored');
   var group = Group(name);
-  Object.keys(self.parts).forEach(function(key) {
+  Object.keys(self.parts).forEach(function (key) {
     var part = self.parts[key];
     var hidden = self.names.indexOf(key) == -1;
-    group.add(map(CSG.fromPolygons(part.toPolygons())), key, hidden);
+
+    group.add(clone(part), key, hidden);
   });
 
   if (self.holes) {
-    group.holes = toArray(self.holes).map(function(part) {
+    group.holes = toArray(self.holes).map(function (part) {
       return map(CSG.fromPolygons(part.toPolygons()), 'holes');
     });
   }
@@ -200,7 +203,7 @@ JsCadUtilsGroup.prototype.clone = function(name, map) {
  * @return {JsCadUtilsGroup}       The rotoated group.
  * @function rotate
  */
-JsCadUtilsGroup.prototype.rotate = function(solid, axis, angle) {
+JsCadUtilsGroup.prototype.rotate = function (solid, axis, angle) {
   var self = this;
   var axes = {
     x: [1, 0, 0],
@@ -214,7 +217,7 @@ JsCadUtilsGroup.prototype.rotate = function(solid, axis, angle) {
   var rotationCenter = solid.centroid();
   var rotationAxis = axes[axis];
 
-  self.map(function(part) {
+  self.map(function (part) {
     return part.rotate(rotationCenter, rotationAxis, angle);
   });
 
@@ -228,7 +231,7 @@ JsCadUtilsGroup.prototype.rotate = function(solid, axis, angle) {
  * @param  {Function} map     A function run on each part before unioning.
  * @return {CSG} A `CSG` object of all combined parts.
  */
-JsCadUtilsGroup.prototype.combineAll = function(options, map) {
+JsCadUtilsGroup.prototype.combineAll = function (options, map) {
   var self = this;
   return self.combine(Object.keys(self.parts).join(','), options, map);
 };
@@ -255,7 +258,7 @@ JsCadUtilsGroup.prototype.snap = function snap(
     var self = this;
     // debug(', self);
     var t = calcSnap(self.combine(part), to, axis, orientation, delta);
-    self.map(function(part) {
+    self.map(function (part) {
       return part.translate(t);
     });
     return self;
@@ -295,7 +298,7 @@ JsCadUtilsGroup.prototype.align = function align(part, to, axis, delta) {
       to,
       delta
     );
-    self.map(function(part /*, name */) {
+    self.map(function (part /*, name */) {
       return part.translate(t);
     });
 
@@ -321,6 +324,43 @@ stack: ${err.stack}
   }
 };
 
+JsCadUtilsGroup.prototype.center = function center(part) {
+  var self = this;
+
+  return self.align(part, unitCube(), 'xyz');
+};
+
+JsCadUtilsGroup.prototype.zero = function zero(part) {
+  var self = this;
+  var bounds = self.parts[part].getBounds();
+  return self.translate([0, 0, -bounds[0].z]);
+};
+
+JsCadUtilsGroup.prototype.connectTo = function connectTo(
+  part,
+  connectorName,
+  to,
+  toConnectorName,
+  mirror = true,
+  normalrotation = 0
+) {
+  var self = this;
+
+  var matrix = self.parts[part].properties[connectorName].getTransformationTo(
+    to.properties[toConnectorName],
+    mirror,
+    normalrotation
+  );
+
+  debug('connectTo', matrix);
+
+  self.map(function (part) {
+    return part.transform(matrix);
+  });
+
+  return self;
+};
+
 /**
  * @function midlineTo
  * @param  {String} part       Comma separated list of parts in the group to align.
@@ -331,12 +371,12 @@ stack: ${err.stack}
 JsCadUtilsGroup.prototype.midlineTo = function midlineTo(part, axis, to) {
   var self = this;
   var size = self.combine(part).size();
-  var t = axisApply(axis, function(i, a) {
+  var t = axisApply(axis, function (i, a) {
     return to - size[a] / 2;
   });
   // debug(' part, t);
   // var t = util.calcCenterWith(self.combine(part), axis, to, delta);
-  self.map(function(part) {
+  self.map(function (part) {
     return part.translate(t);
   });
 
@@ -361,7 +401,7 @@ JsCadUtilsGroup.prototype.translate = function translate(x, y, z) {
 
   var t = Array.isArray(x) ? x : [x, y, z];
   debug('translate', t);
-  self.map(function(part) {
+  self.map(function (part) {
     return part.translate(t);
   });
 
@@ -380,13 +420,13 @@ JsCadUtilsGroup.prototype.translate = function translate(x, y, z) {
  * @param  {function} map   A function run on each part as its added to the new group.
  * @return {JsCadUtilsGroup} The new group with the picked parts.
  */
-JsCadUtilsGroup.prototype.pick = function(parts, map) {
+JsCadUtilsGroup.prototype.pick = function (parts, map) {
   var self = this;
   var p = (parts && parts.length > 0 && parts.split(',')) || self.names;
   if (!map) map = identity;
 
   var g = Group();
-  p.forEach(function(name) {
+  p.forEach(function (name) {
     g.add(map(CSG.fromPolygons(self.parts[name].toPolygons()), name), name);
   });
   return g;
@@ -399,14 +439,14 @@ JsCadUtilsGroup.prototype.pick = function(parts, map) {
  * @param  {Function} map   A function run on each part as its added to the new array.
  * @return {Array} An array of `CSG` objects
  */
-JsCadUtilsGroup.prototype.array = function(parts, map) {
+JsCadUtilsGroup.prototype.array = function (parts, map) {
   var self = this;
   // try {
   var p = (parts && parts.length > 0 && parts.split(',')) || self.names;
   if (!map) map = identity;
 
   var a = [];
-  p.forEach(name => {
+  p.forEach((name) => {
     if (!self.parts[name]) {
       debug('array error', this, parts);
       throw error(
@@ -442,18 +482,18 @@ parts: "${parts}"
  * @return {Array} An array of `CSG` objects.
  * @deprecated Use `array` instead of `toArray`.
  */
-JsCadUtilsGroup.prototype.toArray = function(pieces) {
+JsCadUtilsGroup.prototype.toArray = function (pieces) {
   var self = this;
   var piecesArray = pieces ? pieces.split(',') : self.names;
 
-  return piecesArray.map(function(piece) {
+  return piecesArray.map(function (piece) {
     if (!self.parts[piece])
       console.error(`Cannot find ${piece} in ${self.names}`);
     return self.parts[piece];
   });
 };
 
-JsCadUtilsGroup.prototype.toString = function() {
+JsCadUtilsGroup.prototype.toString = function () {
   return `{
   name: "${this.name}",
   names: "${this.names.join(',')}", 
@@ -462,7 +502,7 @@ JsCadUtilsGroup.prototype.toString = function() {
 }`;
 };
 
-JsCadUtilsGroup.prototype.setName = function(name) {
+JsCadUtilsGroup.prototype.setName = function (name) {
   this.name = name;
   return this;
 };
@@ -507,7 +547,7 @@ export function Group(objectNames, addObjects) {
         self.name = objectNames;
       } else {
         var objects = objectNames; // eslint-disable-line no-redeclare
-        self.names = Object.keys(objects).filter(k => k !== 'holes');
+        self.names = Object.keys(objects).filter((k) => k !== 'holes');
         self.parts = Object.assign({}, objects);
         self.holes = objects.holes;
       }

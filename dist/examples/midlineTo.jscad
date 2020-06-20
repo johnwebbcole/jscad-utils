@@ -363,6 +363,40 @@ function initJscadutils(_CSG, options = {}) {
             }
             return target;
         }
+        function _slicedToArray(arr, i) {
+            return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest();
+        }
+        function _arrayWithHoles(arr) {
+            if (Array.isArray(arr)) return arr;
+        }
+        function _iterableToArrayLimit(arr, i) {
+            if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) {
+                return;
+            }
+            var _arr = [];
+            var _n = true;
+            var _d = false;
+            var _e = undefined;
+            try {
+                for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+                    _arr.push(_s.value);
+                    if (i && _arr.length === i) break;
+                }
+            } catch (err) {
+                _d = true;
+                _e = err;
+            } finally {
+                try {
+                    if (!_n && _i["return"] != null) _i["return"]();
+                } finally {
+                    if (_d) throw _e;
+                }
+            }
+            return _arr;
+        }
+        function _nonIterableRest() {
+            throw new TypeError("Invalid attempt to destructure non-iterable instance");
+        }
         var toRadians = function toRadians(deg) {
             return deg / 180 * Math.PI;
         };
@@ -877,7 +911,7 @@ function initJscadutils(_CSG, options = {}) {
             Object.keys(self.parts).forEach(function(key) {
                 var part = self.parts[key];
                 var hidden = self.names.indexOf(key) == -1;
-                group.add(map(CSG.fromPolygons(part.toPolygons())), key, hidden);
+                group.add(clone(part), key, hidden);
             });
             if (self.holes) {
                 group.holes = toArray(self.holes).map(function(part) {
@@ -935,6 +969,26 @@ function initJscadutils(_CSG, options = {}) {
                 debug("align error", this, part, to, axis, delta, err);
                 throw error('group::align error "'.concat(err.message || err.toString(), '"\nthis: ').concat(this, '\npart: "').concat(part, '"\nto: ').concat(to, '\naxis: "').concat(axis, '"\ndelta: "').concat(delta, '"\nstack: ').concat(err.stack, "\n"), "JSCAD_UTILS_GROUP_ERROR");
             }
+        };
+        JsCadUtilsGroup.prototype.center = function center(part) {
+            var self = this;
+            return self.align(part, unitCube(), "xyz");
+        };
+        JsCadUtilsGroup.prototype.zero = function zero(part) {
+            var self = this;
+            var bounds = self.parts[part].getBounds();
+            return self.translate([ 0, 0, -bounds[0].z ]);
+        };
+        JsCadUtilsGroup.prototype.connectTo = function connectTo(part, connectorName, to, toConnectorName) {
+            var mirror = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : true;
+            var normalrotation = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
+            var self = this;
+            var matrix = self.parts[part].properties[connectorName].getTransformationTo(to.properties[toConnectorName], mirror, normalrotation);
+            debug("connectTo", matrix);
+            self.map(function(part) {
+                return part.transform(matrix);
+            });
+            return self;
         };
         JsCadUtilsGroup.prototype.midlineTo = function midlineTo(part, axis, to) {
             var self = this;
@@ -1126,6 +1180,7 @@ function initJscadutils(_CSG, options = {}) {
             });
         }
         function unitAxis(length, radius, centroid) {
+            debug$1(length, centroid);
             centroid = centroid || [ 0, 0, 0 ];
             return unitCube(length, radius).union([ unitCube(length, radius).rotateY(90).setColor(0, 1, 0), unitCube(length, radius).rotateX(90).setColor(0, 0, 1) ]).translate(centroid);
         }
@@ -1699,8 +1754,18 @@ function initJscadutils(_CSG, options = {}) {
             var _calcRotate = calcRotate(part, solid, axis), rotationCenter = _calcRotate.rotationCenter, rotationAxis = _calcRotate.rotationAxis;
             return part.rotate(rotationCenter, rotationAxis, angle);
         }
+        function cloneProperties(from, to) {
+            return Object.entries(from).reduce(function(props, _ref) {
+                var _ref2 = _slicedToArray(_ref, 2), key = _ref2[0], value = _ref2[1];
+                props[key] = value;
+                return props;
+            }, to);
+        }
         function clone(o) {
-            return CSG.fromPolygons(o.toPolygons());
+            var c = CSG.fromPolygons(o.toPolygons());
+            cloneProperties(o, c);
+            debug$1("clone", o, c, CSG);
+            return c;
         }
         var debug$2 = Debug("jscadUtils:parts");
         var parts = {
