@@ -58,11 +58,11 @@
     "gulp-util": "^3.0.7",
     "gulp-watch": "^5.0.1",
     "nyc": "^14.1.1",
-    "rollup": "^1.25.0",
+    "rollup": "^2.17.1",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-commonjs": "^10.0.2",
     "rollup-plugin-node-resolve": "^5.2.0",
-    "vuepress-jsdoc": "^1.8.1"
+    "vuepress-jsdoc": "^3.0.0"
   },
   "ava": {
     "files": [

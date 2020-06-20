@@ -59,8 +59,8 @@ function initJscadutils(_CSG, options = {}) {
     });
     var jscadUtils = function(exports, jsCadCSG, scadApi) {
         "use strict";
-        jsCadCSG = jsCadCSG && jsCadCSG.hasOwnProperty("default") ? jsCadCSG["default"] : jsCadCSG;
-        scadApi = scadApi && scadApi.hasOwnProperty("default") ? scadApi["default"] : scadApi;
+        jsCadCSG = jsCadCSG && Object.prototype.hasOwnProperty.call(jsCadCSG, "default") ? jsCadCSG["default"] : jsCadCSG;
+        scadApi = scadApi && Object.prototype.hasOwnProperty.call(scadApi, "default") ? scadApi["default"] : scadApi;
         var util = Object.freeze({
             __proto__: null,
             get NOZZEL_SIZE() {
