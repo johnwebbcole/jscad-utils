@@ -42,7 +42,7 @@ var debugCount = 0;
  * util.init(CSG, { debug: 'jscadUtils:group' });
  *
  * @function Debug
- * @param  {String} name The name of the debug funciton.
+ * @param  {String} name The name of the debug function.
  * @return {Function} A debug function if enabled otherwise an empty function.
  */
 export const Debug = function(name) {
