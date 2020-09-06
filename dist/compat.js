@@ -115,7 +115,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     get fillet () { return fillet; },
     get calcRotate () { return calcRotate; },
     get rotateAround () { return rotateAround; },
-    get clone () { return clone; }
+    get clone () { return clone; },
+    get addConnector () { return addConnector; }
   });
 
   function _typeof(obj) {
@@ -345,6 +346,37 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     r.b = Math.sqrt(Math.pow(r.c, 2) - Math.pow(r.a, 2));
     return r;
   };
+  /**
+   * @function solveab
+   * Solve a partial right triangle object from two sides (a and b). Angles are in degrees.
+   * Angle `C` is set to 90 degrees. Requires a Side and an
+   * Angle.
+   *
+   *           /|
+   *          /B|
+   *         /  |
+   *       c/   |a
+   *       /A  C|
+   *      /_____|
+   *         b
+   *
+   * @param  {Number} r.a Length of side `a`
+   * @param  {Number} r.b Length of side `b`
+   * @return {Object}   A solved triangle object {A,B,C,a,b,c}
+   */
+
+  function solveab(r) {
+    r = Object.assign(r, {
+      C: 90
+    }); // c = sqr(a*a + b*b)
+
+    r.c = Math.sqrt(Math.pow(r.a, 2) + Math.pow(r.b, 2)); // A = arcsin(a/c)
+
+    r.A = toDegrees(Math.asin(r.a / r.c)); // B = arcsin(b/c);
+
+    r.B = toDegrees(Math.asin(r.b / r.c));
+    return r;
+  }
 
   var triUtils = /*#__PURE__*/Object.freeze({
     __proto__: null,
@@ -352,7 +384,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     toDegrees: toDegrees,
     solve: solve,
     solve90SA: solve90SA,
-    solve90ac: solve90ac
+    solve90ac: solve90ac,
+    solveab: solveab
   });
 
   /**
@@ -933,6 +966,27 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       }
     };
 
+    proto.prototype.addConnector = function addConnector$1(name, point, axis, normal) {
+      return addConnector(this, name, point, axis, normal);
+    };
+
+    proto.prototype.connect = function connectTo(myConnectorName, otherConnector) {
+      var mirror = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+      var normalrotation = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+      var myConnector = myConnectorName.split('.').reduce(function (a, v) {
+        return a[v];
+      }, this.properties);
+      /**
+       * Check for missing property.
+       */
+
+      if (!myConnector) {
+        error("The connector '".concat(myConnectorName, "' does not exist on the object [").concat(Object.keys(this.properties).join(','), "]"), 'Missing connector property');
+      }
+
+      return this.connectTo(myConnector, otherConnector, mirror, normalrotation);
+    };
+
     proto.prototype._jscadutilsinit = true; // console.trace('init', proto.prototype);
   }
 
@@ -1099,7 +1153,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     Object.keys(self.parts).forEach(function (key) {
       var part = self.parts[key];
       var hidden = self.names.indexOf(key) == -1;
-      group.add(clone(part), key, hidden);
+      group.add(map(clone(part)), key, hidden);
     });
 
     if (self.holes) {
@@ -1225,11 +1279,26 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     return self.translate([0, 0, -bounds[0].z]);
   };
 
-  JsCadUtilsGroup.prototype.connectTo = function connectTo(part, connectorName, to, toConnectorName) {
+  JsCadUtilsGroup.prototype.connectTo = function connectTo(partName, connectorName, to, toConnectorName) {
     var mirror = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : true;
     var normalrotation = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
+    debug('connectTo', {
+      partName: partName,
+      connectorName: connectorName,
+      to: to,
+      toConnectorName: toConnectorName,
+      mirror: mirror,
+      normalrotation: normalrotation
+    });
     var self = this;
-    var matrix = self.parts[part].properties[connectorName].getTransformationTo(to.properties[toConnectorName], mirror, normalrotation);
+    var myConnector = connectorName.split('.').reduce(function (a, v) {
+      return a[v];
+    }, self.parts[partName].properties);
+    debug('toConnector', to instanceof CSG.Connector);
+    var toConnector = toConnectorName.split('.').reduce(function (a, v) {
+      return a[v];
+    }, to.properties);
+    var matrix = myConnector.getTransformationTo(toConnector, mirror, normalrotation);
     debug('connectTo', matrix);
     self.map(function (part) {
       return part.transform(matrix);
@@ -1616,9 +1685,11 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     });
   }
   function unitAxis(length, radius, centroid) {
-    debug$1(length, centroid);
+    debug$1('unitAxis', length, radius, centroid);
     centroid = centroid || [0, 0, 0];
-    return unitCube(length, radius).union([unitCube(length, radius).rotateY(90).setColor(0, 1, 0), unitCube(length, radius).rotateX(90).setColor(0, 0, 1)]).translate(centroid);
+    var unitaxis = unitCube(length, radius).setColor(1, 0, 0).union([unitCube(length, radius).rotateY(90).setColor(0, 1, 0), unitCube(length, radius).rotateX(90).setColor(0, 0, 1)]);
+    unitaxis.properties.origin = new CSG.Connector([0, 0, 0], [1, 0, 0], [0, 1, 0]);
+    return unitaxis.translate(centroid);
   }
   function toArray(a) {
     return Array.isArray(a) ? a : [a];
@@ -2410,6 +2481,23 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     debug$1('clone', o, c, CSG);
     return c;
   }
+  /**
+   * @function addConnector
+   * @param  {CSG} object    The object to add the connector to.
+   * @param  {String} name The name of the connector, this is added to the object `properties`.
+   * @param  {Array} point=[0,0,0] a 3 axis array defining the connection point in 3D space.
+   * @param  {Array} point=[0,0,0] a 3 axis array defining the direction vector of the connection (in the case of the servo motor example it would point in the direction of the shaft).
+   * @param  {Array} point=[0,0,0] a 3 axis array direction vector somewhat perpendicular to axis; this defines the “12 o'clock” orientation of the connection.
+   * @return {CSG}        The CSG object with the new connector added.
+   */
+
+  function addConnector(object, name) {
+    var point = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [0, 0, 0];
+    var axis = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : [1, 0, 0];
+    var normal = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [0, 0, 1];
+    object.properties[name] = new CSG.Connector(point, axis, normal);
+    return object;
+  }
 
   var debug$2 = Debug('jscadUtils:parts');
   var parts = {
@@ -2789,19 +2877,25 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    */
 
   function Rabett(box, thickness, gap, height, face) {
+    var options = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : {};
     debug$3('Rabett', box, thickness, gap, height, face);
     gap = gap || 0.25;
-    var inside = -thickness - gap;
-    var outside = -thickness + gap;
+    var inside = thickness - gap;
+    var outside = -thickness + gap; // options.color = true;
+
     var group = Group();
-    var top = box.bisect('z', height, {
-      color: true
-    });
-    var bottom = top.parts.negative.bisect('z', height - face, {
-      color: true
-    });
-    group.add(union([top.parts.positive, bottom.parts.positive.subtract(bottom.parts.positive.enlarge(outside, outside, 0)).color('green')]), 'top');
-    group.add(union([bottom.parts.negative, bottom.parts.positive.intersect(bottom.parts.positive.enlarge(inside, inside, 0)).color('yellow')]), 'bottom');
+    debug$3('Rabbet', box.bisect('z', height, options));
+    var _box$bisect$parts = box.bisect('z', height, options).parts,
+        top = _box$bisect$parts.positive,
+        lower2_3rd = _box$bisect$parts.negative;
+    var _lower2_3rd$bisect$pa = lower2_3rd.bisect('z', height - face, options).parts,
+        middle = _lower2_3rd$bisect$pa.positive,
+        bottom = _lower2_3rd$bisect$pa.negative;
+    group.add(top.union(middle // .color('yellow')
+    .subtract(middle.color('darkred').enlarge([outside, outside, 0]))), 'top');
+    group.add(middle.color('pink').enlarge([inside, inside, 0]), 'middle');
+    group.add(bottom.union(middle // .color('green')
+    .subtract(middle.color('red').enlarge([inside, inside, 0]))), 'bottom');
     return group;
   }
   /**

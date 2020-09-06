@@ -184,7 +184,7 @@ JsCadUtilsGroup.prototype.clone = function (name, map) {
     var part = self.parts[key];
     var hidden = self.names.indexOf(key) == -1;
 
-    group.add(clone(part), key, hidden);
+    group.add(map(clone(part)), key, hidden);
   });
 
   if (self.holes) {
@@ -337,17 +337,33 @@ JsCadUtilsGroup.prototype.zero = function zero(part) {
 };
 
 JsCadUtilsGroup.prototype.connectTo = function connectTo(
-  part,
+  partName,
   connectorName,
   to,
   toConnectorName,
   mirror = true,
   normalrotation = 0
 ) {
+  debug('connectTo', {
+    partName,
+    connectorName,
+    to,
+    toConnectorName,
+    mirror,
+    normalrotation
+  });
   var self = this;
+  var myConnector = connectorName.split('.').reduce((a, v) => {
+    return a[v];
+  }, self.parts[partName].properties);
 
-  var matrix = self.parts[part].properties[connectorName].getTransformationTo(
-    to.properties[toConnectorName],
+  debug('toConnector', to instanceof CSG.Connector);
+  var toConnector = toConnectorName.split('.').reduce((a, v) => {
+    return a[v];
+  }, to.properties);
+
+  var matrix = myConnector.getTransformationTo(
+    toConnector,
     mirror,
     normalrotation
   );

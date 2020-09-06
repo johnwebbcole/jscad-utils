@@ -9,7 +9,7 @@ import { identity, xyz2array, depreciated } from './util';
 
 /**
  * jscad box and join utilities.  This should be considered experimental,
- * but there are some usefull utilities here.
+ * but there are some useful utilities here.
  */
 /**
    * Create a [rabbet joint](https://en.wikipedia.org/wiki/Rabbet) in a CSG solid.
@@ -78,33 +78,41 @@ export function topMiddleBottom(box, thickness) {
  * @param {Number} face      Size of the join face.
  * @return {JsCadUtilsGroup} A group object with `positive`, `negative` parts.
  */
-export function Rabett(box, thickness, gap, height, face) {
+export function Rabett(box, thickness, gap, height, face, options = {}) {
   debug('Rabett', box, thickness, gap, height, face);
   gap = gap || 0.25;
-  var inside = -thickness - gap;
+  var inside = thickness - gap;
   var outside = -thickness + gap;
+  // options.color = true;
 
   var group = Group();
-  var top = box.bisect('z', height, { color: true });
-  var bottom = top.parts.negative.bisect('z', height - face, { color: true });
+  debug('Rabbet', box.bisect('z', height, options));
+  var { positive: top, negative: lower2_3rd } = box.bisect(
+    'z',
+    height,
+    options
+  ).parts;
+  var { positive: middle, negative: bottom } = lower2_3rd.bisect(
+    'z',
+    height - face,
+    options
+  ).parts;
 
   group.add(
-    union([
-      top.parts.positive,
-      bottom.parts.positive
-        .subtract(bottom.parts.positive.enlarge(outside, outside, 0))
-        .color('green')
-    ]),
+    top.union(
+      middle
+        // .color('yellow')
+        .subtract(middle.color('darkred').enlarge([outside, outside, 0]))
+    ),
     'top'
   );
-
+  group.add(middle.color('pink').enlarge([inside, inside, 0]), 'middle');
   group.add(
-    union([
-      bottom.parts.negative,
-      bottom.parts.positive
-        .intersect(bottom.parts.positive.enlarge(inside, inside, 0))
-        .color('yellow')
-    ]),
+    bottom.union(
+      middle
+        // .color('green')
+        .subtract(middle.color('red').enlarge([inside, inside, 0]))
+    ),
     'bottom'
   );
 
@@ -217,9 +225,7 @@ export const CutOut = function cutOut(o, h, box, plug, gap) {
   var cutout = o.intersect(box);
   var cs = o.size();
 
-  var clear = Parts.Cube([s.x, s.y, h])
-    .align(o, 'xy')
-    .color('yellow');
+  var clear = Parts.Cube([s.x, s.y, h]).align(o, 'xy').color('yellow');
   var top = clear.snap(o, 'z', 'center+').union(o);
   var back = Parts.Cube([cs.x + 6, 2, cs.z + 2.5])
     .align(cutout, 'x')
@@ -249,7 +255,7 @@ export const CutOut = function cutOut(o, h, box, plug, gap) {
   });
 };
 
-export const Rectangle = function(size, thickness, cb) {
+export const Rectangle = function (size, thickness, cb) {
   thickness = thickness || 2;
   var s = array.div(xyz2array(size), 2);
 
@@ -284,7 +290,7 @@ export const Rectangle = function(size, thickness, cb) {
  * @return {CSG} An A hollow version of the original object..
  * @memberof module:Boxes
  */
-export const Hollow = function(object, thickness, interiorcb, exteriorcb) {
+export const Hollow = function (object, thickness, interiorcb, exteriorcb) {
   thickness = thickness || 2;
   var size = -thickness * 2;
   interiorcb = interiorcb || identity;
@@ -301,7 +307,7 @@ export const Hollow = function(object, thickness, interiorcb, exteriorcb) {
  * @deprecated use parts.BBox
  * @memberof module:Boxes
  */
-export const BBox = function(o) {
+export const BBox = function (o) {
   depreciated('BBox', true, "Use 'parts.BBox' instead");
   var s = array.div(xyz2array(o.size()), 2);
   return CSG.cube({

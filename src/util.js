@@ -214,14 +214,21 @@ export function unitCube(length, radius) {
 }
 
 export function unitAxis(length, radius, centroid) {
-  debug(length, centroid);
+  debug('unitAxis', length, radius, centroid);
   centroid = centroid || [0, 0, 0];
-  return unitCube(length, radius)
+  var unitaxis = unitCube(length, radius)
+    .setColor(1, 0, 0)
     .union([
       unitCube(length, radius).rotateY(90).setColor(0, 1, 0),
       unitCube(length, radius).rotateX(90).setColor(0, 0, 1)
-    ])
-    .translate(centroid);
+    ]);
+
+  unitaxis.properties.origin = new CSG.Connector(
+    [0, 0, 0],
+    [1, 0, 0],
+    [0, 1, 0]
+  );
+  return unitaxis.translate(centroid);
 }
 
 export function toArray(a) {
@@ -625,7 +632,7 @@ export function centroid(o, objectSize) {
 
 /**
  * Calculates the transform array to move the midline of an object
- * by value.  This is usefule when you have a diagram that provide
+ * by value.  This is useful when you have a diagram that provides
  * the distance to an objects midline instead of the edge.
  * @function calcmidlineTo
  * @param  {CSG} o    A CSG object.
@@ -1190,4 +1197,24 @@ export function clone(o) {
 
   debug('clone', o, c, CSG);
   return c;
+}
+
+/**
+ * @function addConnector
+ * @param  {CSG} object    The object to add the connector to.
+ * @param  {String} name The name of the connector, this is added to the object `properties`.
+ * @param  {Array} point=[0,0,0] a 3 axis array defining the connection point in 3D space.
+ * @param  {Array} point=[0,0,0] a 3 axis array defining the direction vector of the connection (in the case of the servo motor example it would point in the direction of the shaft).
+ * @param  {Array} point=[0,0,0] a 3 axis array direction vector somewhat perpendicular to axis; this defines the “12 o'clock” orientation of the connection.
+ * @return {CSG}        The CSG object with the new connector added.
+ */
+export function addConnector(
+  object,
+  name,
+  point = [0, 0, 0],
+  axis = [1, 0, 0],
+  normal = [0, 0, 1]
+) {
+  object.properties[name] = new CSG.Connector(point, axis, normal);
+  return object;
 }

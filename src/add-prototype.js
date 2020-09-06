@@ -13,7 +13,7 @@ export default function init(proto) {
   if (proto.prototype._jscadutilsinit) return;
 
   // Colors.init(proto);
-  proto.prototype.color = function(r, g, b, a) {
+  proto.prototype.color = function (r, g, b, a) {
     if (!r) return this; // shortcut empty color values to do nothing.
     return color(this, r, g, b, a);
   };
@@ -72,11 +72,11 @@ export default function init(proto) {
 
   if (proto.size) echo('proto already has .size');
 
-  proto.prototype.size = function() {
+  proto.prototype.size = function () {
     return util.size(this.getBounds());
   };
 
-  proto.prototype.centroid = function() {
+  proto.prototype.centroid = function () {
     return util.centroid(this);
   };
 
@@ -130,7 +130,7 @@ export default function init(proto) {
       return this._translate(arguments[0]);
     } else {
       var t = Array.prototype.slice.call(arguments, 0).reduce(
-        function(result, arg) {
+        function (result, arg) {
           // console.log('arg', arg);
           result = util.array.addArray(result, arg);
           return result;
@@ -141,6 +141,38 @@ export default function init(proto) {
       // console.log('translate', t);
       return this._translate(t);
     }
+  };
+  proto.prototype.addConnector = function addConnector(
+    name,
+    point,
+    axis,
+    normal
+  ) {
+    return util.addConnector(this, name, point, axis, normal);
+  };
+
+  proto.prototype.connect = function connectTo(
+    myConnectorName,
+    otherConnector,
+    mirror = false,
+    normalrotation = 0
+  ) {
+    var myConnector = myConnectorName.split('.').reduce((a, v) => {
+      return a[v];
+    }, this.properties);
+
+    /**
+     * Check for missing property.
+     */
+    if (!myConnector) {
+      util.error(
+        `The connector '${myConnectorName}' does not exist on the object [${Object.keys(
+          this.properties
+        ).join(',')}]`,
+        'Missing connector property'
+      );
+    }
+    return this.connectTo(myConnector, otherConnector, mirror, normalrotation);
   };
 
   proto.prototype._jscadutilsinit = true;

@@ -26,7 +26,7 @@ export const toDegrees = function toDegrees(rad) {
  * @param  {Number} p2.y Point 2 y coordinate
  * @return {Object}    A triangle object {A,B,C,a,b,c}
  */
-export const solve = function(p1, p2) {
+export const solve = function (p1, p2) {
   var r = {
     c: 90,
     A: Math.abs(p2.x - p1.x),
@@ -69,7 +69,7 @@ export const solve = function(p1, p2) {
  * @param  {Number} r.c Length of side `c`
  * @return {Object}   A solved triangle object {A,B,C,a,b,c}
  */
-export const solve90SA = function(r) {
+export const solve90SA = function (r) {
   r = Object.assign(r, {
     C: 90
   });
@@ -94,7 +94,7 @@ export const solve90SA = function(r) {
   return r;
 };
 
-export const solve90ac = function(r) {
+export const solve90ac = function (r) {
   r = Object.assign(r, { C: 90 });
 
   // sinA = a/c
@@ -113,3 +113,36 @@ export const solve90ac = function(r) {
   r.b = Math.sqrt(Math.pow(r.c, 2) - Math.pow(r.a, 2));
   return r;
 };
+
+/**
+ * @function solveab
+ * Solve a partial right triangle object from two sides (a and b). Angles are in degrees.
+ * Angle `C` is set to 90 degrees. Requires a Side and an
+ * Angle.
+ *
+ *           /|
+ *          /B|
+ *         /  |
+ *       c/   |a
+ *       /A  C|
+ *      /_____|
+ *         b
+ *
+ * @param  {Number} r.a Length of side `a`
+ * @param  {Number} r.b Length of side `b`
+ * @return {Object}   A solved triangle object {A,B,C,a,b,c}
+ */
+export function solveab(r) {
+  r = Object.assign(r, { C: 90 });
+
+  // c = sqr(a*a + b*b)
+  r.c = Math.sqrt(Math.pow(r.a, 2) + Math.pow(r.b, 2));
+
+  // A = arcsin(a/c)
+  r.A = toDegrees(Math.asin(r.a / r.c));
+
+  // B = arcsin(b/c);
+  r.B = toDegrees(Math.asin(r.b / r.c));
+
+  return r;
+}
