@@ -1,6 +1,6 @@
 {
   "name": "@jwc/jscad-utils",
-  "version": "4.7.0",
+  "version": "4.8.0",
   "description": "Utilities for use in a jscad script.",
   "main": "src/index.js",
   "module": "src/index.js",
