@@ -5,7 +5,8 @@ pages:
     - npm ci
     # jsdoc does not handle the vscode imports, copy the src and use `sed` to replace the imported typedefs
     - cp -R src srcx
-    - find ./srcx -name "*.js" -print0 | xargs -0 sed -i "s/@typedef {typeof import/@xtypedef {typeof import/g"
+    # osx, change the sed to include `sed -i ".bak"`
+    - find ./srcx -name "*.js" -print0 | xargs -0 sed -i -e "s/@typedef {typeof import/@xtypedef {typeof import/g" -e "s/@typedef {import/@xtypedef {import/g"
     - npm run docs
     - ls -al -R public
   artifacts:

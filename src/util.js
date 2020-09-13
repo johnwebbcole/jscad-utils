@@ -714,7 +714,7 @@ export function getDelta(size, bounds, axis, offset, nonzero) {
  *
  * Negative offsets operate off of the larger side of the axes.  In the previous example, an offset of -2 creates a 8mm side and a 2mm side.
  *
- * You can angle the cut plane and poistion the rotation point.
+ * You can angle the cut plane and position the rotation point.
  *
  * ![bisect example](../images/bisect.png)
  * @param  {CSG} object object to bisect
@@ -725,9 +725,9 @@ export function getDelta(size, bounds, axis, offset, nonzero) {
  * @param  {number} rotateoffset
  * @param  {Object} options
  * @param  {boolean} [options.addRotationCenter=false]
- * @param  {Array[Number]} [options.cutDelta]
+ * @param  {Array} [options.cutDelta]
  * @param  {CSG.Vector3D} [options.rotationCenter]
- * @return {object}  Returns a group object with a parts object.
+ * @return {JsCadUtilsGroup}  Returns a group object with a parts object.
  */
 export function bisect(...args) {
   if (args.length < 2) {
@@ -854,7 +854,6 @@ export function bisect(...args) {
 }
 /**
  * Slices an object with the cutting plane oriented through the origin [0,0,0]
- * @function slice
  * @param  {CSG} object The object to slice.
  * @param  {number} angle The slice angle.
  * @param  {'x'|'y'|'z'} axis The slice axis.
@@ -903,12 +902,34 @@ export function slice(
 /**
  * Creates a `JsCadUtilsGroup` object that has  `body` and `wedge` objects. The `wedge` object
  * is created by radially cutting the object from the `start` to the `end` angle.
+ *
+ * ![wedge example](../images/wedge.png)
+ *
+ *
+ * @example
+ * util.init(CSG);
+ * var wedge = util.wedge(
+ *   CSG.cube({
+ *     radius: 10
+ *   }),
+ *   30,
+ *   -30,
+ *   'x'
+ * );
+ *
+ * return wedge
+ *   .map((part, name) => {
+ *     if (name == 'wedge') return part.translate([0, 5, 0]);
+ *     return part;
+ *   })
+ *   .combine();
+ *
  * @function wedge
- * @param  {CSG} object {description}
- * @param  {number} start  {description}
- * @param  {number} end    {description}
- * @param  {'x'|'y'|'z'} axis   {description}
- * @return {JsCadUtilsGroup} {description}
+ * @param  {CSG} object The object to slice.
+ * @param  {number} start  The starting angle to slice.
+ * @param  {number} end    The ending angle of the slice.
+ * @param  {'x'|'y'|'z'} axis   The axis to cut the wedge in.
+ * @return {JsCadUtilsGroup} A group object with a `body` and `wedge` parts.
  */
 export function wedge(object, start, end, axis) {
   var a = slice(object, start, axis);

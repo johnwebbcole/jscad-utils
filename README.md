@@ -85,3 +85,4 @@ Here are some of the examples:
 - [retraction-test](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/retraction-test.jscad)
 - [size](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/size.jscad)
 - [text](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/text.jscad)
+- [wedge](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/wedge.jscad)
