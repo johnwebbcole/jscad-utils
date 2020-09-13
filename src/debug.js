@@ -45,11 +45,12 @@ var debugCount = 0;
  * @param  {String} name The name of the debug function.
  * @return {Function} A debug function if enabled otherwise an empty function.
  */
-export const Debug = function(name) {
+export const Debug = function (name) {
   var checks = Object.assign(
     { enabled: [], disabled: [], options: { browser: true } },
     jscadUtilsDebug || {}
   );
+
   var style = checks.options.browser
     ? `color:${debugColors[debugCount++ % debugColors.length]}`
     : `${termColors[debugCount++ % termColors.length]}`;

@@ -1,11 +1,10 @@
+import { csgImageSnapshot } from '@jwc/jscad-test-utils';
 import test from 'ava';
+import { CSG } from '../src/jscad';
 // import { nearlyEqual } from './helpers/nearlyEqual';
 import * as util from '../src/util';
 
-import { csgImageSnapshot } from '@jwc/jscad-test-utils';
-import { CSG } from '../src/jscad';
-
-test.after.always.cb('wait for logging', t => {
+test.after.always.cb('wait for logging', (t) => {
   setTimeout(t.end, 100);
 });
 
@@ -15,7 +14,7 @@ const snapshotOptions = {
   }
 };
 
-test('import util', t => {
+test('import util', (t) => {
   // console.log(
   //     Object.keys(util)
   //         .map(k => `test.todo('${k}');`)
@@ -25,18 +24,18 @@ test('import util', t => {
   t.snapshot(Object.keys(util).sort());
 });
 
-test('identity', t => {
+test('identity', (t) => {
   var o = { a: 'foo' };
   t.deepEqual(util.identity(o), o);
 });
 test.todo('result');
 
-test('defaults', t => {
+test('defaults', (t) => {
   var error = t.throws(() => util.defaults({ a: 0 }, { b: 1 }));
   t.is(error.message, 'defaults is depreciated. use Object.assign instead');
 });
 
-test('isEmpty', t => {
+test('isEmpty', (t) => {
   t.true(util.isEmpty(undefined));
   t.true(util.isEmpty(null));
   t.false(util.isEmpty({}));
@@ -45,7 +44,7 @@ test('isEmpty', t => {
   t.false(util.isEmpty(false));
 });
 
-test('isNegative', t => {
+test('isNegative', (t) => {
   t.true(util.isNegative(-1));
   t.false(util.isNegative(1));
   t.false(util.isNegative(0));
@@ -55,10 +54,10 @@ test('isNegative', t => {
 test.todo('print');
 test.todo('error');
 test.todo('depreciated');
-test('unitCube', t => {
+test('unitCube', (t) => {
   t.snapshot(util.unitCube().getBounds());
 });
-test('unitAxis', t => {
+test('unitAxis', (t) => {
   t.snapshot(util.unitAxis().getBounds());
 });
 test.todo('toArray');
@@ -82,7 +81,7 @@ test.todo('center');
 test.todo('centerY');
 test.todo('centerX');
 test.todo('enlarge');
-test('fit', async t => {
+test('fit', async (t) => {
   var cube = CSG.cube({
     radius: 10
   });
@@ -120,33 +119,33 @@ test('fit', async t => {
 test.todo('flushSide');
 test.todo('axisApply');
 test.todo('axis2array');
-test('centroid', t => {
+test('centroid', (t) => {
   var cube = CSG.cube({
     radius: 10,
     center: [5, 5, 5]
   });
   t.snapshot(util.centroid(cube));
 });
-test('inch', t => {
+test('inch', (t) => {
   t.is(util.inch(1.0), 25.4);
   t.is(util.inch(200.0), 5080);
   t.is(util.inch(3.75), 95.25);
 });
 
-test('cm', t => {
+test('cm', (t) => {
   t.is(util.cm(25.4), 1);
   t.is(util.cm(5080), 200);
   t.is(util.cm(95.25), 3.75);
 });
 
-test('label', async t => {
+test('label', async (t) => {
   var label = util.clone(util.label('label'));
 
   const value = await csgImageSnapshot(t, label, snapshotOptions);
   t.true(value);
 });
 
-test.skip('text', async t => {
+test.skip('text', async (t) => {
   var text = util.text('text');
 
   const value = await csgImageSnapshot(t, text, snapshotOptions);
@@ -155,7 +154,7 @@ test.skip('text', async t => {
 
 test.todo('shift');
 
-test('zero', async t => {
+test('zero', async (t) => {
   var object = CSG.sphere({ radius: 5 }).Zero();
 
   const value = await csgImageSnapshot(t, object, snapshotOptions);
@@ -167,7 +166,7 @@ test.todo('calcFlush');
 test.todo('calcSnap');
 test.todo('snap');
 test.todo('flush');
-test('calcmidlineTo', t => {
+test('calcmidlineTo', (t) => {
   var board = CSG.cube({
     radius: 1
   });
@@ -183,7 +182,7 @@ test.todo('calcCenterWith');
 test.todo('centerWith');
 test.todo('getDelta');
 
-test('bisect object positive', async t => {
+test('bisect object positive', async (t) => {
   var bisectCube = CSG.cube({
     radius: 10
   }).bisect('x', 2, { color: true });
@@ -196,7 +195,7 @@ test('bisect object positive', async t => {
   t.true(value);
 });
 
-test('bisect object negative', async t => {
+test('bisect object negative', async (t) => {
   var bisectCube = CSG.cube({
     radius: 10
   }).bisect('x', -2, { color: true });
@@ -209,6 +208,20 @@ test('bisect object negative', async t => {
   t.true(value);
 });
 
+test.todo('slice');
+test('wedge', async (t) => {
+  var wedge = util.wedge(
+    CSG.cube({
+      radius: 10
+    }),
+    30,
+    -30,
+    'x'
+  );
+
+  const value = await csgImageSnapshot(t, wedge.toArray(), snapshotOptions);
+  t.true(value);
+});
 test.todo('stretch');
 test.todo('poly2solid');
 test.todo('slices2poly');
@@ -216,7 +229,7 @@ test.todo('normalVector');
 test.todo('sliceParams');
 test.todo('reShape');
 
-test('chamfer', async t => {
+test('chamfer', async (t) => {
   var cube = CSG.cube({
     radius: 10
   }).chamfer(3, 'z+');
@@ -225,7 +238,7 @@ test('chamfer', async t => {
   t.true(value);
 });
 
-test('fillet', async t => {
+test('fillet', async (t) => {
   var cube = CSG.cube({
     radius: 10
   }).fillet(2, 'z+');

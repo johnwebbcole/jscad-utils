@@ -105,6 +105,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     get centerWith () { return centerWith; },
     get getDelta () { return getDelta; },
     get bisect () { return bisect; },
+    get slice () { return slice; },
+    get wedge () { return wedge; },
     get stretch () { return stretch; },
     get poly2solid () { return poly2solid; },
     get slices2poly () { return slices2poly; },
@@ -549,7 +551,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * util.init(CSG, { debug: 'jscadUtils:group' });
    *
    * @function Debug
-   * @param  {String} name The name of the debug funciton.
+   * @param  {String} name The name of the debug function.
    * @return {Function} A debug function if enabled otherwise an empty function.
    */
 
@@ -1496,7 +1498,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     return new JsCadUtilsGroup(self.names, self.parts, self.holes);
   }
 
-  var debug$1 = Debug('jscadUtils:util');
+  var debug$1 = Debug('jscadUtils:util'); // import utilInit from '../src/add-prototype';
   // utilInit(CSG);
   // console.trace('CSG', CSG.prototype);
 
@@ -1952,8 +1954,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     if (!side) {
       var fix = {
         '01': 'outside+',
-        '10': 'outside-',
-        '11': 'inside+',
+        10: 'outside-',
+        11: 'inside+',
         '00': 'inside-',
         '-11': 'center+',
         '-10': 'center-'
@@ -2031,7 +2033,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   }
   /**
    * Calculates the transform array to move the midline of an object
-   * by value.  This is usefule when you have a diagram that provide
+   * by value.  This is useful when you have a diagram that provides
    * the distance to an objects midline instead of the edge.
    * @function calcmidlineTo
    * @param  {CSG} o    A CSG object.
@@ -2175,9 +2177,9 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       }
     }
 
-    options = Object.assign(options, {
+    options = Object.assign({
       addRotationCenter: false
-    });
+    }, options);
     angle = angle || 0;
     var info = normalVector(axis);
     var bounds = object.getBounds();
@@ -2215,8 +2217,63 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
       options: options
     });
     var g = Group('negative,positive', [object.cutByPlane(cutplane.plane).color(options.color && 'red'), object.cutByPlane(cutplane.plane.flipped()).color(options.color && 'blue')]);
-    if (options.addRotationCenter) g.add(unitAxis(objectSize.length() + 10, 0.5, rotationCenter), 'rotationCenter');
+    if (options.addRotationCenter) g.add(unitAxis(objectSize.length() + 10, 0.1, rotationCenter), 'rotationCenter');
     return g;
+  }
+  /**
+   * Slices an object with the cutting plane oriented through the origin [0,0,0]
+   * @function slice
+   * @param  {CSG} object The object to slice.
+   * @param  {number} angle The slice angle.
+   * @param  {'x'|'y'|'z'} axis The slice axis.
+   * @param  {'x'|'y'|'z'} rotateaxis The rotation axis of the slice.
+   * @param  {object} options The slice angle.
+   * @param  {boolean} [options.color] Colors the slices.
+   * @param  {boolean} [options.addRotationCenter] Adds a unitAxis object at the rotation center to the group.
+   * @param  {CSG.Vector3D} [options.rotationCenter] The location of the rotation center, defaults to [0,0,0].
+   * @return {JsCadUtilsGroup} A group with a positive and negative CSG object.
+   */
+
+  function slice(object) {
+    var angle = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 15;
+    var axis = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'x';
+    var rotateaxis = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'z';
+    var options = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
+      color: true,
+      addRotationCenter: true
+    };
+    var info = normalVector(axis);
+    var rotationCenter = options.rotationCenter || new CSG.Vector3D(0, 0, 0);
+    var theRotationAxis = rotationAxes[rotateaxis];
+    var cutplane = CSG.OrthoNormalBasis.GetCartesian(info.orthoNormalCartesian[0], info.orthoNormalCartesian[1]) // .translate(cutDelta)
+    .rotate(rotationCenter, theRotationAxis, angle);
+    var g = Group('negative,positive', [object.cutByPlane(cutplane.plane).color(options.color && 'red'), object.cutByPlane(cutplane.plane.flipped()).color(options.color && 'blue')]);
+
+    if (options.addRotationCenter) {
+      var objectSize = size(object);
+      g.add(unitAxis(objectSize.length() + 10, 0.1, rotationCenter), 'rotationCenter');
+    }
+
+    return g;
+  }
+  /**
+   * Creates a `JsCadUtilsGroup` object that has  `body` and `wedge` objects. The `wedge` object
+   * is created by radially cutting the object from the `start` to the `end` angle.
+   * @function wedge
+   * @param  {CSG} object {description}
+   * @param  {number} start  {description}
+   * @param  {number} end    {description}
+   * @param  {'x'|'y'|'z'} axis   {description}
+   * @return {JsCadUtilsGroup} {description}
+   */
+
+  function wedge(object, start, end, axis) {
+    var a = slice(object, start, axis);
+    var b = slice(a.parts.positive, end, axis);
+    return Group({
+      body: b.parts.positive.union(a.parts.negative).color('blue'),
+      wedge: b.parts.negative.color('red')
+    });
   }
   /**
    * Wraps the `stretchAtPlane` call using the same
@@ -2808,7 +2865,7 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
   /**
    * jscad box and join utilities.  This should be considered experimental,
-   * but there are some usefull utilities here.
+   * but there are some useful utilities here.
    */
 
   /**

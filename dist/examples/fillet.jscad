@@ -234,6 +234,12 @@ function initJscadutils(_CSG, options = {}) {
             get bisect() {
                 return bisect;
             },
+            get slice() {
+                return slice;
+            },
+            get wedge() {
+                return wedge;
+            },
             get stretch() {
                 return stretch;
             },
@@ -1530,9 +1536,9 @@ function initJscadutils(_CSG, options = {}) {
                     }
                 }
             }
-            options = Object.assign(options, {
+            options = Object.assign({
                 addRotationCenter: false
-            });
+            }, options);
             angle = angle || 0;
             var info = normalVector(axis);
             var bounds = object.getBounds();
@@ -1570,8 +1576,35 @@ function initJscadutils(_CSG, options = {}) {
                 options
             });
             var g = Group("negative,positive", [ object.cutByPlane(cutplane.plane).color(options.color && "red"), object.cutByPlane(cutplane.plane.flipped()).color(options.color && "blue") ]);
-            if (options.addRotationCenter) g.add(unitAxis(objectSize.length() + 10, .5, rotationCenter), "rotationCenter");
+            if (options.addRotationCenter) g.add(unitAxis(objectSize.length() + 10, .1, rotationCenter), "rotationCenter");
             return g;
+        }
+        function slice(object) {
+            var angle = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 15;
+            var axis = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "x";
+            var rotateaxis = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "z";
+            var options = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
+                color: true,
+                addRotationCenter: true
+            };
+            var info = normalVector(axis);
+            var rotationCenter = options.rotationCenter || new CSG.Vector3D(0, 0, 0);
+            var theRotationAxis = rotationAxes[rotateaxis];
+            var cutplane = CSG.OrthoNormalBasis.GetCartesian(info.orthoNormalCartesian[0], info.orthoNormalCartesian[1]).rotate(rotationCenter, theRotationAxis, angle);
+            var g = Group("negative,positive", [ object.cutByPlane(cutplane.plane).color(options.color && "red"), object.cutByPlane(cutplane.plane.flipped()).color(options.color && "blue") ]);
+            if (options.addRotationCenter) {
+                var objectSize = size(object);
+                g.add(unitAxis(objectSize.length() + 10, .1, rotationCenter), "rotationCenter");
+            }
+            return g;
+        }
+        function wedge(object, start, end, axis) {
+            var a = slice(object, start, axis);
+            var b = slice(a.parts.positive, end, axis);
+            return Group({
+                body: b.parts.positive.union(a.parts.negative).color("blue"),
+                wedge: b.parts.negative.color("red")
+            });
         }
         function stretch(object, axis, distance, offset) {
             var normal = {

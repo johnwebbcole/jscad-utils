@@ -104,6 +104,14 @@ export default function init(proto) {
     return util.bisect(this, ...args);
   };
 
+  proto.prototype.slice = function slice(...args) {
+    return util.slice(this, ...args);
+  };
+
+  proto.prototype.wedge = function wedge(...args) {
+    return util.wedge(this, ...args);
+  };
+
   proto.prototype.stretch = function stretch(axis, distance, offset) {
     return util.stretch(this, axis, distance, offset);
   };

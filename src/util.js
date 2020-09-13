@@ -1,20 +1,20 @@
+import * as array from './array';
 import { Debug } from './debug';
-const debug = Debug('jscadUtils:util');
-import {
-  CSG,
-  union,
-  rectangular_extrude,
-  vector_text,
-  vector_char
-} from './jscad';
 // import jsCadCSG from '@jscad/csg';
 // const { CSG } = jsCadCSG;
 // import scadApi from '@jscad/scad-api';
 // const { rectangular_extrude } = scadApi.extrusions;
 // const { vector_text, vector_char } = scadApi.text;
 // const { union } = scadApi.booleanOps;
-import Group from './group';
-import * as array from './array';
+import Group, { JsCadUtilsGroup } from './group';
+import {
+  CSG,
+  rectangular_extrude,
+  union,
+  vector_char,
+  vector_text
+} from './jscad';
+const debug = Debug('jscadUtils:util');
 // import utilInit from '../src/add-prototype';
 // utilInit(CSG);
 // console.trace('CSG', CSG.prototype);
@@ -531,8 +531,8 @@ export function calcSnap(moveobj, withobj, axes, orientation, delta = 0) {
   if (!side) {
     var fix = {
       '01': 'outside+',
-      '10': 'outside-',
-      '11': 'inside+',
+      10: 'outside-',
+      11: 'inside+',
       '00': 'inside-',
       '-11': 'center+',
       '-10': 'center-'
@@ -772,9 +772,12 @@ export function bisect(...args) {
     }
   }
 
-  options = Object.assign(options, {
-    addRotationCenter: false
-  });
+  options = Object.assign(
+    {
+      addRotationCenter: false
+    },
+    options
+  );
   angle = angle || 0;
   var info = normalVector(axis);
   var bounds = object.getBounds();
@@ -843,11 +846,77 @@ export function bisect(...args) {
 
   if (options.addRotationCenter)
     g.add(
-      unitAxis(objectSize.length() + 10, 0.5, rotationCenter),
+      unitAxis(objectSize.length() + 10, 0.1, rotationCenter),
       'rotationCenter'
     );
 
   return g;
+}
+/**
+ * Slices an object with the cutting plane oriented through the origin [0,0,0]
+ * @function slice
+ * @param  {CSG} object The object to slice.
+ * @param  {number} angle The slice angle.
+ * @param  {'x'|'y'|'z'} axis The slice axis.
+ * @param  {'x'|'y'|'z'} rotateaxis The rotation axis of the slice.
+ * @param  {object} options The slice angle.
+ * @param  {boolean} [options.color] Colors the slices.
+ * @param  {boolean} [options.addRotationCenter] Adds a unitAxis object at the rotation center to the group.
+ * @param  {CSG.Vector3D} [options.rotationCenter] The location of the rotation center, defaults to [0,0,0].
+ * @return {JsCadUtilsGroup} A group with a positive and negative CSG object.
+ */
+export function slice(
+  object,
+  angle = 15,
+  axis = 'x',
+  rotateaxis = 'z',
+  options = { color: true, addRotationCenter: true }
+) {
+  var info = normalVector(axis);
+
+  var rotationCenter = options.rotationCenter || new CSG.Vector3D(0, 0, 0);
+  var theRotationAxis = rotationAxes[rotateaxis];
+
+  var cutplane = CSG.OrthoNormalBasis.GetCartesian(
+    info.orthoNormalCartesian[0],
+    info.orthoNormalCartesian[1]
+  )
+    // .translate(cutDelta)
+    .rotate(rotationCenter, theRotationAxis, angle);
+
+  var g = Group('negative,positive', [
+    object.cutByPlane(cutplane.plane).color(options.color && 'red'),
+    object.cutByPlane(cutplane.plane.flipped()).color(options.color && 'blue')
+  ]);
+
+  if (options.addRotationCenter) {
+    var objectSize = size(object);
+
+    g.add(
+      unitAxis(objectSize.length() + 10, 0.1, rotationCenter),
+      'rotationCenter'
+    );
+  }
+  return g;
+}
+
+/**
+ * Creates a `JsCadUtilsGroup` object that has  `body` and `wedge` objects. The `wedge` object
+ * is created by radially cutting the object from the `start` to the `end` angle.
+ * @function wedge
+ * @param  {CSG} object {description}
+ * @param  {number} start  {description}
+ * @param  {number} end    {description}
+ * @param  {'x'|'y'|'z'} axis   {description}
+ * @return {JsCadUtilsGroup} {description}
+ */
+export function wedge(object, start, end, axis) {
+  var a = slice(object, start, axis);
+  var b = slice(a.parts.positive, end, axis);
+  return Group({
+    body: b.parts.positive.union(a.parts.negative).color('blue'),
+    wedge: b.parts.negative.color('red')
+  });
 }
 
 /**
