@@ -1,9 +1,9 @@
 import { CSG, union } from '../src/jscad';
-import { Debug } from './debug';
-const debug = Debug('jscadUtils:boxes');
-import Group from './group';
 import * as array from './array';
-import { identity, xyz2array, depreciated } from './util';
+import { Debug } from './debug';
+import Group from './group';
+import { depreciated, identity, xyz2array } from './util';
+const debug = Debug('jscadUtils:boxes');
 
 /** @typedef {import("./group").JsCadUtilsGroup} JsCadUtilsGroup */
 
@@ -79,40 +79,59 @@ export function topMiddleBottom(box, thickness) {
  * @return {JsCadUtilsGroup} A group object with `positive`, `negative` parts.
  */
 export function Rabett(box, thickness, gap, height, face, options = {}) {
-  debug('Rabett', box, thickness, gap, height, face);
+  debug(
+    'Rabett',
+    'thickness',
+    thickness,
+    'gap',
+    gap,
+    'height',
+    height,
+    'face',
+    face
+  );
   gap = gap || 0.25;
   var inside = thickness - gap;
   var outside = -thickness + gap;
   // options.color = true;
 
   var group = Group();
-  debug('Rabbet', box.bisect('z', height, options));
+  // debug('Rabbet top height:', height, 'options:', options);
   var { positive: top, negative: lower2_3rd } = box.bisect(
     'z',
     height,
     options
   ).parts;
+
+  // debug('face', face, 'height', height);
+  var lowerBisectHeight =
+    Math.sign(height) < 0 ? face * Math.sign(height) : height - face;
+  // debug('Rabbet bottom height:', lowerBisectHeight, 'options:', options);
   var { positive: middle, negative: bottom } = lower2_3rd.bisect(
     'z',
-    height - face,
+    lowerBisectHeight,
     options
   ).parts;
 
   group.add(
-    top.union(
-      middle
-        // .color('yellow')
-        .subtract(middle.color('darkred').enlarge([outside, outside, 0]))
-    ),
+    top
+      // .color('blue')
+      .union(
+        middle
+          // .color('yellow')
+          .subtract(middle.color('darkred').enlarge([outside, outside, 0]))
+      ),
     'top'
   );
-  group.add(middle.color('pink').enlarge([inside, inside, 0]), 'middle');
+  // group.add(middle.color('pink').enlarge([inside, inside, 0]), 'middle');
   group.add(
-    bottom.union(
-      middle
-        // .color('green')
-        .subtract(middle.color('red').enlarge([inside, inside, 0]))
-    ),
+    bottom
+      // .color('orange')
+      .union(
+        middle
+          // .color('green')
+          .subtract(middle.color('red').enlarge([inside, inside, 0]))
+      ),
     'bottom'
   );
 

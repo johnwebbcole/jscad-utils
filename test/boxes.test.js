@@ -1,9 +1,9 @@
+import { csgImageSnapshot } from '@jwc/jscad-test-utils';
 import test from 'ava';
 import { Boxes, parts as Parts } from '../src';
 import { union } from '../src/jscad';
-import { csgImageSnapshot } from '@jwc/jscad-test-utils';
 
-test('boxes-RabettTopBottom', async t => {
+test('boxes-RabettTopBottom', async (t) => {
   var part = Parts.Hexagon(20, 10).color('orange');
   var cbox = Boxes.Hollow(part, 3);
 
@@ -18,7 +18,7 @@ test('boxes-RabettTopBottom', async t => {
   t.true(value);
 });
 
-test('boxes-RabettTopBottom without removable bottom', async t => {
+test('boxes-RabettTopBottom without removable bottom', async (t) => {
   var part = Parts.Hexagon(20, 10).color('orange');
   var cbox = Boxes.Hollow(part, 3);
 
@@ -29,7 +29,7 @@ test('boxes-RabettTopBottom without removable bottom', async t => {
   t.true(value);
 });
 
-test('boxes-RabettTopBottom without removable top', async t => {
+test('boxes-RabettTopBottom without removable top', async (t) => {
   var part = Parts.Hexagon(20, 10).color('orange');
   var cbox = Boxes.Hollow(part, 3);
 
@@ -44,19 +44,31 @@ test('boxes-RabettTopBottom without removable top', async t => {
   t.true(value);
 });
 
-test('boxes-Rabett', async t => {
+test('boxes-Rabett', async (t) => {
   var cyl = Parts.Cylinder(20, 20);
-  var cbox = Boxes.Hollow(cyl, 3, function(box) {
+  var cbox = Boxes.Hollow(cyl, 3, function (box) {
     return box.fillet(2, 'z+').fillet(2, 'z-');
   });
-  var box = Boxes.Rabett(cbox, 3, 0.5, 11, 2);
+  var box = Boxes.Rabett(cbox, 3, 0.5, 7, 2);
   var object = box.parts.top.translate([0, 0, 10]).union(box.parts.bottom);
 
   const value = await csgImageSnapshot(t, object);
   t.true(value);
 });
 
-test('boxes-RabettJoin', async t => {
+test('boxes-Rabett with negative start', async (t) => {
+  var cyl = Parts.Cylinder(20, 20);
+  var cbox = Boxes.Hollow(cyl, 3, function (box) {
+    return box.fillet(2, 'z+').fillet(2, 'z-');
+  });
+  var box = Boxes.Rabett(cbox, 3, 0.5, -7, 2);
+  var object = box.parts.top.translate([0, 0, 10]).union(box.parts.bottom);
+
+  const value = await csgImageSnapshot(t, object);
+  t.true(value);
+});
+
+test('boxes-RabettJoin', async (t) => {
   var cube = Parts.Cube([20, 20, 20]).Center();
 
   const error = t.throws(
@@ -66,10 +78,10 @@ test('boxes-RabettJoin', async t => {
     { name: 'JSCAD_UTILS_DEPRECATED' }
   );
 
-  t.is(error.message, 'RabbetJoin is depreciated. Use \'Rabbet\' instead');
+  t.is(error.message, "RabbetJoin is depreciated. Use 'Rabbet' instead");
 });
 
-test('boxes-topMiddleBottom', async t => {
+test('boxes-topMiddleBottom', async (t) => {
   var cube = Parts.Cube([20, 20, 20]).Center();
 
   var box = Boxes.topMiddleBottom(cube, 2);

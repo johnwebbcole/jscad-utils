@@ -2234,12 +2234,32 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
    * is created by radially cutting the object from the `start` to the `end` angle.
    *
    * ![wedge example](../images/wedge.png)
+   *
+   *
+   * @example
+   * util.init(CSG);
+   * var wedge = util.wedge(
+   *   CSG.cube({
+   *     radius: 10
+   *   }),
+   *   30,
+   *   -30,
+   *   'x'
+   * );
+   *
+   * return wedge
+   *   .map((part, name) => {
+   *     if (name == 'wedge') return part.translate([0, 5, 0]);
+   *     return part;
+   *   })
+   *   .combine();
+   *
    * @function wedge
-   * @param  {CSG} object {description}
-   * @param  {number} start  {description}
-   * @param  {number} end    {description}
-   * @param  {'x'|'y'|'z'} axis   {description}
-   * @return {JsCadUtilsGroup} {description}
+   * @param  {CSG} object The object to slice.
+   * @param  {number} start  The starting angle to slice.
+   * @param  {number} end    The ending angle of the slice.
+   * @param  {'x'|'y'|'z'} axis   The axis to cut the wedge in.
+   * @return {JsCadUtilsGroup} A group object with a `body` and `wedge` parts.
    */
 
   function wedge(object, start, end, axis) {
@@ -2910,24 +2930,26 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
 
   function Rabett(box, thickness, gap, height, face) {
     var options = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : {};
-    debug$3('Rabett', box, thickness, gap, height, face);
+    debug$3('Rabett', 'thickness', thickness, 'gap', gap, 'height', height, 'face', face);
     gap = gap || 0.25;
     var inside = thickness - gap;
-    var outside = -thickness + gap; // options.color = true;
-
+    var outside = -thickness + gap;
+    options.color = true;
     var group = Group();
-    debug$3('Rabbet', box.bisect('z', height, options));
+    debug$3('Rabbet top height:', height, 'options:', options);
     var _box$bisect$parts = box.bisect('z', height, options).parts,
         top = _box$bisect$parts.positive,
         lower2_3rd = _box$bisect$parts.negative;
-    var _lower2_3rd$bisect$pa = lower2_3rd.bisect('z', height - face, options).parts,
+    debug$3('face', face, 'height', height);
+    var lowerBisectHeight = Math.sign(height) < 0 ? face * Math.sign(height) : height - face;
+    debug$3('Rabbet bottom height:', lowerBisectHeight, 'options:', options);
+    var _lower2_3rd$bisect$pa = lower2_3rd.bisect('z', lowerBisectHeight, options).parts,
         middle = _lower2_3rd$bisect$pa.positive,
         bottom = _lower2_3rd$bisect$pa.negative;
-    group.add(top.union(middle // .color('yellow')
-    .subtract(middle.color('darkred').enlarge([outside, outside, 0]))), 'top');
-    group.add(middle.color('pink').enlarge([inside, inside, 0]), 'middle');
-    group.add(bottom.union(middle // .color('green')
-    .subtract(middle.color('red').enlarge([inside, inside, 0]))), 'bottom');
+    group.add(top // .color('blue')
+    .union(middle.color('yellow').subtract(middle.color('darkred').enlarge([outside, outside, 0]))), 'top'); // group.add(middle.color('pink').enlarge([inside, inside, 0]), 'middle');
+
+    group.add(bottom.color('orange').union(middle.color('green').subtract(middle.color('red').enlarge([inside, inside, 0]))), 'bottom');
     return group;
   }
   /**

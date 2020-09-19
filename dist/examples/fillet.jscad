@@ -2031,17 +2031,20 @@ function initJscadutils(_CSG, options = {}) {
         }
         function Rabett(box, thickness, gap, height, face) {
             var options = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : {};
-            debug$3("Rabett", box, thickness, gap, height, face);
+            debug$3("Rabett", "thickness", thickness, "gap", gap, "height", height, "face", face);
             gap = gap || .25;
             var inside = thickness - gap;
             var outside = -thickness + gap;
+            options.color = true;
             var group = Group();
-            debug$3("Rabbet", box.bisect("z", height, options));
+            debug$3("Rabbet top height:", height, "options:", options);
             var _box$bisect$parts = box.bisect("z", height, options).parts, top = _box$bisect$parts.positive, lower2_3rd = _box$bisect$parts.negative;
-            var _lower2_3rd$bisect$pa = lower2_3rd.bisect("z", height - face, options).parts, middle = _lower2_3rd$bisect$pa.positive, bottom = _lower2_3rd$bisect$pa.negative;
-            group.add(top.union(middle.subtract(middle.color("darkred").enlarge([ outside, outside, 0 ]))), "top");
-            group.add(middle.color("pink").enlarge([ inside, inside, 0 ]), "middle");
-            group.add(bottom.union(middle.subtract(middle.color("red").enlarge([ inside, inside, 0 ]))), "bottom");
+            debug$3("face", face, "height", height);
+            var lowerBisectHeight = Math.sign(height) < 0 ? face * Math.sign(height) : height - face;
+            debug$3("Rabbet bottom height:", lowerBisectHeight, "options:", options);
+            var _lower2_3rd$bisect$pa = lower2_3rd.bisect("z", lowerBisectHeight, options).parts, middle = _lower2_3rd$bisect$pa.positive, bottom = _lower2_3rd$bisect$pa.negative;
+            group.add(top.union(middle.color("yellow").subtract(middle.color("darkred").enlarge([ outside, outside, 0 ]))), "top");
+            group.add(bottom.color("orange").union(middle.color("green").subtract(middle.color("red").enlarge([ inside, inside, 0 ]))), "bottom");
             return group;
         }
         var RabettTopBottom = function rabbetTMB(box, thickness) {
