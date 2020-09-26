@@ -1698,6 +1698,11 @@ function initJscadutils(_CSG, options = {}) {
             return CSG.fromPolygons(polygons);
         }
         function slices2poly(slices, options, axis) {
+            debug$1("slices2poly", slices, options, axis);
+            options = Object.assign({
+                twistangle: 0,
+                twiststeps: 0
+            }, options);
             var twistangle = options && parseFloat(options.twistangle) || 0;
             var twiststeps = options && parseInt(options.twiststeps) || CSG.defaultResolution3D;
             if (twistangle == 0 || twiststeps < 1) {
@@ -1707,6 +1712,7 @@ function initJscadutils(_CSG, options = {}) {
             var polygons = [];
             var first$1 = first(slices);
             var last$1 = last(slices);
+            debug$1("slices2poly first", first$1, first$1.offset, "last", last$1);
             var up = first$1.offset[axis] > last$1.offset[axis];
             polygons = polygons.concat(first$1.poly._toPlanePolygons({
                 translation: first$1.offset,
@@ -1790,19 +1796,21 @@ function initJscadutils(_CSG, options = {}) {
         function reShape(object, radius, orientation, options, slicer) {
             options = options || {};
             var b = object.getBounds();
-            var ar = Math.abs(radius);
+            var absoluteRadius = Math.abs(radius);
             var si = sliceParams(orientation, radius, b);
+            debug$1("reShape", absoluteRadius, si);
             if (si.axis !== "z") throw new Error('reShape error: CAG._toPlanePolytons only uses the "z" axis.  You must use the "z" axis for now.');
             var cutplane = CSG.OrthoNormalBasis.GetCartesian(si.orthoNormalCartesian[0], si.orthoNormalCartesian[1]).translate(si.cutDelta);
             var slice = object.sectionCut(cutplane);
             var first = axisApply(si.axis, function() {
-                return si.positive ? 0 : ar;
+                return si.positive ? 0 : absoluteRadius;
             });
             var last = axisApply(si.axis, function() {
-                return si.positive ? ar : 0;
+                return si.positive ? absoluteRadius : 0;
             });
             var plane = si.positive ? cutplane.plane : cutplane.plane.flipped();
-            var slices = slicer(first, last, slice);
+            debug$1("reShape first/last", first, last);
+            var slices = slicer(first, last, slice, radius);
             var delta = slices2poly(slices, Object.assign(options, {
                 si
             }), si.axis).color(options.color);
@@ -2078,15 +2086,17 @@ function initJscadutils(_CSG, options = {}) {
             var inside = thickness - gap;
             var outside = -thickness + gap;
             options.color = true;
+            debug$3("inside", inside, "outside", outside);
             var group = Group();
-            debug$3("Rabbet top height:", height, "options:", options);
             var _box$bisect$parts = box.bisect("z", height, options).parts, top = _box$bisect$parts.positive, lower2_3rd = _box$bisect$parts.negative;
-            debug$3("face", face, "height", height);
             var lowerBisectHeight = Math.sign(height) < 0 ? face * Math.sign(height) : height - face;
-            debug$3("Rabbet bottom height:", lowerBisectHeight, "options:", options);
             var _lower2_3rd$bisect$pa = lower2_3rd.bisect("z", lowerBisectHeight, options).parts, middle = _lower2_3rd$bisect$pa.positive, bottom = _lower2_3rd$bisect$pa.negative;
-            group.add(top.union(middle.color("yellow").subtract(middle.color("darkred").enlarge([ outside, outside, 0 ]))), "top");
-            group.add(bottom.color("orange").union(middle.color("green").subtract(middle.color("red").enlarge([ inside, inside, 0 ]))), "bottom");
+            var middleTop = middle.color("yellow").subtract(middle.color("darkred").enlarge([ outside, outside, 0 ]));
+            group.add(top.union(middleTop), "top");
+            var bottomOutline = middle.color("yellow").subtract(middle.color("orange").enlarge([ outside, outside, 0 ])).enlarge([ outside, outside, 0 ]);
+            group.add(bottomOutline, "middle-top", true);
+            group.add(middle.color("green").subtract(middle.color("pink").enlarge([ inside, inside, 0 ])), "middle-bottom", true);
+            group.add(bottom.color("orange").union(middle.color("green").subtract(middle.color("red").enlarge([ inside, inside, 0 ])).subtract(middleTop)), "bottom");
             return group;
         }
         var RabettTopBottom = function rabbetTMB(box, thickness) {

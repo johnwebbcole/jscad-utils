@@ -1,19 +1,29 @@
 function main() {
-    util.init(CSG);
+  util.init(CSG, { debug: 'jscadUtils:boxes' });
+  var t = 5;
+  var bbox = Parts.Cube([93.5, 60, 18.82]).Center();
+  var exterior = bbox
+    .enlarge(t, t, t)
+    .stretch('z', 10, 0)
+    .snap(bbox, 'z', 'inside+');
+  var e = exterior.size();
+  // var shell = exterior.subtract(bbox);
+  var rexterior = Parts.RoundedCube(e.x, e.y, e.z, 2)
+    .align(bbox, 'xyz')
+    // .stretch('z', 2, 0)
+    // .snap(shell, 'z', 'inside+')
+    .subtract(bbox);
+  var box = Boxes.Rabett(rexterior, 3, 0.5, -7, 3);
+  var object = union([
+    box.parts.top.translate([0, 0, 30]),
+    box.parts.bottom,
+    box.parts['middle-top'].translate([0, 0, 20]),
+    box.parts['middle-bottom'].translate([0, 0, 10])
+  ]);
+  return object;
 
-    var cube = Parts.Cube([10, 10, 10]).fillet(2, 'z+') // roundover on top (positive fillet)
-        .fillet(-2, 'z-') // fillet on the bottom (negative fillet)
-        .color('orange');
-
-    var cylinder = Parts.Cylinder(10, 10)
-        .translate([0, 20, 0])
-        .align(cube, 'x')
-        .fillet(2, 'z+')
-        .color('blue');
-
-    return union(cube, cylinder);
+  // return [bbox];
 }
-
 // include:js
 // ../dist/compat.js
 var Parts, Boxes, Group, Debug, array, triUtils;

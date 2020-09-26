@@ -141,8 +141,8 @@ export function error(msg, name, error) {
  * has been depricated and what to use instead.
  * @function depreciated
  * @param  {string} method  The name of the method being depricated.
- * @param  {boolean} error  Throws an error if called when true.
- * @param  {string} message Instructions on what to use instead of the depricated method.
+ * @param  {boolean} [error]  Throws an error if called when true.
+ * @param  {string} [message] Instructions on what to use instead of the depricated method.
  */
 export function depreciated(method, error, message) {
   var msg = method + ' is depreciated.' + (' ' + message || '');
@@ -963,12 +963,12 @@ export function stretch(object, axis, distance, offset) {
 }
 
 /**
- * Takes two CSG polygons and createds a solid of `height`.
- * Similar to `CSG.extrude`, excdept you can resize either
+ * Takes two CSG polygons and creates a solid of `height`.
+ * Similar to `CSG.extrude`, except you can resize either
  * polygon.
  * @param  {CAG} top    Top polygon
  * @param  {CAG} bottom Bottom polygon
- * @param  {number} height heigth of solid
+ * @param  {number} height height of solid
  * @return {CSG}        generated solid
  */
 export function poly2solid(top, bottom, height) {
@@ -1020,6 +1020,8 @@ export function poly2solid(top, bottom, height) {
 }
 
 export function slices2poly(slices, options, axis) {
+  debug('slices2poly', slices, options, axis);
+  options = Object.assign({ twistangle: 0, twiststeps: 0 }, options);
   var twistangle = (options && parseFloat(options.twistangle)) || 0;
 
   var twiststeps =
@@ -1035,6 +1037,7 @@ export function slices2poly(slices, options, axis) {
   // bottom and top
   var first = array.first(slices);
   var last = array.last(slices);
+  debug('slices2poly first', first, first.offset, 'last', last);
   var up = first.offset[axis] > last.offset[axis];
 
   // _toPlanePolygons only works in the 'z' axis.  It's hard coded
@@ -1168,8 +1171,10 @@ export function sliceParams(orientation, radius, bounds) {
 export function reShape(object, radius, orientation, options, slicer) {
   options = options || {};
   var b = object.getBounds();
-  var ar = Math.abs(radius);
+  var absoluteRadius = Math.abs(radius);
   var si = sliceParams(orientation, radius, b);
+
+  debug('reShape', absoluteRadius, si);
 
   if (si.axis !== 'z')
     throw new Error(
@@ -1184,16 +1189,16 @@ export function reShape(object, radius, orientation, options, slicer) {
   var slice = object.sectionCut(cutplane);
 
   var first = axisApply(si.axis, function () {
-    return si.positive ? 0 : ar;
+    return si.positive ? 0 : absoluteRadius;
   });
 
   var last = axisApply(si.axis, function () {
-    return si.positive ? ar : 0;
+    return si.positive ? absoluteRadius : 0;
   });
 
   var plane = si.positive ? cutplane.plane : cutplane.plane.flipped();
-
-  var slices = slicer(first, last, slice);
+  debug('reShape first/last', first, last);
+  var slices = slicer(first, last, slice, radius);
 
   var delta = slices2poly(
     slices,

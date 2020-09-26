@@ -94,7 +94,7 @@ export function Rabett(box, thickness, gap, height, face, options = {}) {
   var inside = thickness - gap;
   var outside = -thickness + gap;
   // options.color = true;
-
+  debug('inside', inside, 'outside', outside);
   var group = Group();
   // debug('Rabbet top height:', height, 'options:', options);
   var { positive: top, negative: lower2_3rd } = box.bisect(
@@ -113,25 +113,37 @@ export function Rabett(box, thickness, gap, height, face, options = {}) {
     options
   ).parts;
 
+  var middleTop = middle
+    .color('yellow')
+    .subtract(middle.color('darkred').enlarge([outside, outside, 0]));
   group.add(
     top
       // .color('blue')
-      .union(
-        middle
-          // .color('yellow')
-          .subtract(middle.color('darkred').enlarge([outside, outside, 0]))
-      ),
+      .union(middleTop),
     'top'
   );
-  // group.add(middle.color('pink').enlarge([inside, inside, 0]), 'middle');
+
+  var bottomOutline = middle
+    .color('yellow')
+    .subtract(middle.color('orange').enlarge([outside, outside, 0]))
+    .enlarge([outside, outside, 0]);
+  group.add(bottomOutline, 'middle-top', true);
+
   group.add(
-    bottom
-      // .color('orange')
-      .union(
-        middle
-          // .color('green')
-          .subtract(middle.color('red').enlarge([inside, inside, 0]))
-      ),
+    middle
+      .color('green')
+      .subtract(middle.color('pink').enlarge([inside, inside, 0])),
+    'middle-bottom',
+    true
+  );
+
+  group.add(
+    bottom.color('orange').union(
+      middle
+        .color('green')
+        .subtract(middle.color('red').enlarge([inside, inside, 0]))
+        .subtract(middleTop)
+    ),
     'bottom'
   );
 
