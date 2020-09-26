@@ -54,8 +54,13 @@ function initJscadutils(_CSG, options = {}) {
     });
     var jscadUtils = function(exports, jsCadCSG, scadApi) {
         "use strict";
-        jsCadCSG = jsCadCSG && Object.prototype.hasOwnProperty.call(jsCadCSG, "default") ? jsCadCSG["default"] : jsCadCSG;
-        scadApi = scadApi && Object.prototype.hasOwnProperty.call(scadApi, "default") ? scadApi["default"] : scadApi;
+        function _interopDefaultLegacy(e) {
+            return e && typeof e === "object" && "default" in e ? e : {
+                default: e
+            };
+        }
+        var jsCadCSG__default = _interopDefaultLegacy(jsCadCSG);
+        var scadApi__default = _interopDefaultLegacy(scadApi);
         var util = Object.freeze({
             __proto__: null,
             get NOZZEL_SIZE() {
@@ -302,9 +307,9 @@ function initJscadutils(_CSG, options = {}) {
             var keys = Object.keys(object);
             if (Object.getOwnPropertySymbols) {
                 var symbols = Object.getOwnPropertySymbols(object);
-                if (enumerableOnly) symbols = symbols.filter(function(sym) {
+                if (enumerableOnly) symbols = symbols.filter((function(sym) {
                     return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-                });
+                }));
                 keys.push.apply(keys, symbols);
             }
             return keys;
@@ -313,15 +318,15 @@ function initJscadutils(_CSG, options = {}) {
             for (var i = 1; i < arguments.length; i++) {
                 var source = arguments[i] != null ? arguments[i] : {};
                 if (i % 2) {
-                    ownKeys(Object(source), true).forEach(function(key) {
+                    ownKeys(Object(source), true).forEach((function(key) {
                         _defineProperty(target, key, source[key]);
-                    });
+                    }));
                 } else if (Object.getOwnPropertyDescriptors) {
                     Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
                 } else {
-                    ownKeys(Object(source)).forEach(function(key) {
+                    ownKeys(Object(source)).forEach((function(key) {
                         Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-                    });
+                    }));
                 }
             }
             return target;
@@ -430,29 +435,29 @@ function initJscadutils(_CSG, options = {}) {
             solveab
         });
         var div = function div(a, f) {
-            return a.map(function(e) {
+            return a.map((function(e) {
                 return e / f;
-            });
+            }));
         };
         var addValue = function addValue(a, f) {
-            return a.map(function(e) {
+            return a.map((function(e) {
                 return e + f;
-            });
+            }));
         };
         var addArray = function addArray(a, f) {
-            return a.map(function(e, i) {
+            return a.map((function(e, i) {
                 return e + f[i];
-            });
+            }));
         };
         var add = function add(a) {
-            return Array.prototype.slice.call(arguments, 1).reduce(function(result, arg) {
+            return Array.prototype.slice.call(arguments, 1).reduce((function(result, arg) {
                 if (Array.isArray(arg)) {
                     result = addArray(result, arg);
                 } else {
                     result = addValue(result, arg);
                 }
                 return result;
-            }, a);
+            }), a);
         };
         var fromxyz = function fromxyz(object) {
             return Array.isArray(object) ? object : [ object.x, object.y, object.z ];
@@ -471,9 +476,9 @@ function initJscadutils(_CSG, options = {}) {
             return a && a.length > 0 ? a[a.length - 1] : undefined;
         };
         var min = function min(a) {
-            return a.reduce(function(result, value) {
+            return a.reduce((function(result, value) {
                 return value < result ? value : result;
-            }, Number.MAX_VALUE);
+            }), Number.MAX_VALUE);
         };
         var range = function range(a, b) {
             var result = [];
@@ -507,11 +512,11 @@ function initJscadutils(_CSG, options = {}) {
                 }
             }, jscadUtilsDebug || {});
             var style = checks.options.browser ? "color:".concat(debugColors[debugCount++ % debugColors.length]) : "".concat(termColors[debugCount++ % termColors.length]);
-            var enabled = checks.enabled.some(function checkEnabled(check) {
+            var enabled = checks.enabled.some((function checkEnabled(check) {
                 return check.test(name);
-            }) && !checks.disabled.some(function checkEnabled(check) {
+            })) && !checks.disabled.some((function checkEnabled(check) {
                 return check.test(name);
-            });
+            }));
             var logger = enabled ? checks.options.browser ? function() {
                 var _console;
                 for (var _len = arguments.length, msg = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -698,9 +703,9 @@ function initJscadutils(_CSG, options = {}) {
         function color(o, r, g, b, a) {
             if (typeof r !== "string") return o.setColor(r, g, b, a);
             if (r === "") return o;
-            var c = name2rgb(r).map(function(x) {
+            var c = name2rgb(r).map((function(x) {
                 return x / 255;
-            });
+            }));
             c[3] = g || 1;
             return o.setColor(c);
         }
@@ -802,10 +807,10 @@ function initJscadutils(_CSG, options = {}) {
                 if (arguments.length === 1) {
                     return this._translate(arguments[0]);
                 } else {
-                    var t = Array.prototype.slice.call(arguments, 0).reduce(function(result, arg) {
+                    var t = Array.prototype.slice.call(arguments, 0).reduce((function(result, arg) {
                         result = undefined(result, arg);
                         return result;
-                    }, [ 0, 0, 0 ]);
+                    }), [ 0, 0, 0 ]);
                     return this._translate(t);
                 }
             };
@@ -815,9 +820,9 @@ function initJscadutils(_CSG, options = {}) {
             proto.prototype.connect = function connectTo(myConnectorName, otherConnector) {
                 var mirror = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
                 var normalrotation = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-                var myConnector = myConnectorName.split(".").reduce(function(a, v) {
+                var myConnector = myConnectorName.split(".").reduce((function(a, v) {
                     return a[v];
-                }, this.properties);
+                }), this.properties);
                 if (!myConnector) {
                     error("The connector '".concat(myConnectorName, "' does not exist on the object [").concat(Object.keys(this.properties).join(","), "]"), "Missing connector property");
                 }
@@ -829,10 +834,10 @@ function initJscadutils(_CSG, options = {}) {
             __proto__: null,
             default: init
         });
-        var CSG = jsCadCSG.CSG, CAG = jsCadCSG.CAG;
-        var rectangular_extrude = scadApi.extrusions.rectangular_extrude;
-        var _scadApi$text = scadApi.text, vector_text = _scadApi$text.vector_text, vector_char = _scadApi$text.vector_char;
-        var union = scadApi.booleanOps.union;
+        var CSG = jsCadCSG__default["default"].CSG, CAG = jsCadCSG__default["default"].CAG;
+        var rectangular_extrude = scadApi__default["default"].extrusions.rectangular_extrude;
+        var _scadApi$text = scadApi__default["default"].text, vector_text = _scadApi$text.vector_text, vector_char = _scadApi$text.vector_char;
+        var union = scadApi__default["default"].booleanOps.union;
         init(CSG);
         var debug = Debug("jscadUtils:group");
         function JsCadUtilsGroup() {
@@ -852,9 +857,9 @@ function initJscadutils(_CSG, options = {}) {
                     if (!hidden) self.names.push(name);
                     self.parts[name] = object.combine(parts);
                     if (subparts) {
-                        Object.keys(object.parts).forEach(function(key) {
+                        Object.keys(object.parts).forEach((function(key) {
                             self.parts[subparts + key] = object.parts[key];
-                        });
+                        }));
                     }
                 } else {
                     Object.assign(self.parts, object.parts);
@@ -881,9 +886,9 @@ function initJscadutils(_CSG, options = {}) {
                     throw new Error("no pieces found in ".concat(self.name, " pieces: ").concat(pieces, " parts: ").concat(Object.keys(self.parts), " names: ").concat(self.names));
                 }
                 debug("combine", self.names, self.parts);
-                var g = union(mapPick(self.parts, pieces, function(value, key, index, object) {
+                var g = union(mapPick(self.parts, pieces, (function(value, key, index, object) {
                     return map ? map(value, key, index, object) : identity(value);
-                }, self.name));
+                }), self.name));
                 return g.subtractIf(self.holes && Array.isArray(self.holes) ? union(self.holes) : self.holes, self.holes && !options.noholes);
             } catch (err) {
                 debug("combine error", this, pieces, options, err);
@@ -892,17 +897,17 @@ function initJscadutils(_CSG, options = {}) {
         };
         JsCadUtilsGroup.prototype.map = function(cb) {
             var self = this;
-            self.parts = Object.keys(self.parts).filter(function(k) {
+            self.parts = Object.keys(self.parts).filter((function(k) {
                 return k !== "holes";
-            }).reduce(function(result, key) {
+            })).reduce((function(result, key) {
                 result[key] = cb(self.parts[key], key);
                 return result;
-            }, {});
+            }), {});
             if (self.holes) {
                 if (Array.isArray(self.holes)) {
-                    self.holes = self.holes.map(function(hole, idx) {
+                    self.holes = self.holes.map((function(hole, idx) {
                         return cb(hole, idx);
-                    });
+                    }));
                 } else {
                     self.holes = cb(self.holes, "holes");
                 }
@@ -918,15 +923,15 @@ function initJscadutils(_CSG, options = {}) {
             }
             if (!map) map = identity;
             var group = Group(name);
-            Object.keys(self.parts).forEach(function(key) {
+            Object.keys(self.parts).forEach((function(key) {
                 var part = self.parts[key];
                 var hidden = self.names.indexOf(key) == -1;
                 group.add(map(clone(part)), key, hidden);
-            });
+            }));
             if (self.holes) {
-                group.holes = toArray(self.holes).map(function(part) {
+                group.holes = toArray(self.holes).map((function(part) {
                     return map(CSG.fromPolygons(part.toPolygons()), "holes");
-                });
+                }));
             }
             return group;
         };
@@ -943,9 +948,9 @@ function initJscadutils(_CSG, options = {}) {
             }
             var rotationCenter = solid.centroid();
             var rotationAxis = axes[axis];
-            self.map(function(part) {
+            self.map((function(part) {
                 return part.rotate(rotationCenter, rotationAxis, angle);
-            });
+            }));
             return self;
         };
         JsCadUtilsGroup.prototype.combineAll = function(options, map) {
@@ -956,9 +961,9 @@ function initJscadutils(_CSG, options = {}) {
             try {
                 var self = this;
                 var t = calcSnap(self.combine(part), to, axis, orientation, delta);
-                self.map(function(part) {
+                self.map((function(part) {
                     return part.translate(t);
-                });
+                }));
                 return self;
             } catch (err) {
                 debug("snap error", this, part, to, axis, delta, err);
@@ -971,9 +976,9 @@ function initJscadutils(_CSG, options = {}) {
                 var t = calcCenterWith(self.combine(part, {
                     noholes: true
                 }), axis, to, delta);
-                self.map(function(part) {
+                self.map((function(part) {
                     return part.translate(t);
-                });
+                }));
                 return self;
             } catch (err) {
                 debug("align error", this, part, to, axis, delta, err);
@@ -1001,38 +1006,38 @@ function initJscadutils(_CSG, options = {}) {
                 normalrotation
             });
             var self = this;
-            var myConnector = connectorName.split(".").reduce(function(a, v) {
+            var myConnector = connectorName.split(".").reduce((function(a, v) {
                 return a[v];
-            }, self.parts[partName].properties);
+            }), self.parts[partName].properties);
             debug("toConnector", to instanceof CSG.Connector);
-            var toConnector = toConnectorName.split(".").reduce(function(a, v) {
+            var toConnector = toConnectorName.split(".").reduce((function(a, v) {
                 return a[v];
-            }, to.properties);
+            }), to.properties);
             var matrix = myConnector.getTransformationTo(toConnector, mirror, normalrotation);
             debug("connectTo", matrix);
-            self.map(function(part) {
+            self.map((function(part) {
                 return part.transform(matrix);
-            });
+            }));
             return self;
         };
         JsCadUtilsGroup.prototype.midlineTo = function midlineTo(part, axis, to) {
             var self = this;
             var size = self.combine(part).size();
-            var t = axisApply(axis, function(i, a) {
+            var t = axisApply(axis, (function(i, a) {
                 return to - size[a] / 2;
-            });
-            self.map(function(part) {
+            }));
+            self.map((function(part) {
                 return part.translate(t);
-            });
+            }));
             return self;
         };
         JsCadUtilsGroup.prototype.translate = function translate(x, y, z) {
             var self = this;
             var t = Array.isArray(x) ? x : [ x, y, z ];
             debug("translate", t);
-            self.map(function(part) {
+            self.map((function(part) {
                 return part.translate(t);
-            });
+            }));
             return self;
         };
         JsCadUtilsGroup.prototype.pick = function(parts, map) {
@@ -1040,9 +1045,9 @@ function initJscadutils(_CSG, options = {}) {
             var p = parts && parts.length > 0 && parts.split(",") || self.names;
             if (!map) map = identity;
             var g = Group();
-            p.forEach(function(name) {
+            p.forEach((function(name) {
                 g.add(map(CSG.fromPolygons(self.parts[name].toPolygons()), name), name);
-            });
+            }));
             return g;
         };
         JsCadUtilsGroup.prototype.array = function(parts, map) {
@@ -1051,22 +1056,22 @@ function initJscadutils(_CSG, options = {}) {
             var p = parts && parts.length > 0 && parts.split(",") || self.names;
             if (!map) map = identity;
             var a = [];
-            p.forEach(function(name) {
+            p.forEach((function(name) {
                 if (!self.parts[name]) {
                     debug("array error", _this, parts);
                     throw error('group::array error "'.concat(name, '" not found.\nthis: ').concat(_this, '\nparts: "').concat(parts, '"\n'), "JSCAD_UTILS_GROUP_ERROR");
                 }
                 a.push(map(CSG.fromPolygons(self.parts[name].toPolygons()), name));
-            });
+            }));
             return a;
         };
         JsCadUtilsGroup.prototype.toArray = function(pieces) {
             var self = this;
             var piecesArray = pieces ? pieces.split(",") : self.names;
-            return piecesArray.map(function(piece) {
+            return piecesArray.map((function(piece) {
                 if (!self.parts[piece]) console.error("Cannot find ".concat(piece, " in ").concat(self.names));
                 return self.parts[piece];
-            });
+            }));
         };
         JsCadUtilsGroup.prototype.toString = function() {
             return '{\n  name: "'.concat(this.name, '",\n  names: "').concat(this.names.join(","), '", \n  parts: "').concat(Object.keys(this.parts), '",\n  holes: "').concat(this.holes, '"\n}');
@@ -1099,9 +1104,9 @@ function initJscadutils(_CSG, options = {}) {
                         self.name = objectNames;
                     } else {
                         var objects = objectNames;
-                        self.names = Object.keys(objects).filter(function(k) {
+                        self.names = Object.keys(objects).filter((function(k) {
                             return k !== "holes";
-                        });
+                        }));
                         self.parts = Object.assign({}, objects);
                         self.holes = objects.holes;
                     }
@@ -1180,21 +1185,21 @@ function initJscadutils(_CSG, options = {}) {
         function label(text, x, y, width, height) {
             var l = vector_text(x || 0, y || 0, text);
             var o = [];
-            l.forEach(function(pl) {
+            l.forEach((function(pl) {
                 o.push(rectangular_extrude(pl, {
                     w: width || 2,
                     h: height || 2
                 }));
-            });
+            }));
             return center(union(o));
         }
         function text(text) {
             var l = vector_char(0, 0, text);
-            var _char = l.segments.reduce(function(result, segment) {
+            var _char = l.segments.reduce((function(result, segment) {
                 var path = new CSG.Path2D(segment);
                 var cag = path.expandToCAG(2);
                 return result ? result.union(cag) : cag;
-            }, undefined);
+            }), undefined);
             return _char;
         }
         function unitCube(length, radius) {
@@ -1227,35 +1232,35 @@ function initJscadutils(_CSG, options = {}) {
             return result;
         }
         function zipObject(names, values) {
-            return names.reduce(function(result, value, idx) {
+            return names.reduce((function(result, value, idx) {
                 result[value] = values[idx];
                 return result;
-            }, {});
+            }), {});
         }
         function map(o, f) {
-            return Object.keys(o).map(function(key) {
+            return Object.keys(o).map((function(key) {
                 return f(o[key], key, o);
-            });
+            }));
         }
         function mapValues(o, f) {
-            return Object.keys(o).map(function(key) {
+            return Object.keys(o).map((function(key) {
                 return f(o[key], key);
-            });
+            }));
         }
         function pick(o, names) {
-            return names.reduce(function(result, name) {
+            return names.reduce((function(result, name) {
                 result[name] = o[name];
                 return result;
-            }, {});
+            }), {});
         }
         function mapPick(o, names, f, options) {
-            return names.reduce(function(result, name, index) {
+            return names.reduce((function(result, name, index) {
                 if (!o[name]) {
                     throw new Error("".concat(name, " not found in ").concat(options.name, ": ").concat(Object.keys(o).join(",")));
                 }
                 result.push(f ? f(o[name], name, index, o) : o[name]);
                 return result;
-            }, []);
+            }), []);
         }
         function divA(a, f) {
             return div(a, f);
@@ -1319,9 +1324,9 @@ function initJscadutils(_CSG, options = {}) {
             var objectSize = size(object);
             var objectCentroid = centroid(object, objectSize);
             var idx = 0;
-            var t = map(objectSize, function(i) {
+            var t = map(objectSize, (function(i) {
                 return scale(i, a[idx++]);
-            });
+            }));
             var new_object = object.scale(t);
             var new_centroid = centroid(new_object);
             var delta = new_centroid.minus(objectCentroid).times(-1);
@@ -1345,10 +1350,10 @@ function initJscadutils(_CSG, options = {}) {
             }
             var s = [ scale(objectSize.x, x), scale(objectSize.y, y), scale(objectSize.z, z) ];
             var min$1 = min(s);
-            return centerWith(object.scale(s.map(function(d, i) {
+            return centerWith(object.scale(s.map((function(d, i) {
                 if (a[i] === 0) return 1;
                 return keep_aspect_ratio ? min$1 : d;
-            })), "xyz", object);
+            }))), "xyz", object);
         }
         function shift(object, x, y, z) {
             var hsize = this.div(this.size(object.getBounds()), 2);
@@ -1387,9 +1392,9 @@ function initJscadutils(_CSG, options = {}) {
             if (side[0] === -1) {
                 w[-1] = toxyz(withobj.centroid());
             }
-            return this.axisApply(axes, function(i, axis) {
+            return this.axisApply(axes, (function(i, axis) {
                 return w[side[0]][axis] - m[side[1]][axis];
-            });
+            }));
         }
         function calcSnap(moveobj, withobj, axes, orientation) {
             var delta = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
@@ -1410,12 +1415,12 @@ function initJscadutils(_CSG, options = {}) {
             if (side[0] === -1) {
                 w[-1] = withobj.centroid();
             }
-            var t = axisApply(axes, function(i, axis) {
+            var t = axisApply(axes, (function(i, axis) {
                 return w[side[0]][axis] - m[side[1]][axis];
-            });
-            return delta ? axisApply(axes, function(i) {
+            }));
+            return delta ? axisApply(axes, (function(i) {
                 return t[i] + delta;
-            }) : t;
+            })) : t;
         }
         function snap(moveobj, withobj, axis, orientation, delta) {
             debug$1("snap", moveobj, withobj, axis, orientation, delta);
@@ -1433,9 +1438,9 @@ function initJscadutils(_CSG, options = {}) {
                 y: 1,
                 z: 2
             };
-            axes.split("").forEach(function(axis) {
+            axes.split("").forEach((function(axis) {
                 retval[lookup[axis]] = valfun(lookup[axis], axis);
-            });
+            }));
             return retval;
         }
         function axis2array(axes, valfun) {
@@ -1446,10 +1451,10 @@ function initJscadutils(_CSG, options = {}) {
                 y: 1,
                 z: 2
             };
-            axes.split("").forEach(function(axis) {
+            axes.split("").forEach((function(axis) {
                 var i = lookup[axis];
                 a[i] = valfun(i, axis);
-            });
+            }));
             return a;
         }
         function centroid(o, objectSize) {
@@ -1464,9 +1469,9 @@ function initJscadutils(_CSG, options = {}) {
         function calcmidlineTo(o, axis, to) {
             var bounds = o.getBounds();
             var objectSize = size(bounds);
-            return axisApply(axis, function(i, a) {
+            return axisApply(axis, (function(i, a) {
                 return to - objectSize[a] / 2;
-            });
+            }));
         }
         function midlineTo(o, axis, to) {
             return o.translate(calcmidlineTo(o, axis, to));
@@ -1474,18 +1479,18 @@ function initJscadutils(_CSG, options = {}) {
         function translator(o, axis, withObj) {
             var objectCentroid = centroid(o);
             var withCentroid = centroid(withObj);
-            var t = axisApply(axis, function(i) {
+            var t = axisApply(axis, (function(i) {
                 return withCentroid[i] - objectCentroid[i];
-            });
+            }));
             return t;
         }
         function calcCenterWith(o, axes, withObj) {
             var delta = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
             var objectCentroid = centroid(o);
             var withCentroid = centroid(withObj);
-            var t = axisApply(axes, function(i, axis) {
+            var t = axisApply(axes, (function(i, axis) {
                 return withCentroid[axis] - objectCentroid[axis];
-            });
+            }));
             return delta ? add(t, delta) : t;
         }
         function centerWith(o, axis, withObj) {
@@ -1498,9 +1503,9 @@ function initJscadutils(_CSG, options = {}) {
                 }
             }
             var dist = isNegative(offset) ? offset = size[axis] + offset : offset;
-            return axisApply(axis, function(i, a) {
+            return axisApply(axis, (function(i, a) {
                 return bounds[0][a] + (isEmpty(dist) ? size[axis] / 2 : dist);
-            });
+            }));
         }
         function bisect() {
             for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -1563,11 +1568,11 @@ function initJscadutils(_CSG, options = {}) {
             }[[ axis, rotateaxis ].sort().join("")];
             var centroid = object.centroid();
             var rotateDelta = getDelta(objectSize, bounds, rotateOffsetAxis, rotateoffset);
-            var rotationCenter = options.rotationCenter || new CSG.Vector3D(axisApply("xyz", function(i, a) {
+            var rotationCenter = options.rotationCenter || new CSG.Vector3D(axisApply("xyz", (function(i, a) {
                 if (a == axis) return cutDelta[i];
                 if (a == rotateOffsetAxis) return rotateDelta[i];
                 return centroid[a];
-            }));
+            })));
             var theRotationAxis = rotationAxes[rotateaxis];
             var cutplane = CSG.OrthoNormalBasis.GetCartesian(info.orthoNormalCartesian[0], info.orthoNormalCartesian[1]).translate(cutDelta).rotate(rotationCenter, theRotationAxis, angle);
             debug$1("bisect", debug$1.enabled && {
@@ -1626,7 +1631,7 @@ function initJscadutils(_CSG, options = {}) {
         }
         function poly2solid(top, bottom, height) {
             if (top.sides.length == 0) {
-                return new CSG();
+                return new CSG;
             }
             var offsetVector = CSG.Vector3D.Create(0, 0, height);
             var normalVector = CSG.Vector3D.Create(0, 1, 0);
@@ -1684,7 +1689,7 @@ function initJscadutils(_CSG, options = {}) {
                 return v[rotateAxis](angle * percent);
             };
             var connectorAxis = last$1.offset.minus(first$1.offset).abs();
-            slices.forEach(function(slice, idx) {
+            slices.forEach((function(slice, idx) {
                 if (idx < slices.length - 1) {
                     var nextidx = idx + 1;
                     var top = !up ? slices[nextidx] : slice;
@@ -1697,7 +1702,7 @@ function initJscadutils(_CSG, options = {}) {
                         toConnector2: c2
                     }));
                 }
-            });
+            }));
             return CSG.fromPolygons(polygons);
         }
         function normalVector(axis) {
@@ -1738,12 +1743,12 @@ function initJscadutils(_CSG, options = {}) {
             var info = dirInfo["dir" + direction];
             return Object.assign({
                 axis,
-                cutDelta: axisApply(axis, function(i, a) {
+                cutDelta: axisApply(axis, (function(i, a) {
                     return bounds[info.sizeIdx][a] + Math.abs(radius) * info.sizeDir;
-                }),
-                moveDelta: axisApply(axis, function(i, a) {
+                })),
+                moveDelta: axisApply(axis, (function(i, a) {
                     return bounds[info.sizeIdx][a] + Math.abs(radius) * info.moveDir;
-                })
+                }))
             }, info, normalVector(axis));
         }
         function reShape(object, radius, orientation, options, slicer) {
@@ -1755,12 +1760,12 @@ function initJscadutils(_CSG, options = {}) {
             if (si.axis !== "z") throw new Error('reShape error: CAG._toPlanePolytons only uses the "z" axis.  You must use the "z" axis for now.');
             var cutplane = CSG.OrthoNormalBasis.GetCartesian(si.orthoNormalCartesian[0], si.orthoNormalCartesian[1]).translate(si.cutDelta);
             var slice = object.sectionCut(cutplane);
-            var first = axisApply(si.axis, function() {
+            var first = axisApply(si.axis, (function() {
                 return si.positive ? 0 : absoluteRadius;
-            });
-            var last = axisApply(si.axis, function() {
+            }));
+            var last = axisApply(si.axis, (function() {
                 return si.positive ? absoluteRadius : 0;
-            });
+            }));
             var plane = si.positive ? cutplane.plane : cutplane.plane.flipped();
             debug$1("reShape first/last", first, last);
             var slices = slicer(first, last, slice, radius);
@@ -1771,7 +1776,7 @@ function initJscadutils(_CSG, options = {}) {
             return union([ options.unionOriginal ? object : remainder, delta.translate(si.moveDelta) ]);
         }
         function chamfer(object, radius, orientation, options) {
-            return reShape(object, radius, orientation, options, function(first, last, slice) {
+            return reShape(object, radius, orientation, options, (function(first, last, slice) {
                 return [ {
                     poly: slice,
                     offset: new CSG.Vector3D(first)
@@ -1779,15 +1784,15 @@ function initJscadutils(_CSG, options = {}) {
                     poly: enlarge(slice, [ -radius * 2, -radius * 2 ]),
                     offset: new CSG.Vector3D(last)
                 } ];
-            });
+            }));
         }
         function fillet(object, radius, orientation, options) {
             options = options || {};
-            return reShape(object, radius, orientation, options, function(first, last, slice) {
+            return reShape(object, radius, orientation, options, (function(first, last, slice) {
                 var v1 = new CSG.Vector3D(first);
                 var v2 = new CSG.Vector3D(last);
                 var res = options.resolution || CSG.defaultResolution3D;
-                var slices = range(0, res).map(function(i) {
+                var slices = range(0, res).map((function(i) {
                     var p = i > 0 ? i / (res - 1) : 0;
                     var v = v1.lerp(v2, p);
                     var size = -radius * 2 - Math.cos(Math.asin(p)) * (-radius * 2);
@@ -1795,9 +1800,9 @@ function initJscadutils(_CSG, options = {}) {
                         poly: enlarge(slice, [ size, size ]),
                         offset: v
                     };
-                });
+                }));
                 return slices;
-            });
+            }));
         }
         function calcRotate(part, solid, axis) {
             var axes = {
@@ -1817,11 +1822,11 @@ function initJscadutils(_CSG, options = {}) {
             return part.rotate(rotationCenter, rotationAxis, angle);
         }
         function cloneProperties(from, to) {
-            return Object.entries(from).reduce(function(props, _ref) {
+            return Object.entries(from).reduce((function(props, _ref) {
                 var _ref2 = _slicedToArray(_ref, 2), key = _ref2[0], value = _ref2[1];
                 props[key] = value;
                 return props;
-            }, to);
+            }), to);
         }
         function clone(o) {
             var c = CSG.fromPolygons(o.toPolygons());
@@ -1854,10 +1859,10 @@ function initJscadutils(_CSG, options = {}) {
             for (var _len = arguments.length, objects = new Array(_len), _key = 0; _key < _len; _key++) {
                 objects[_key] = arguments[_key];
             }
-            return objects.reduce(function(bbox, part) {
+            return objects.reduce((function(bbox, part) {
                 var object = bbox ? union([ bbox, box(part) ]) : part;
                 return box(object);
-            }, undefined);
+            }), undefined);
         }
         function Cube(width) {
             var r = div(fromxyz(width), 2);
@@ -2038,7 +2043,6 @@ function initJscadutils(_CSG, options = {}) {
             gap = gap || .25;
             var inside = thickness - gap;
             var outside = -thickness + gap;
-            options.color = true;
             debug$3("inside", inside, "outside", outside);
             var group = Group();
             var _box$bisect$parts = box.bisect("z", height, options).parts, top = _box$bisect$parts.positive, lower2_3rd = _box$bisect$parts.negative;

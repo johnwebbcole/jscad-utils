@@ -43,8 +43,10 @@ function initJscadutils(_CSG, options = {}) {
 var jscadUtils = (function (exports, jsCadCSG, scadApi) {
   'use strict';
 
-  jsCadCSG = jsCadCSG && Object.prototype.hasOwnProperty.call(jsCadCSG, 'default') ? jsCadCSG['default'] : jsCadCSG;
-  scadApi = scadApi && Object.prototype.hasOwnProperty.call(scadApi, 'default') ? scadApi['default'] : scadApi;
+  function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+  var jsCadCSG__default = /*#__PURE__*/_interopDefaultLegacy(jsCadCSG);
+  var scadApi__default = /*#__PURE__*/_interopDefaultLegacy(scadApi);
 
   var util = /*#__PURE__*/Object.freeze({
     __proto__: null,
@@ -1013,13 +1015,13 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     'default': init
   });
 
-  var CSG = jsCadCSG.CSG,
-      CAG = jsCadCSG.CAG;
-  var rectangular_extrude = scadApi.extrusions.rectangular_extrude;
-  var _scadApi$text = scadApi.text,
+  var CSG = jsCadCSG__default['default'].CSG,
+      CAG = jsCadCSG__default['default'].CAG;
+  var rectangular_extrude = scadApi__default['default'].extrusions.rectangular_extrude;
+  var _scadApi$text = scadApi__default['default'].text,
       vector_text = _scadApi$text.vector_text,
       vector_char = _scadApi$text.vector_char;
-  var union = scadApi.booleanOps.union;
+  var union = scadApi__default['default'].booleanOps.union;
   init(CSG);
 
   var debug = Debug('jscadUtils:group');
@@ -2983,8 +2985,8 @@ var jscadUtils = (function (exports, jsCadCSG, scadApi) {
     debug$3('Rabett', 'thickness', thickness, 'gap', gap, 'height', height, 'face', face);
     gap = gap || 0.25;
     var inside = thickness - gap;
-    var outside = -thickness + gap;
-    options.color = true;
+    var outside = -thickness + gap; // options.color = true;
+
     debug$3('inside', inside, 'outside', outside);
     var group = Group(); // debug('Rabbet top height:', height, 'options:', options);
 
