@@ -1,19 +1,18 @@
 import { Debug } from './debug';
-const debug = Debug('jscadUtils:group');
 import { CSG, union } from './jscad';
-
 import {
-  identity,
-  unitCube,
-  toArray,
-  calcSnap,
-  mapPick,
-  calcCenterWith,
   axisApply,
-  zipObject,
+  calcCenterWith,
+  calcSnap,
   clone,
-  error
+  error,
+  identity,
+  mapPick,
+  toArray,
+  unitCube,
+  zipObject
 } from './util';
+const debug = Debug('jscadUtils:group');
 
 /**
  * @function JsCadUtilsGroup
@@ -106,7 +105,7 @@ JsCadUtilsGroup.prototype.combine = function (
         self.parts,
         pieces,
         function (value, key, index, object) {
-          // debug('combine', value, key, object);
+          debug('combine mapPick', value, key, object);
           return map ? map(value, key, index, object) : identity(value);
         },
         self.name
@@ -133,7 +132,7 @@ stack: ${err.stack}
 
 /**
  * Apply a function to each element in the group.
- * @param  {Function} cb Callback founction applied to each part.
+ * @param  {Function} cb Callback function applied to each part.
  * It is called with the parameters `(value, key)`
  * @return {Object}      Returns this object so it can be chained
  * @function map
@@ -200,7 +199,7 @@ JsCadUtilsGroup.prototype.clone = function (name, map) {
  * @param  {CSG|String} solid The solid to rotate the group around
  * @param  {String} axis  Axis to rotate
  * @param  {Number} angle Angle in degrees
- * @return {JsCadUtilsGroup}       The rotoated group.
+ * @return {JsCadUtilsGroup}       The rotated group.
  * @function rotate
  */
 JsCadUtilsGroup.prototype.rotate = function (solid, axis, angle) {
@@ -405,7 +404,7 @@ JsCadUtilsGroup.prototype.midlineTo = function midlineTo(part, axis, to) {
 };
 
 /**
- * Translates a group by a given ammount
+ * Translates a group by a given amount
  * @function translate
  * @param  {Number|Array} x The `x` value or an array of x, y and z.
  * @param  {Number} [y] The `y` value.
@@ -451,8 +450,8 @@ JsCadUtilsGroup.prototype.pick = function (parts, map) {
 /**
  * Converts a group into an array of `CSG` objects.
  * @function array
- * @param  {String} parts A comma separated list of parts it include in the new array.
- * @param  {Function} map   A function run on each part as its added to the new array.
+ * @param  {String} [parts] A comma separated list of parts it include in the new array.
+ * @param  {Function} [map]   A function run on each part as its added to the new array.
  * @return {Array} An array of `CSG` objects
  */
 JsCadUtilsGroup.prototype.array = function (parts, map) {
@@ -514,7 +513,7 @@ JsCadUtilsGroup.prototype.toString = function () {
   name: "${this.name}",
   names: "${this.names.join(',')}", 
   parts: "${Object.keys(this.parts)}",
-  holes: "${this.holes}"
+  holes: ${Array.isArray(this.holes) ? this.holes.length : this.holes ? 1 : 0}
 }`;
 };
 
@@ -531,7 +530,7 @@ JsCadUtilsGroup.prototype.setName = function (name) {
  *
  * You can call the `combine()` function with a list of parts you want combined into one.
  *
- * The `map()` funciton allows you to modify each part
+ * The `map()` function allows you to modify each part
  * contained in the group object.
  *
  * @param  {string | object} [objectNames]   Comma separated list of part names.

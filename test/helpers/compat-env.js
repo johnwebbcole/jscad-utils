@@ -6,7 +6,7 @@ const {
 global.union = union;
 
 global.jscadUtilsDebug = {
-  enabled: [/jscadUtils:parts/],
+  enabled: [], // [/jscadUtils:group/],
   disabled: [],
   options: { browser: false }
 };

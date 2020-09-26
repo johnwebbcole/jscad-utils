@@ -219,7 +219,7 @@ test('wedge', async (t) => {
     'x'
   );
 
-  const value = await csgImageSnapshot(t, wedge.toArray(), snapshotOptions);
+  const value = await csgImageSnapshot(t, wedge.array(), snapshotOptions);
   t.true(value);
 });
 test.todo('stretch');
