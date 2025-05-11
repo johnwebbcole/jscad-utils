@@ -73,16 +73,16 @@ Examples are placed in the `dist` directory with the `jscad-utils.jscad` file in
 
 Here are some of the examples:
 
-- [snap](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/snap.jscad) an example showing how to use the `snap` function.
-- [bisect](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/bisect.jscad) an example cutting an object in two with the `bisect` function.
-- [fillet](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/fillet.jscad) an example adding a roundover and fillet with the `fillet` function.
-- [chamfer](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/chamfer.jscad) an example cutting a chamfer into an object with the `chamfer` function.
-- [boxes](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/boxes.jscad)
-- [fit](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/fit.jscad)
-- [midlineTo](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/midlineTo.jscad)
-- [parts-hexagon](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/parts-hexagon.jscad)
-- [rabett-tb](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/rabett-tb.jscad)
-- [retraction-test](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/retraction-test.jscad)
-- [size](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/size.jscad)
-- [text](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/text.jscad)
-- [wedge](http://openjscad.org/#https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/wedge.jscad)
+- [snap](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/snap.jscad) an example showing how to use the `snap` function.
+- [bisect](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/bisect.jscad) an example cutting an object in two with the `bisect` function.
+- [fillet](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/fillet.jscad) an example adding a roundover and fillet with the `fillet` function.
+- [chamfer](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/chamfer.jscad) an example cutting a chamfer into an object with the `chamfer` function.
+- [boxes](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/boxes.jscad)
+- [fit](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/fit.jscad)
+- [midlineTo](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/midlineTo.jscad)
+- [parts-hexagon](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/parts-hexagon.jscad)
+- [rabett-tb](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/rabett-tb.jscad)
+- [retraction-test](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/retraction-test.jscad)
+- [size](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/size.jscad)
+- [text](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/text.jscad)
+- [wedge](https://gitlab.com/johnwebbcole/jscad-utils/raw/master/dist/examples/wedge.jscad)
